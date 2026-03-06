@@ -13,3 +13,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include(cmake/Dependencies.cmake)
 
 add_subdirectory(src)
+add_subdirectory(sandbox)
