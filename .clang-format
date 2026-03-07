@@ -1,0 +1,13 @@
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: InlineOnly
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Stroustrup
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 100
+CompactNamespaces: false
+IndentWidth: 4
+TabWidth: 4
+NamespaceIndentation: None
+PackConstructorInitializers: Never
+PointerAlignment: Left
