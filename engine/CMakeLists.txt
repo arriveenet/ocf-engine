@@ -12,6 +12,7 @@ set(HDRS
     include/ocf/VertexArrayObject.h
     include/ocf/VertexBuffer.h
     include/ocf/IndexBuffer.h
+    include/ocf/Texture.h
     include/ocf/OpenGLUtility.h
 )
 
@@ -27,6 +28,7 @@ set(SRCS
     src/VertexArrayObject.cpp
     src/VertexBuffer.cpp
     src/IndexBuffer.cpp
+    src/Texture.cpp
     src/OpenGLUtility.cpp
 )
 
