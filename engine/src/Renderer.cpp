@@ -1,6 +1,7 @@
 #include "ocf/FileUtils.h"
 #include "ocf/IndexBuffer.h"
 #include "ocf/Program.h"
+#include "ocf/RenderCommand.h"
 #include "ocf/Renderer.h"
 #include "ocf/Types.h"
 #include "ocf/VertexArrayObject.h"
@@ -48,27 +49,22 @@ Renderer::~Renderer()
     delete m_vertexArrayObject;
 }
 
+void Renderer::pushCommand(const RenderCommand& command)
+{
+    m_renderQueue.push(command);
+}
+
 void Renderer::render()
 {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_program->getHandle());
+    RenderCommand command;
+    command.program = m_program;
+    command.vertexArrayObject = m_vertexArrayObject;
+    pushCommand(command);
 
-    m_vertexArrayObject->bind();
-
-    const GLenum mode = m_vertexArrayObject->getPrimitiveType();
-    const size_t count = m_vertexArrayObject->getVertexCount();
-    const size_t offset = m_vertexArrayObject->offset();
-
-    if (m_vertexArrayObject->hasIndexBuffer()) {
-        const GLenum indexType = m_vertexArrayObject->getIndexType();
-        glDrawElements(mode, static_cast<GLint>(count), indexType,
-                       reinterpret_cast<const void*>(static_cast<uintptr_t>(offset)));
-    }
-    else {
-        glDrawArrays(mode, static_cast<GLint>(offset), static_cast<GLsizei>(count));
-    }
+    m_renderQueue.flush();
 }
 
 } // namespace ocf

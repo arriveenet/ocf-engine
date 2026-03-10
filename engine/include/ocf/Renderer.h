@@ -1,5 +1,6 @@
 #pragma once
-#include <glad/gl.h>
+#include "ocf/RenderCommand.h"
+#include "ocf/RenderQueue.h"
 
 namespace ocf {
 
@@ -11,11 +12,14 @@ public:
     Renderer();
     virtual ~Renderer();
 
+    void pushCommand(const RenderCommand& command);
+
     void render();
 
 private:
     Program* m_program = nullptr;
     VertexArrayObject* m_vertexArrayObject = nullptr;
+    RenderQueue m_renderQueue;
 };
 
 } // namespace ocf

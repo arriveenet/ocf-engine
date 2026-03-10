@@ -4,6 +4,8 @@ set(HDRS
     include/ocf/FileUtils.h
     include/ocf/Node.h
     include/ocf/Program.h
+    include/ocf/RenderCommand.h
+    include/ocf/RenderQueue.h
     include/ocf/Renderer.h
     include/ocf/RendererEnums.h
     include/ocf/Scene.h
@@ -22,6 +24,7 @@ set(SRCS
     src/FileUtils.cpp
     src/Node.cpp
     src/Program.cpp
+    src/RenderQueue.cpp
     src/Renderer.cpp
     src/Scene.cpp
     src/Window.cpp
