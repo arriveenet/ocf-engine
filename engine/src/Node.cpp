@@ -1,5 +1,6 @@
 #include "ocf/Component.h"
 #include "ocf/Node.h"
+#include "ocf/Renderer.h"
 #include <algorithm>
 
 namespace ocf {
@@ -24,6 +25,14 @@ void Node::update(float deltaTime)
     // Update child nodes
     for (auto child : m_children) {
         child->update(deltaTime);
+    }
+}
+
+void Node::render(Renderer* renderer)
+{
+    // Render child nodes
+    for (auto child : m_children) {
+        child->render(renderer);
     }
 }
 

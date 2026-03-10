@@ -5,6 +5,7 @@
 namespace ocf {
 
 class Component;
+class Renderer;
 
 class Node {
 public:
@@ -12,6 +13,8 @@ public:
     virtual ~Node();
 
     void update(float deltaTime);
+
+    virtual void render(Renderer* renderer);
 
     void setParent(Node* parent) { m_parent = parent; }
 

@@ -42,7 +42,7 @@ void Engine::run()
         // Assume a fixed time step of 16ms
         m_currentScene->update(0.016f);
 
-        m_renderer->render();
+        m_renderer->render(m_currentScene);
 
         m_window->swapBuffers();
     }

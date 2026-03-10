@@ -1,4 +1,5 @@
 set(HDRS
+    include/ocf/CameraComponent.h
     include/ocf/Component.h
     include/ocf/Engine.h
     include/ocf/FileUtils.h
@@ -19,6 +20,7 @@ set(HDRS
 )
 
 set(SRCS
+    src/CameraComponent.cpp
     src/Component.cpp
     src/Engine.cpp
     src/FileUtils.cpp
