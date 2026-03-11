@@ -10,6 +10,7 @@ set(HDRS
     include/ocf/Renderer.h
     include/ocf/RendererEnums.h
     include/ocf/Scene.h
+    include/ocf/Transform.h
     include/ocf/Types.h
     include/ocf/Window.h
     include/ocf/VertexArrayObject.h
@@ -29,6 +30,7 @@ set(SRCS
     src/RenderQueue.cpp
     src/Renderer.cpp
     src/Scene.cpp
+    src/Transform.cpp
     src/Window.cpp
     src/VertexArrayObject.cpp
     src/VertexBuffer.cpp
