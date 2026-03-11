@@ -4,6 +4,7 @@
 
 namespace ocf {
 
+class Scene;
 class VertexArrayObject;
 class Program;
 
@@ -14,11 +15,9 @@ public:
 
     void pushCommand(const RenderCommand& command);
 
-    void render();
+    void render(Scene* scene);
 
 private:
-    Program* m_program = nullptr;
-    VertexArrayObject* m_vertexArrayObject = nullptr;
     RenderQueue m_renderQueue;
 };
 
