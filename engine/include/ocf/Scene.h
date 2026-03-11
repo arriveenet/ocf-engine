@@ -6,7 +6,7 @@ namespace ocf {
 
 class Node;
 class Renderer;
-class CameraComponent;
+class Camera;
 
 class Scene {
 public:
@@ -19,12 +19,12 @@ public:
 
     Node* getRoot() const { return m_root.get(); }
 
-    void addCamera(CameraComponent* camera);
-    void removeCamera(CameraComponent* camera);
+    void addCamera(Camera* camera);
+    void removeCamera(Camera* camera);
 
 protected:
     std::unique_ptr<Node> m_root;
-    std::vector<CameraComponent*> m_cameras;
+    std::vector<Camera*> m_cameras;
 };
 
 } // namespace ocf

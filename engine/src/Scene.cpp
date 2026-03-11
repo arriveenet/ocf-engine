@@ -1,5 +1,5 @@
 #include "ocf/Scene.h"
-#include "ocf/CameraComponent.h"
+#include "ocf/Camera.h"
 #include "ocf/Node.h"
 #include "ocf/Renderer.h"
 #include <algorithm>
@@ -31,16 +31,16 @@ void Scene::render(Renderer* renderer)
     }
 }
 
-void Scene::addCamera(CameraComponent* camera)
+void Scene::addCamera(Camera* camera)
 {
     m_cameras.push_back(camera);
     std::stable_sort(m_cameras.begin(), m_cameras.end(),
-        [](const CameraComponent* a, const CameraComponent* b) {
+        [](const Camera* a, const Camera* b) {
             return a->getDepth() < b->getDepth();
         });
 }
 
-void Scene::removeCamera(CameraComponent* camera)
+void Scene::removeCamera(Camera* camera)
 {
     auto it = std::find(m_cameras.begin(), m_cameras.end(), camera);
     if (it != m_cameras.end()) {

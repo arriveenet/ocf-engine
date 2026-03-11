@@ -4,10 +4,10 @@
 
 namespace ocf {
 
-class CameraComponent : public Component {
+class Camera : public Component {
 public:
-    CameraComponent();
-    ~CameraComponent() override;
+    Camera();
+    ~Camera() override;
 
     void update(float deltaTime) override;
 

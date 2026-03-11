@@ -1,4 +1,4 @@
-#include <ocf/CameraComponent.h>
+#include <ocf/Camera.h>
 #include <ocf/Engine.h>
 #include <ocf/FileUtils.h>
 #include <ocf/IndexBuffer.h>
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
     // Create a camera and register it with the scene.
     // The camera is valid for the entire lifetime of the scene (both are local to main).
-    CameraComponent camera;
+    Camera camera;
     camera.setCameraFlag(CameraFlag::Default);
     scene.addCamera(&camera);
 
