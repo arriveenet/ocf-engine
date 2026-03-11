@@ -1,5 +1,6 @@
 #include "ocf/Component.h"
 #include "ocf/Node.h"
+#include "ocf/Transform.h"
 #include <algorithm>
 
 namespace ocf {
@@ -31,6 +32,36 @@ void Node::addChild(Node *node)
 {
     node->m_parent = this;
     m_children.push_back(node);
+}
+
+void Node::setPosition(const glm::vec3& position)
+{
+    m_transform.setPosition(position);
+}
+
+glm::vec3 Node::getPosition() const
+{
+    return m_transform.getPosition();
+}
+
+void Node::setRotation(const glm::vec3& eulerAngles)
+{
+    m_transform.setRotation(eulerAngles);
+}
+
+glm::vec3 Node::getRotation() const
+{
+    return m_transform.getRotation();
+}
+
+void Node::setScale(const glm::vec3& scale)
+{
+    m_transform.setScale(scale);
+}
+
+glm::vec3 Node::getScale() const
+{
+    return m_transform.getScale();
 }
 
 void Node::removeChild(Node *node)
