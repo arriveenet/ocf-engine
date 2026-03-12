@@ -6,23 +6,28 @@
 
 namespace ocf {
 
+Engine* Engine::create()
+{
+    Engine* engine = new Engine();
+    return engine;
+}
+
+void Engine::destroy(Engine* engine)
+{
+    engine->terminate();
+    delete engine;
+}
+
 Engine::Engine()
 {
 }
 
 Engine::~Engine()
 {
-    FileUtils::destroyInstance();
 }
 
 bool Engine::init(std::string_view title, int width, int height, Scene *scene)
 {
-  m_window = new Window(title.data(), width, height);
-    if(!m_window->create()) {
-        delete m_window;
-        return false;
-    }
-
     m_renderer = new Renderer();
     m_currentScene = scene;
 
@@ -34,18 +39,15 @@ Scene* Engine::getCurrentScene() const noexcept
     return m_currentScene;
 }
 
-void Engine::run()
+Scene* Engine::createScene()
 {
-    while (!m_window->shouldClose()) {
-        m_window->pollEvents();
+    Scene* scene = new Scene();
+    return scene;
+}
 
-        // Assume a fixed time step of 16ms
-        m_currentScene->update(0.016f);
-
-        m_renderer->render(m_currentScene);
-
-        m_window->swapBuffers();
-    }
+void Engine::destroyScene(Scene* scene)
+{
+    delete scene;
 }
 
 void Engine::terminate()
@@ -53,8 +55,7 @@ void Engine::terminate()
     delete m_renderer;
     m_renderer = nullptr;
 
-    delete m_window;
-    m_window = nullptr;
+    FileUtils::destroyInstance();
 }
 
 } // namespace ocf

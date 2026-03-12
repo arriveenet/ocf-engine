@@ -9,6 +9,9 @@ class Window;
 
 class Engine {
 public:
+    static Engine* create();
+    static void destroy(Engine* engine);
+
     Engine();
     ~Engine();
 
@@ -16,13 +19,17 @@ public:
 
     Scene *getCurrentScene() const noexcept;
 
-    void run();
+    Scene* createScene();
+
+    void destroyScene(Scene* scene);
+
+    Renderer* getRenderer() const noexcept { return m_renderer; }
+
 
     void terminate();
 
 private:
     Renderer* m_renderer = nullptr;
-    Window* m_window = nullptr;
     Scene* m_currentScene = nullptr;
 };
 

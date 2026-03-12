@@ -1,4 +1,5 @@
 set(HDRS
+    include/ocf/Application.h
     include/ocf/Camera.h
     include/ocf/Component.h
     include/ocf/Engine.h
@@ -10,6 +11,7 @@ set(HDRS
     include/ocf/Renderer.h
     include/ocf/RendererEnums.h
     include/ocf/Scene.h
+    include/ocf/Sprite.h
     include/ocf/Transform.h
     include/ocf/Types.h
     include/ocf/Window.h
@@ -21,6 +23,7 @@ set(HDRS
 )
 
 set(SRCS
+    src/Application.cpp
     src/Camera.cpp
     src/Component.cpp
     src/Engine.cpp
@@ -30,6 +33,7 @@ set(SRCS
     src/RenderQueue.cpp
     src/Renderer.cpp
     src/Scene.cpp
+    src/Sprite.cpp
     src/Transform.cpp
     src/Window.cpp
     src/VertexArrayObject.cpp

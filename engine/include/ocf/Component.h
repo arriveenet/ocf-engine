@@ -9,7 +9,7 @@ public:
     Component();
     virtual ~Component();
 
-    virtual void update(float deltaTime) = 0;
+    virtual void update(float deltaTime);
 
 protected:
     Node *m_pOwner = nullptr;
