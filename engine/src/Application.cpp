@@ -23,7 +23,7 @@ Application::~Application()
 void Application::run(const Config& config, SetupCallback setupCallback,
                       CleanupCallback cleanupCallback, int width, int height)
 {
-    m_window = std::make_unique<Window>(config.title, width, height);
+    m_window = std::make_unique<Window>(config.title, config, width, height);
 
     if (!m_window->create()) {
         return;

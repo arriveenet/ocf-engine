@@ -7,8 +7,9 @@
 
 namespace ocf {
 
-Window::Window(std::string_view title, int width, int height)
+Window::Window(std::string_view title, const Config& config, int width, int height)
     : m_title(title)
+    , m_config(config)
     , m_width(width)
     , m_height(height)
 {
@@ -48,8 +49,12 @@ bool Window::create()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    if (!SDL_CreateWindowAndRenderer(m_title.c_str(), m_width, m_height,
-                                   SDL_WINDOW_OPENGL,
+    uint32_t windowFlags = SDL_WINDOW_OPENGL;
+    if (m_config.resizable) {
+        windowFlags |= SDL_WINDOW_RESIZABLE;
+    }
+
+    if (!SDL_CreateWindowAndRenderer(m_title.c_str(), m_width, m_height, windowFlags,
                                    &m_window, &m_renderer)) {
         return false;
     }
