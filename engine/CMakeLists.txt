@@ -3,14 +3,14 @@ project(ocfengine LANGUAGES CXX)
 
 set(TARGET ocfengine)
 
-# ==============================================================================
+# ==================================================================================================
 #  Options
-# ==============================================================================
+# ==================================================================================================
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
-# ==============================================================================
+# ==================================================================================================
 #  Functions
-# ==============================================================================
+# ==================================================================================================
 function( add_filtered_public_h filterName fileString )
     file(GLOB TMP_FILES ${fileString})
     set(PUBLIC_HEADER_FILES ${PUBLIC_HEADER_FILES} ${TMP_FILES} PARENT_SCOPE)
@@ -53,17 +53,15 @@ function( add_filtered_std relativePath )
     set(SOURCE_FILES ${SOURCE_FILES} PARENT_SCOPE)
 endfunction( add_filtered_std )
 
-# ==============================================================================
+# ==================================================================================================
 #  Sources and headers
-# ==============================================================================
+# ==================================================================================================
+add_filtered_std("platform")
 add_filtered_std("rhi")
 
-# ==============================================================================
+# ==================================================================================================
 #  Includes & target definition
-# ==============================================================================
-include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
+# ==================================================================================================
 #building a library
 add_library(${TARGET} ${PUBLIC_HEADER_FILES} ${PRIVATE_HEADER_FILES} ${SOURCE_FILES})
 if(BUILD_SHARED_LIBS)
@@ -72,13 +70,14 @@ else()
     target_compile_definitions(${TARGET} PUBLIC OCF_LIBRARY_STATIC)
 endif()
 
-target_include_directories(${TARGET} PUBLIC ${PUBLIC_HDR_DIR})
+target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 
-# ==============================================================================
+# ==================================================================================================
 #  Compiler flags
-# ==============================================================================
+# ==================================================================================================
 if (MSVC)
     set(OCF_WARNINGS /W4)
     target_compile_options(${TARGET} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")

@@ -2,9 +2,9 @@
 
 namespace ocf {
 
-class RHIDevice {
+class Application {
 public:
-
+    void run();
 };
 
 } // namespace ocf
