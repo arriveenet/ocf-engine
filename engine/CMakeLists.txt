@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ocfengine LANGUAGE CXX)
+project(ocfengine LANGUAGES CXX)
 
 set(TARGET ocfengine)
 

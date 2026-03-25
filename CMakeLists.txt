@@ -4,10 +4,10 @@ project(ocf-engine)
 # ==============================================================================
 #  Project Settings
 # ==============================================================================
-set(CXX_STANDARD "-std=c++20")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
-    set(CXX_STANDARD "/std:c++20")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STANDARD} /W0 /Zc:__cplusplus")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STANDARD} -fstrict-aliasing -Wno-unknown-pragmas -Wno-unused-function -Wno-deprecated-declarations")
