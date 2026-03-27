@@ -56,8 +56,10 @@ endfunction( add_filtered_std )
 # ==================================================================================================
 #  Sources and headers
 # ==================================================================================================
+add_filtered_std("core")
 add_filtered_std("platform")
 add_filtered_std("rhi")
+add_filtered_std("scene")
 
 # ==================================================================================================
 #  Includes & target definition
@@ -74,6 +76,11 @@ target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
+
+# ==================================================================================================
+# Dependencies
+# ==================================================================================================
+target_link_libraries(${TARGET} PRIVATE glfw)
 
 # ==================================================================================================
 #  Compiler flags
