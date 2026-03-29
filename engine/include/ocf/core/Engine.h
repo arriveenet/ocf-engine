@@ -6,6 +6,10 @@
 
 namespace ocf {
 
+namespace rhi {
+class Device;
+}
+
 class Scene;
 class Renderer;
 
@@ -33,6 +37,7 @@ private:
     float m_deltaTime;
     std::chrono::steady_clock::time_point m_lastUpdate;
     std::unique_ptr<Scene> m_currentScene;
+    std::unique_ptr<rhi::Device> m_device;
 };
 
 } // namespace ocf

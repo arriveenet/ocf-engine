@@ -6,9 +6,16 @@
  */
 
 #include "ocf/core/Engine.h"
+
+#include "ocf/core/Logger.h"
 #include "ocf/scene/Scene.h"
+#include "ocf/rhi/Device.h"
+#include "ocf/rhi/DeviceFactory.h"
 
 namespace ocf {
+
+using namespace logger;
+using namespace rhi;
 
 Engine::Engine()
     : m_deltaTime(0.0f)
@@ -22,6 +29,13 @@ Engine::~Engine()
 
 bool Engine::init()
 {
+    // Setup Logger
+    auto consoleAppender = std::make_unique<ConsoleAppender>();
+    Logger::getInstance().addAppender(std::move(consoleAppender));
+    Logger::getInstance().setLogLevel(LogLevel::Debug);
+
+    m_device = DeviceFactory::getInstance().create();
+
     return true;
 }
 

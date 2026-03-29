@@ -8,6 +8,8 @@ set(TARGET ocfengine)
 # ==================================================================================================
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
+find_package(Vulkan REQUIRED)
+
 # ==================================================================================================
 #  Functions
 # ==================================================================================================
@@ -61,6 +63,8 @@ add_filtered_std("platform")
 add_filtered_std("rhi")
 add_filtered_std("scene")
 
+add_filtered_std("rhi/vulkan")
+
 # ==================================================================================================
 #  Includes & target definition
 # ==================================================================================================
@@ -81,6 +85,7 @@ set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 # Dependencies
 # ==================================================================================================
 target_link_libraries(${TARGET} PRIVATE glfw)
+target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
 # ==================================================================================================
 #  Compiler flags

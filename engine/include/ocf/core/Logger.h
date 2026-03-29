@@ -117,7 +117,7 @@ public:
             return;
         }
 
-        std::string message = std::format(fmt, std::forward<Args>(args)...);
+        std::string message = std::vformat(fmt, std::make_format_args(args...));
         LogEvent event(level, message);
 
         for (auto& appender : m_appenders) {

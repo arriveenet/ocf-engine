@@ -3,10 +3,12 @@
 #pragma once
 
 namespace ocf {
+namespace rhi {
 
-class RHIDevice {
+class Context {
 public:
-
+    virtual ~Context() = default;
 };
 
+} // namespace rhi
 } // namespace ocf
