@@ -59,6 +59,7 @@ endfunction( add_filtered_std )
 #  Sources and headers
 # ==================================================================================================
 add_filtered_std("core")
+add_filtered_std("math")
 add_filtered_std("platform")
 add_filtered_std("rhi")
 add_filtered_std("scene")
