@@ -16,7 +16,7 @@ public:
     using HandleId = uint32_t;
     static constexpr HandleId nullid = UINT32_MAX;
 
-    Handle() : m_id(nullid) {};
+    Handle() : m_id(nullid) {}
     explicit Handle(HandleId id) : m_id(id) {}
 
     explicit operator bool() const noexcept { return m_id != nullid; }

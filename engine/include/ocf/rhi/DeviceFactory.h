@@ -13,7 +13,7 @@ class DeviceFactory {
 public:
     static DeviceFactory& getInstance();
 
-    ~DeviceFactory() = default;
+    virtual ~DeviceFactory() = default;
 
     virtual std::unique_ptr<Device> create() = 0;
 

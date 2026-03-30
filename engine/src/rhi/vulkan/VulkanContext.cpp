@@ -119,7 +119,7 @@ bool VulkanContext::createInstance(const char* appName)
     std::vector<const char*> extensionList;
     std::vector<const char*> layerList;
 
-#if DEBUG || _DEBUG
+#ifndef NDEBUG
     layerList.push_back("VK_LAYER_KHRONOS_validation");
     extensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
@@ -143,7 +143,8 @@ bool VulkanContext::createInstance(const char* appName)
     createInfo.enabledLayerCount = uint32_t(layerList.size());
     createInfo.ppEnabledLayerNames = layerList.data();
 
-    return vkCreateInstance(&createInfo, nullptr, &m_instance) == VK_SUCCESS;
+    VkResult ret =  vkCreateInstance(&createInfo, nullptr, &m_instance);
+    return ret == VK_SUCCESS;
 }
 
 bool VulkanContext::createDebugMessenger()
@@ -228,7 +229,7 @@ bool VulkanContext::createCommandPool()
 
 void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
 {
-#if _DEBUG || DEBUG
+#ifndef NDEBUG
     if (m_pfnSetDebugUtilsObjectNameEXT) {
         VkDebugUtilsObjectNameInfoEXT nameInfo{
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
