@@ -1,6 +1,5 @@
 #include "ocf/math/MaxRectsBinPack.h"
-#include "ocf/base/Macros.h"
-#include <cmath>
+#include <cassert>
 #include <limits>
 
 namespace ocf {
@@ -89,7 +88,7 @@ Rect MaxRectsBinPack::insert(float width, float height)
         newNode = findPositionForNewNodeBottomLeft(width, height, score1, score2);
         break;
     default:
-        OCFASSERT(false, "Invalid heuristic");
+        assert(false);
         break;
     }
 
@@ -125,7 +124,7 @@ Rect MaxRectsBinPack::scoreRect(float width, float height, float score1, float s
         score1 = -score1;
         break;
     default:
-        OCFASSERT(false, "Invalid heuristic");
+        assert(false);
         break;
     }
 
@@ -386,8 +385,8 @@ bool MaxRectsBinPack::splitFreeNode(const Rect& freeNode, const Rect& usedNode)
 
 void MaxRectsBinPack::insertNewFreeRects(const Rect& newFreeRect)
 {
-    OCF_ASSERT(newFreeRect.m_size.x > 0.0f);
-    OCF_ASSERT(newFreeRect.m_size.y > 0.0f);
+    assert(newFreeRect.m_size.x > 0.0f);
+    assert(newFreeRect.m_size.y > 0.0f);
 
     for (size_t i = 0; i < m_newFreeRectsLastSize;) {
 

@@ -2,6 +2,8 @@
 
 #include "VulkanContext.h"
 
+#include "VulkanUtility.h"
+
 #include "ocf/core/Logger.h"
 
 #include <GLFW/glfw3.h>
@@ -144,6 +146,8 @@ bool VulkanContext::createInstance(const char* appName)
     createInfo.ppEnabledLayerNames = layerList.data();
 
     VkResult ret =  vkCreateInstance(&createInfo, nullptr, &m_instance);
+    VK_CHECK_RESULT(ret);
+
     return ret == VK_SUCCESS;
 }
 
