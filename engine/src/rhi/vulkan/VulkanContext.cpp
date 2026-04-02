@@ -47,28 +47,40 @@ VulkanContext::~VulkanContext()
 bool VulkanContext::initialize(const char* appName)
 {
     // Create Vulkan instance
-    if(!createInstance(appName)) {
-        OCF_LOG_ERROR("Failed to create Vulkan instance");
+    VulkanResult result = createInstance(appName);
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
         return false;
     }
 
     // Select physical device
-    pickPhysicalDevice();
+    result = pickPhysicalDevice();
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
+        return false;
+    }
 
     // Create debug messenger
-    createDebugMessenger();
+    result = createDebugMessenger();
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
+        return false;
+    }
 
     // Create logical device and queues
-    if (!createLogicalDevice()) {
-        OCF_LOG_ERROR("Failed to create logical device");
+    result = createLogicalDevice();
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
         return false;
     }
 
     // Create command pool
-    if (!createCommandPool()) {
-        OCF_LOG_ERROR("Failed to create command pool");
+    result = createCommandPool();
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
         return false;
     }
+
 
     OCF_LOG_INFO("Vulkan instance created successfully");
     return true;
@@ -99,7 +111,7 @@ void VulkanContext::terminate()
     OCF_LOG_INFO("Vulkan instance terminated.");
 }
 
-bool VulkanContext::createInstance(const char* appName)
+VulkanResult VulkanContext::createInstance(const char* appName)
 {
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -113,9 +125,9 @@ bool VulkanContext::createInstance(const char* appName)
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    OCF_LOG_DEBUG("Available Vulkan instance extensions:");
-    for (const auto& extention : extensions) {
-        OCF_LOG_DEBUG("    {} (version {})", extention.extensionName, extention.specVersion);
+    // OCF_LOG_DEBUG("Available Vulkan instance extensions:");
+    for (const auto& extension : extensions) {
+        // OCF_LOG_DEBUG("    {} (version {})", extension.extensionName, extension.specVersion);
     }
 
     std::vector<const char*> extensionList;
@@ -145,13 +157,15 @@ bool VulkanContext::createInstance(const char* appName)
     createInfo.enabledLayerCount = uint32_t(layerList.size());
     createInfo.ppEnabledLayerNames = layerList.data();
 
-    VkResult ret =  vkCreateInstance(&createInfo, nullptr, &m_instance);
-    VK_CHECK_RESULT(ret);
+    VkResult result =  vkCreateInstance(&createInfo, nullptr, &m_instance);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to create Vulkan instance"));
+    }
 
-    return ret == VK_SUCCESS;
+    return VulkanResult::Ok();
 }
 
-bool VulkanContext::createDebugMessenger()
+VulkanResult VulkanContext::createDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -166,19 +180,26 @@ bool VulkanContext::createDebugMessenger()
     auto vkCreateDebugUtilsMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
         m_instance, "vkCreateDebugUtilsMessengerEXT");
 
-    if (vkCreateDebugUtilsMessenger != nullptr &&
-        vkCreateDebugUtilsMessenger(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-        OCF_LOG_ERROR("Failed to set up debug messenger");
-        return false;
+    if (vkCreateDebugUtilsMessenger == nullptr) {
+        return VulkanResult::Err(
+            VK_ERROR(VK_ERROR_EXTENSION_NOT_PRESENT,
+                     "Failed to get address of vkCreateDebugUtilsMessengerEXT"));
+
+    }
+
+    VkResult result =
+        vkCreateDebugUtilsMessenger(m_instance, &createInfo, nullptr, &m_debugMessenger);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to create debug utils messenger"));
     }
 
     m_pfnSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetInstanceProcAddr(
         m_instance, "vkSetDebugUtilsObjectNameEXT");
 
-    return true;
+    return VulkanResult::Ok();
 }
 
-bool VulkanContext::createLogicalDevice()
+VulkanResult VulkanContext::createLogicalDevice()
 {
     const QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
@@ -203,16 +224,17 @@ bool VulkanContext::createLogicalDevice()
     createInfo.pNext = nullptr;
     createInfo.pEnabledFeatures = nullptr;
 
-
-    if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
-        return false;
+    VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to create logical device"));
     }
 
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
-    return true;
+
+    return VulkanResult::Ok();
 }
 
-bool VulkanContext::createCommandPool()
+VulkanResult VulkanContext::createCommandPool()
 {
     const QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
@@ -222,13 +244,14 @@ bool VulkanContext::createCommandPool()
     commandPoolCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-    if (vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_commandPool) !=
-        VK_SUCCESS) {
-        OCF_LOG_ERROR("Failed to create command pool");
-        return false;
+    VkResult result =
+        vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_commandPool);
+
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to create command pool"));
     }
 
-    return true;
+    return VulkanResult::Ok();
 }
 
 void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
@@ -246,13 +269,13 @@ void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, co
 #endif
 }
 
-void VulkanContext::pickPhysicalDevice()
+VulkanResult VulkanContext::pickPhysicalDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
     if (deviceCount == 0) {
-        OCF_LOG_ERROR("Failed to find GPUs with Vulkan support");
-        return;
+        return VulkanResult::Err(
+            VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Failed to find GPUs with Vulkan support"));
     }
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
@@ -265,8 +288,8 @@ void VulkanContext::pickPhysicalDevice()
     }
 
     if (m_physicalDevice == VK_NULL_HANDLE) {
-        OCF_LOG_ERROR("Failed to find a suitable GPU");
-        return;
+        return VulkanResult::Err(
+            VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Failed to find a suitable GPU"));
     }
 
     // Get memory properties and device properties
@@ -275,6 +298,7 @@ void VulkanContext::pickPhysicalDevice()
 
     OCF_LOG_DEBUG("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
                   static_cast<int>(m_deviceProperties.deviceType));
+    return VulkanResult::Ok();
 }
 
 bool VulkanContext::isDeviceSuitable(VkPhysicalDevice device)

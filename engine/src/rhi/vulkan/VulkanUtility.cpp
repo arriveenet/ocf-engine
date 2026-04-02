@@ -16,5 +16,11 @@ void VulkanUtility::assertVkError(VkResult ret, const char* function, size_t lin
     }
 }
 
+void VulkanUtility::logError(const VulkanError& error)
+{
+    OCF_LOG_ERROR("[Vulkan Error]: {} ({})\nFile: {}:{}", error.message,
+                  static_cast<int>(error.result), error.file, error.line);
+}
+
 } // namespace rhi
 } // namespace ocf

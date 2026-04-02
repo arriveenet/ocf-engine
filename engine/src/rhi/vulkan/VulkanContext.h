@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "VulkanUtility.h"
+
 #include "ocf/rhi/Context.h"
 
 #include <vulkan/vulkan.h>
@@ -30,17 +32,17 @@ private:
         std::optional<uint32_t> graphicsFamily;
     };
 
-    bool createInstance(const char* appName);
+    VulkanResult createInstance(const char* appName);
 
-    bool createDebugMessenger();
+    VulkanResult createDebugMessenger();
 
-    bool createLogicalDevice();
+    VulkanResult createLogicalDevice();
 
-    bool createCommandPool();
+    VulkanResult createCommandPool();
 
     void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
 
-    void pickPhysicalDevice();
+    VulkanResult pickPhysicalDevice();
 
     bool isDeviceSuitable(VkPhysicalDevice device);
 
