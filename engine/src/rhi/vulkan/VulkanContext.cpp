@@ -15,10 +15,18 @@ namespace {
 
 VKAPI_ATTR VkBool32 VKAPI_CALL
 vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                    VkDebugUtilsMessageTypeFlagsEXT messageType,
-                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+                    VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
+                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* /* pUserData */)
 {
-    OCF_LOG_DEBUG("Vulkan validation layer: {}", pCallbackData->pMessage);
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        OCF_LOG_ERROR("Vulkan validation layer: {}", pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        OCF_LOG_WARN("Vulkan validation layer: {}", pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+        OCF_LOG_INFO("Vulkan validation layer: {}", pCallbackData->pMessage);
+    } else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+        OCF_LOG_DEBUG("Vulkan validation layer: {}", pCallbackData->pMessage);
+    }
     return VK_FALSE;
 }
 
@@ -125,10 +133,10 @@ VulkanResult VulkanContext::createInstance(const char* appName)
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> extensions(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-    // OCF_LOG_DEBUG("Available Vulkan instance extensions:");
-    for (const auto& extension : extensions) {
-        // OCF_LOG_DEBUG("    {} (version {})", extension.extensionName, extension.specVersion);
-    }
+    //OCF_LOG_DEBUG("Available Vulkan instance extensions:");
+    //for (const auto& extension : extensions) {
+    //    OCF_LOG_DEBUG("    {} (version {})", extension.extensionName, extension.specVersion);
+    //}
 
     std::vector<const char*> extensionList;
     std::vector<const char*> layerList;
