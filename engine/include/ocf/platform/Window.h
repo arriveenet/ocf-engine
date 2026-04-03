@@ -9,6 +9,14 @@ namespace ocf {
 
 class OCF_API Window {
 public:
+    enum class Platform {
+        Win32,
+        Cocoa,
+        Wayland,
+        X11,
+        Unknown,
+    };
+
     Window();
     virtual ~Window() = default;
 
@@ -26,6 +34,8 @@ public:
 
     /** Check if the window should close. */
     virtual bool windowShouldClose() const = 0;
+
+    virtual Platform getPlatform() const;
 
     virtual void* getNativeHandle() const = 0;
 

@@ -58,6 +58,19 @@ bool GLFWWindow::windowShouldClose() const
     return glfwWindowShouldClose(m_pMainWindow);
 }
 
+Window::Platform GLFWWindow::getPlatform() const
+{
+    const int platform = glfwGetPlatform();
+
+    switch (platform) {
+    case GLFW_PLATFORM_WIN32:       return Platform::Win32;
+    case GLFW_PLATFORM_COCOA:       return Platform::Cocoa;
+    case GLFW_PLATFORM_WAYLAND:     return Platform::Wayland;
+    case GLFW_PLATFORM_X11:         return Platform::X11;
+    default:                        return Platform::Unknown;
+    }
+}
+
 void* GLFWWindow::getNativeHandle() const
 {
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32

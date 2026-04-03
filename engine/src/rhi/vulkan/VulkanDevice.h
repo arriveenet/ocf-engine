@@ -16,6 +16,8 @@ public:
 
     TextureHandle createTexture() override;
 
+    SwapchainHandle createSwapchain(uint32_t width, uint32_t height) override;
+
 private:
     VulkanContext& m_context;
 };

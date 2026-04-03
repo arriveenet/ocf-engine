@@ -106,6 +106,11 @@ endif()
 
 target_compile_options(${TARGET} PRIVATE ${OCF_WARNINGS})
 
+
+if (WIN32)
+    target_compile_definitions({${TARGET} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+endif()
+
 # ==================================================================================================
 # Sub-projects
 # ==================================================================================================

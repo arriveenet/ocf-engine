@@ -21,4 +21,9 @@ std::string Window::getTitle() const
     return m_title;
 }
 
+Window::Platform Window::getPlatform() const
+{
+    return Platform::Unknown;
+}
+
 } // namespace ocf

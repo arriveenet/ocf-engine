@@ -5,8 +5,10 @@
 #include "VulkanUtility.h"
 
 #include "ocf/core/Logger.h"
+#include "ocf/platform/Window.h"
 
 #include <GLFW/glfw3.h>
+#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
 
 #include <vector>
@@ -36,15 +38,6 @@ namespace ocf {
 namespace rhi {
 
 VulkanContext::VulkanContext()
-    : m_instance(VK_NULL_HANDLE)
-    , m_device(VK_NULL_HANDLE)
-    , m_physicalDevice(VK_NULL_HANDLE)
-    , m_memoryProperties{}
-    , m_deviceProperties{}
-    , m_graphicsQueue(VK_NULL_HANDLE)
-    , m_commandPool(VK_NULL_HANDLE)
-    , m_debugMessenger(VK_NULL_HANDLE)
-    , m_pfnSetDebugUtilsObjectNameEXT(nullptr)
 {
 }
 
@@ -117,6 +110,27 @@ void VulkanContext::terminate()
     m_instance = VK_NULL_HANDLE;
 
     OCF_LOG_INFO("Vulkan instance terminated.");
+}
+
+VulkanResult VulkanContext::createSurface(Window* window)
+{
+    auto surface = createWindowSurface(window);
+    if (surface.isErr()) {
+        return VulkanResult::Err(surface.unwrapErr());
+    }
+
+    m_surface = surface.unwrap();
+
+    QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+    VkBool32 presentSupport = VK_FALSE;
+    vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, indices.graphicsFamily.value(),
+                                         m_surface, &presentSupport);
+    if (presentSupport == VK_FALSE) {
+        return VulkanResult::Err(
+            VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Selected GPU does not support presentation"));
+    }
+
+    return VulkanResult::Ok();
 }
 
 VulkanResult VulkanContext::createInstance(const char* appName)
@@ -260,6 +274,48 @@ VulkanResult VulkanContext::createCommandPool()
     }
 
     return VulkanResult::Ok();
+}
+
+Result<VkSurfaceKHR, VulkanError> VulkanContext::createWindowSurface(Window* window)
+{
+    Window::Platform platform = window->getPlatform();
+    VkResult result = VK_ERROR_EXTENSION_NOT_PRESENT;
+
+    if (platform == Window::Platform::Win32) {
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        VkWin32SurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+        createInfo.hwnd = static_cast<HWND>(window->getNativeHandle());
+        createInfo.hinstance = GetModuleHandle(nullptr);
+        VkResult result = vkCreateWin32SurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
+        if (result == VK_SUCCESS) {
+            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
+        }
+#endif
+    }
+    else if (platform == Window::Platform::Wayland) {
+#ifdef VK_USE_PLATFORM_WAYLAND_KHR
+        VkWaylandSurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+        VkResult result = vkCreateWaylandSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
+        if (result == VK_SUCCESS) {
+            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
+        }
+#endif
+    }
+    else if (platform == Window::Platform::X11) {
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+        VkXlibSurfaceCreateInfoKHR createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+        VkResult result = vkCreateXlibSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
+        if (result == VK_SUCCESS) {
+            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
+        }
+#endif
+    }
+
+    return Result<VkSurfaceKHR, VulkanError>::Err(
+        VK_ERROR(result, "Failed to create window surface"));
 }
 
 void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)

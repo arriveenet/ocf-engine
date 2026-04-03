@@ -9,6 +9,7 @@ namespace rhi {
 
 struct RHITexture;
 struct RHIVertexBuffer;
+struct RHISwapchain;
 
 template <typename T>
 struct Handle {
@@ -29,6 +30,7 @@ private:
 
 using TextureHandle = Handle<RHITexture>;
 using VertexBufferHandle = Handle<RHIVertexBuffer>;
+using SwapchainHandle = Handle<RHISwapchain>;
 
 } // namespace rhi
 } // namespace ocf

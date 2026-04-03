@@ -14,8 +14,13 @@ public:
     bool create(const Application::Config &config, std::string_view title,
                 int width, int height) override;
     void swapBuffers() override;
+
     void pollEvents() override;
+
     bool windowShouldClose() const override;
+
+    Platform getPlatform() const override;
+
     void* getNativeHandle() const override;
 
 private:
