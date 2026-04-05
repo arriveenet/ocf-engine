@@ -4,6 +4,17 @@
 
 namespace ocf {
 
+const char* Window::platformToString(Window::Platform platform)
+{
+    switch (platform) {
+    case Platform::Win32:       return "Win32";
+    case Platform::Cocoa:       return "Cocoa";
+    case Platform::Wayland:     return "Wayland";
+    case Platform::X11:         return "X11";
+    default:                        return "Unknown";
+    }
+}
+
 Window::Window()
     : m_title("")
     , m_width(0)

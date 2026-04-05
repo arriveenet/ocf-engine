@@ -17,12 +17,16 @@ public:
         Unknown,
     };
 
+    static const char* platformToString(Platform platform);
+
     Window();
     virtual ~Window() = default;
 
     void setTitle(std::string_view title);
 
     std::string getTitle() const;
+
+    virtual Platform getPlatform() const;
 
     virtual bool create(const Application::Config& config, std::string_view title, int width, int height) = 0;
 
@@ -35,8 +39,7 @@ public:
     /** Check if the window should close. */
     virtual bool windowShouldClose() const = 0;
 
-    virtual Platform getPlatform() const;
-
+    /** Get native handle */
     virtual void* getNativeHandle() const = 0;
 
 protected:

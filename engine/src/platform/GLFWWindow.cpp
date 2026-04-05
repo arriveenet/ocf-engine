@@ -2,7 +2,9 @@
 
 #include "GLFWWindow.h"
 
+#include "ocf/core/Logger.h"
 #include "ocf/platform/platform.h"
+#include <GLFW/glfw3.h>
 
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32
 #    define GLFW_EXPOSE_NATIVE_WIN32
@@ -28,10 +30,16 @@ GLFWWindow::~GLFWWindow()
 bool GLFWWindow::create(const Application::Config& config, std::string_view title,
                         int width, int height)
 {
+    glfwSetErrorCallback([](int error, const char* description) {
+        OCF_LOG_ERROR("GLFW Error ({}): {}", error, description);
+    });
+
     if (!glfwInit()) {
         return false;
     }
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     m_pMainWindow = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
     if (!m_pMainWindow) {
         glfwTerminate();

@@ -3,6 +3,7 @@
 #include "platform/GLFWWindow.h"
 
 #include "ocf/core/Engine.h"
+#include "ocf/core/Logger.h"
 #include "ocf/platform/Application.h"
 
 namespace ocf {
@@ -34,8 +35,9 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     m_engine = Engine::create();
 
+    OCF_LOG_INFO("Window platform: {}", Window::platformToString(m_window->getPlatform()));
+
     Scene* scene = m_engine->createScene();
-    
     if (setupCallback) {
       setupCallback(*m_engine, scene);
     }
@@ -44,7 +46,7 @@ void Application::run(const Config& config, SetupCallback setupCallback,
         // Main application loop
         m_engine->mainLoop();
         m_window->pollEvents();
-        m_window->swapBuffers();
+       // m_window->swapBuffers();
     }
 
     if (cleanupCallback) {
