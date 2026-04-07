@@ -7,8 +7,11 @@
 #include <GLFW/glfw3.h>
 
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32
-#    define GLFW_EXPOSE_NATIVE_WIN32
-#    include <GLFW/glfw3native.h>
+#   define GLFW_EXPOSE_NATIVE_WIN32
+#   include <GLFW/glfw3native.h>
+#elif OCF_TARGET_PLATFORM == OCF_PLATFORM_LINUX
+#   define GLFW_EXPOSE_NATIVE_X11
+#   include <GLFW/glfw3native.h>
 #endif
 
 
@@ -51,11 +54,6 @@ bool GLFWWindow::create(const Application::Config& config, std::string_view titl
     return true;
 }
 
-void GLFWWindow::swapBuffers()
-{
-    glfwSwapBuffers(m_pMainWindow);
-}
-
 void GLFWWindow::pollEvents()
 {
     glfwPollEvents();
@@ -79,13 +77,23 @@ Window::Platform GLFWWindow::getPlatform() const
     }
 }
 
-void* GLFWWindow::getNativeHandle() const
+Window::NativeHandle GLFWWindow::getNativeHandle() const
 {
+    NativeHandle handle{};
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32
-    return glfwGetWin32Window(m_pMainWindow);
+    handle.platform = Platform::Win32;
+    handle.win32.hInstance = GetModuleHandle(nullptr);
+    handle.win32.hWnd = glfwGetWin32Window(m_pMainWindow);
+#elif OCF_TARGET_PLATFORM == OCF_PLATFORM_LINUX
+    handle.platform = Platform::X11;
+    handle.x11.display = glfwGetX11Display();
+    handle.x11.window = glfwGetX11Window(m_pMainWindow);
 #else
-    return nullptr;
+    handle.platform = Platform::Unknown;
+    handle.handle = nullptr;
 #endif
+
+    return handle;
 }
 
 } // namespace ocf

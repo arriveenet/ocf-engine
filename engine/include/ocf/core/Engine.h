@@ -25,6 +25,8 @@ public:
 
     Scene* createScene();
 
+    rhi::Device* getDevice() const;
+
 private:
     Engine();
     ~Engine();

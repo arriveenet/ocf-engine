@@ -5,6 +5,7 @@
 #include "ocf/core/Engine.h"
 #include "ocf/core/Logger.h"
 #include "ocf/platform/Application.h"
+#include "ocf/rhi/Device.h"
 
 namespace ocf {
 
@@ -35,6 +36,9 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     m_engine = Engine::create();
 
+    rhi::Device* device = m_engine->getDevice();
+    device->createSwapchain(m_window.get(), width, height);
+
     OCF_LOG_INFO("Window platform: {}", Window::platformToString(m_window->getPlatform()));
 
     Scene* scene = m_engine->createScene();
@@ -46,7 +50,6 @@ void Application::run(const Config& config, SetupCallback setupCallback,
         // Main application loop
         m_engine->mainLoop();
         m_window->pollEvents();
-       // m_window->swapBuffers();
     }
 
     if (cleanupCallback) {

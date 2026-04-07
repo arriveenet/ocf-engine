@@ -4,8 +4,7 @@
 
 #include "ocf/rhi/Device.h"
 
-namespace ocf {
-namespace rhi {
+namespace ocf::rhi {
 
 class VulkanContext;
 
@@ -16,11 +15,10 @@ public:
 
     TextureHandle createTexture() override;
 
-    SwapchainHandle createSwapchain(uint32_t width, uint32_t height) override;
+    SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
 private:
     VulkanContext& m_context;
 };
 
-} // namespace rhi
-} // namespace ocf
+} // namespace ocf::rhi

@@ -75,6 +75,11 @@ Scene* Engine::createScene()
     return m_currentScene.get();
 }
 
+Device* Engine::getDevice() const
+{
+    return m_device.get();
+}
+
 void Engine::calculateDeltaTime()
 {
     auto now = std::chrono::steady_clock::now();

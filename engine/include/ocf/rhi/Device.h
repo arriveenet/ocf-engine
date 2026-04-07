@@ -5,22 +5,21 @@
 #include "ocf/rhi/Handle.h"
 
 namespace ocf {
-namespace rhi {
+class Window;
+}
+
+namespace ocf::rhi {
 
 class Context;
 
-class IWindow;
+struct RHIResourceBase {};
 
-struct RHIBase {};
+struct RHITexture : public RHIResourceBase {};
 
-struct RHITexture : public RHIBase {
-};
+struct RHIVertexBuffer : public RHIResourceBase {};
 
-struct RHIVertexBuffer : public RHIBase {
-};
 
-struct RHISwapchain : public RHIBase {
-};
+struct RHISwapchain : public RHIResourceBase {};
 
 class Device {
 public:
@@ -29,10 +28,9 @@ public:
 
     virtual TextureHandle createTexture() = 0;
 
-    virtual SwapchainHandle createSwapchain(uint32_t width, uint32_t height) = 0;
+    virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 
 protected:
 };
 
-} // namespace rhi
-} // namespace ocf
+} // namespace ocf::rhi

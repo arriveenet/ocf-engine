@@ -8,8 +8,14 @@
 #include "ocf/platform/Window.h"
 
 #include <GLFW/glfw3.h>
-#define VK_USE_PLATFORM_WAYLAND_KHR
+
+#include <Windows.h>
+
+#define VK_USE_PLATFORM_WIN32_KHR
+//#define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
+
 
 #include <vector>
 
@@ -278,35 +284,39 @@ VulkanResult VulkanContext::createCommandPool()
 
 Result<VkSurfaceKHR, VulkanError> VulkanContext::createWindowSurface(Window* window)
 {
-    Window::Platform platform = window->getPlatform();
+    Window::NativeHandle nativeHandle = window->getNativeHandle();
     VkResult result = VK_ERROR_EXTENSION_NOT_PRESENT;
 
-    if (platform == Window::Platform::Win32) {
+    if (nativeHandle.platform == Window::Platform::Win32) {
 #ifdef VK_USE_PLATFORM_WIN32_KHR
         VkWin32SurfaceCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        createInfo.hwnd = static_cast<HWND>(window->getNativeHandle());
-        createInfo.hinstance = GetModuleHandle(nullptr);
+        createInfo.hwnd = static_cast<HWND>(nativeHandle.win32.hWnd);
+        createInfo.hinstance = static_cast<HINSTANCE>(nativeHandle.win32.hInstance);
         VkResult result = vkCreateWin32SurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
         if (result == VK_SUCCESS) {
             return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
         }
 #endif
     }
-    else if (platform == Window::Platform::Wayland) {
+    else if (nativeHandle.platform == Window::Platform::Wayland) {
 #ifdef VK_USE_PLATFORM_WAYLAND_KHR
         VkWaylandSurfaceCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+        createInfo.display = static_cast<wl_display*>(nativeHandle.wayland.display);
+        createInfo.surface = static_cast<wl_surface*>(nativeHandle.wayland.surface);
         VkResult result = vkCreateWaylandSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
         if (result == VK_SUCCESS) {
             return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
         }
 #endif
     }
-    else if (platform == Window::Platform::X11) {
+    else if (nativeHandle.platform == Window::Platform::X11) {
 #ifdef VK_USE_PLATFORM_XLIB_KHR
         VkXlibSurfaceCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+        createInfo.dpy = static_cast<Display*>(nativeHandle.x11.display);
+        createInfo.window = static_cast<Window>(nativeHandle.x11.window);
         VkResult result = vkCreateXlibSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
         if (result == VK_SUCCESS) {
             return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);

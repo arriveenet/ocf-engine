@@ -13,7 +13,6 @@ public:
 
     bool create(const Application::Config &config, std::string_view title,
                 int width, int height) override;
-    void swapBuffers() override;
 
     void pollEvents() override;
 
@@ -21,7 +20,7 @@ public:
 
     Platform getPlatform() const override;
 
-    void* getNativeHandle() const override;
+    NativeHandle getNativeHandle() const override;
 
 private:
     GLFWwindow* m_pMainWindow = nullptr;
