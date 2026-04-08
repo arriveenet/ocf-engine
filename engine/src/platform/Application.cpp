@@ -48,8 +48,8 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     while (!m_window->windowShouldClose()) {
         // Main application loop
-        m_engine->mainLoop();
         m_window->pollEvents();
+        m_engine->mainLoop();
     }
 
     if (cleanupCallback) {

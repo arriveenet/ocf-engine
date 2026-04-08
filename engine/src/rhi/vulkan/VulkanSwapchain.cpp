@@ -115,6 +115,23 @@ void VulkanSwapchain::destroy()
 
 VulkanResult VulkanSwapchain::acquireNextImage()
 {
+    VkDevice device = m_context.getDevice();
+
+    assert(!m_presentSemaphoreList.empty());
+    VkSemaphore acquireSemaphore = m_presentSemaphoreList.back();
+    m_presentSemaphoreList.pop_back();
+
+    VkResult result = vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX, acquireSemaphore,
+                                            VK_NULL_HANDLE, &m_currentIndex);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to acquire next image"));
+    }
+
+    VkSemaphore oldSemaphore = m_frames[m_currentIndex].presentComplete;
+    if (oldSemaphore != VK_NULL_HANDLE) {
+        m_presentSemaphoreList.push_back(oldSemaphore);
+    }
+    m_frames[m_currentIndex].presentComplete = acquireSemaphore;
     return VulkanResult::Ok();
 }
 
@@ -135,10 +152,38 @@ VkSemaphore VulkanSwapchain::getRenderCompleteSemaphore() const
 
 void VulkanSwapchain::createFrameContext()
 {
+    VkDevice device = m_context.getDevice();
+    m_frames.resize(m_images.size());
+    for (auto& frame : m_frames) {
+        VkSemaphoreCreateInfo semaphoreCI{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+        vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.renderComplete);
+    }
+
+    uint32_t presentCompleteSemaphoreCount = m_images.size() + 1;
+    m_presentSemaphoreList.resize(presentCompleteSemaphoreCount);
+    for (auto& semaphore : m_presentSemaphoreList) {
+        VkSemaphoreCreateInfo semaphoreCI{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+        vkCreateSemaphore(device, &semaphoreCI, nullptr, &semaphore);
+    }
 }
 
 void VulkanSwapchain::destroyFrameContext()
 {
+    VkDevice device = m_context.getDevice();
+    for (auto& frame : m_frames) {
+        vkDestroySemaphore(device, frame.renderComplete, nullptr);
+        vkDestroySemaphore(device, frame.presentComplete, nullptr);
+    }
+    m_frames.clear();
+
+    for (auto& semaphore : m_presentSemaphoreList) {
+        vkDestroySemaphore(device, semaphore, nullptr);
+    }
+    m_presentSemaphoreList.clear();
 }
 
 

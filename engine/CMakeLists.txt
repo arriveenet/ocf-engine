@@ -66,6 +66,36 @@ add_filtered_std("scene")
 
 add_filtered_std("rhi/vulkan")
 
+if (WIN32)
+    set(PLATFORM_HEADER_FILES
+        src/rhi/vulkan/platform/VulkanPlatformWindows.h
+    )
+
+    set(PLATFORM_SOURCE_FILES
+        src/rhi/vulkan/platform/VulkanPlatformWindows.cpp
+    )
+
+    list(APPEND PRIVATE_HEADER_FILES ${PLATFORM_HEADER_FILES})
+    list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
+
+    source_group("Private Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
+    source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
+elseif (LINUX)
+    set(PLATFORM_HEADER_FILES
+        src/rhi/vulkan/platform/VulkanPlatformLinux.h
+    )
+
+    set(PLATFORM_SOURCE_FILES
+        src/rhi/vulkan/platform/VulkanPlatformLinux.cpp
+    )
+
+    list(APPEND PRIVATE_HEADER_FILES ${PLATFORM_HEADER_FILES})
+    list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
+
+    source_group("Private Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
+    source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
+endif()
+
 # ==================================================================================================
 #  Includes & target definition
 # ==================================================================================================

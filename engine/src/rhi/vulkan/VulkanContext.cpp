@@ -2,20 +2,15 @@
 
 #include "VulkanContext.h"
 
+#include "VulkanPlatform.h"
 #include "VulkanUtility.h"
+#include "VulkanSwapchain.h"
 
 #include "ocf/core/Logger.h"
 #include "ocf/platform/Window.h"
 
 #include <GLFW/glfw3.h>
-
-#include <Windows.h>
-
-#define VK_USE_PLATFORM_WIN32_KHR
-//#define VK_USE_PLATFORM_WAYLAND_KHR
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
-
 
 #include <vector>
 
@@ -118,25 +113,36 @@ void VulkanContext::terminate()
     OCF_LOG_INFO("Vulkan instance terminated.");
 }
 
-VulkanResult VulkanContext::createSurface(Window* window)
+VulkanResult VulkanContext::createSwapchain(Window* window, uint32_t width, uint32_t height)
 {
-    auto surface = createWindowSurface(window);
-    if (surface.isErr()) {
-        return VulkanResult::Err(surface.unwrapErr());
+    if (m_swapchain == nullptr) {
+        m_swapchain = std::make_unique<VulkanSwapchain>(*this);
     }
 
-    m_surface = surface.unwrap();
-
-    QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
-    VkBool32 presentSupport = VK_FALSE;
-    vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, indices.graphicsFamily.value(),
-                                         m_surface, &presentSupport);
-    if (presentSupport == VK_FALSE) {
-        return VulkanResult::Err(
-            VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Selected GPU does not support presentation"));
+    if (m_surface == VK_NULL_HANDLE) {
+        VulkanResult result = createSurface(window);
+        if (!result) {
+            return VulkanResult::Err(result.unwrapErr());
+        }
     }
+
+    m_swapchain->create(width, height);
 
     return VulkanResult::Ok();
+}
+
+VulkanResult VulkanContext::acquireNextImage()
+{
+    return VulkanResult::Ok();
+}
+
+void VulkanContext::submitPresent()
+{
+}
+
+VulkanContext::FrameContext* VulkanContext::getCurrentFrameContext()
+{
+    return nullptr;
 }
 
 VulkanResult VulkanContext::createInstance(const char* appName)
@@ -282,50 +288,26 @@ VulkanResult VulkanContext::createCommandPool()
     return VulkanResult::Ok();
 }
 
-Result<VkSurfaceKHR, VulkanError> VulkanContext::createWindowSurface(Window* window)
+VulkanResult VulkanContext::createSurface(Window* window)
 {
-    Window::NativeHandle nativeHandle = window->getNativeHandle();
-    VkResult result = VK_ERROR_EXTENSION_NOT_PRESENT;
-
-    if (nativeHandle.platform == Window::Platform::Win32) {
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-        VkWin32SurfaceCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        createInfo.hwnd = static_cast<HWND>(nativeHandle.win32.hWnd);
-        createInfo.hinstance = static_cast<HINSTANCE>(nativeHandle.win32.hInstance);
-        VkResult result = vkCreateWin32SurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
-        if (result == VK_SUCCESS) {
-            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
-        }
-#endif
-    }
-    else if (nativeHandle.platform == Window::Platform::Wayland) {
-#ifdef VK_USE_PLATFORM_WAYLAND_KHR
-        VkWaylandSurfaceCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-        createInfo.display = static_cast<wl_display*>(nativeHandle.wayland.display);
-        createInfo.surface = static_cast<wl_surface*>(nativeHandle.wayland.surface);
-        VkResult result = vkCreateWaylandSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
-        if (result == VK_SUCCESS) {
-            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
-        }
-#endif
-    }
-    else if (nativeHandle.platform == Window::Platform::X11) {
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-        VkXlibSurfaceCreateInfoKHR createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-        createInfo.dpy = static_cast<Display*>(nativeHandle.x11.display);
-        createInfo.window = static_cast<Window>(nativeHandle.x11.window);
-        VkResult result = vkCreateXlibSurfaceKHR(m_instance, &createInfo, nullptr, &m_surface);
-        if (result == VK_SUCCESS) {
-            return Result<VkSurfaceKHR, VulkanError>::Ok(m_surface);
-        }
-#endif
+    std::unique_ptr<VulkanPlatform> platform = VulkanPlatform::create();
+    auto surface = platform->createSurface(m_instance, window->getNativeHandle());
+    if (surface.isErr()) {
+        return VulkanResult::Err(surface.unwrapErr());
     }
 
-    return Result<VkSurfaceKHR, VulkanError>::Err(
-        VK_ERROR(result, "Failed to create window surface"));
+    m_surface = surface.unwrap();
+
+    QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+    VkBool32 presentSupport = VK_FALSE;
+    vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, indices.graphicsFamily.value(),
+                                         m_surface, &presentSupport);
+    if (presentSupport == VK_FALSE) {
+        return VulkanResult::Err(
+            VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Selected GPU does not support presentation"));
+    }
+
+    return VulkanResult::Ok();
 }
 
 void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)

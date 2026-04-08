@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <memory>
 
 
 namespace ocf {
@@ -17,12 +18,19 @@ class Window;
 
 namespace rhi {
 
+class VulkanSwapchain;
+
 /**
  * @brief VulkanContext is responsible for managing the Vulkan instance, physical device, logical
  * device, and related resources.
  */
 class VulkanContext : public Context {
 public:
+    struct FrameContext {
+        //std::shared_ptr<CommandBuffer> commandBuffer;
+        VkFence inflightFence = VK_NULL_HANDLE;
+    };
+
     VulkanContext();
     ~VulkanContext() override;
 
@@ -42,7 +50,13 @@ public:
     /** Get Vulkan surface */
     VkSurfaceKHR getSurface() const noexcept { return m_surface; }
 
-    VulkanResult createSurface(Window* window);
+    VulkanResult createSwapchain(Window* window, uint32_t width, uint32_t height);
+
+    VulkanResult acquireNextImage();
+
+    void submitPresent();
+
+    FrameContext* getCurrentFrameContext();
 
 private:
     struct QueueFamilyIndices {
@@ -57,7 +71,7 @@ private:
 
     VulkanResult createCommandPool();
 
-    Result<VkSurfaceKHR, VulkanError> createWindowSurface(Window* window);
+    VulkanResult createSurface(Window* window);
 
     void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
 
@@ -78,6 +92,7 @@ private:
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     PFN_vkSetDebugUtilsObjectNameEXT m_pfnSetDebugUtilsObjectNameEXT = nullptr;
+    std::unique_ptr<VulkanSwapchain> m_swapchain;
 };
 
 } // namespace rhi

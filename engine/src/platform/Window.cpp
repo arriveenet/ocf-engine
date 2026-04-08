@@ -11,7 +11,7 @@ const char* Window::platformToString(Window::Platform platform)
     case Platform::Cocoa:       return "Cocoa";
     case Platform::Wayland:     return "Wayland";
     case Platform::X11:         return "X11";
-    default:                        return "Unknown";
+    default:                    return "Unknown";
     }
 }
 

@@ -26,8 +26,7 @@ TextureHandle VulkanDevice::createTexture()
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width,
                                               uint32_t height)
 {
-    m_context.createSurface(window);
-    VulkanSwapchain* swapchain = new VulkanSwapchain(m_context);
+    m_context.createSwapchain(window, width, height);
 
     // TODO: Handle create result
     return SwapchainHandle();

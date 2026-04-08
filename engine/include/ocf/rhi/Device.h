@@ -18,7 +18,6 @@ struct RHITexture : public RHIResourceBase {};
 
 struct RHIVertexBuffer : public RHIResourceBase {};
 
-
 struct RHISwapchain : public RHIResourceBase {};
 
 class Device {

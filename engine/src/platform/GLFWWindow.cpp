@@ -4,16 +4,18 @@
 
 #include "ocf/core/Logger.h"
 #include "ocf/platform/platform.h"
-#include <GLFW/glfw3.h>
+
 
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32
 #   define GLFW_EXPOSE_NATIVE_WIN32
 #   include <GLFW/glfw3native.h>
 #elif OCF_TARGET_PLATFORM == OCF_PLATFORM_LINUX
 #   define GLFW_EXPOSE_NATIVE_X11
-#   include <GLFW/glfw3native.h>
+#   define GLFW_EXPOSE_NATIVE_WAYLAND
 #endif
 
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 namespace ocf {
 
@@ -80,14 +82,19 @@ Window::Platform GLFWWindow::getPlatform() const
 Window::NativeHandle GLFWWindow::getNativeHandle() const
 {
     NativeHandle handle{};
+    handle.platform = getPlatform();
 #if OCF_TARGET_PLATFORM == OCF_PLATFORM_WIN32
-    handle.platform = Platform::Win32;
     handle.win32.hInstance = GetModuleHandle(nullptr);
     handle.win32.hWnd = glfwGetWin32Window(m_pMainWindow);
 #elif OCF_TARGET_PLATFORM == OCF_PLATFORM_LINUX
-    handle.platform = Platform::X11;
-    handle.x11.display = glfwGetX11Display();
-    handle.x11.window = glfwGetX11Window(m_pMainWindow);
+    if (handle.platform == Platform::Wayland) {
+        handle.wayland.display = glfwGetWaylandDisplay();
+        handle.wayland.surface = glfwGetWaylandWindow(m_pMainWindow);
+    }
+    else if (handle.platform == Platform::X11) {
+        handle.x11.display = glfwGetX11Display();
+        handle.x11.window = glfwGetX11Window(m_pMainWindow);
+    }
 #else
     handle.platform = Platform::Unknown;
     handle.handle = nullptr;

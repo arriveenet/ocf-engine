@@ -30,7 +30,7 @@ public:
             } cocoa;
             struct {
                 void* display;
-                void* window;
+                unsigned long window;
             } x11;
             struct {
                 void* display;
