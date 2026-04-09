@@ -8,8 +8,8 @@ public:
                                                     Window::NativeHandle nativeHandle) override;
 
 private:
-    VkSurfaceKHR createXlibSurface(VkInstance instance, Window::NativeHandle nativeHandle);
-    VkSurfaceKHR createWaylandSurface(VkInstance instance, Window::NativeHandle nativeHandle);
+    VkResult createXlibSurface(VkInstance instance, Window::NativeHandle nativeHandle, VkSurfaceKHR* surface);
+    VkResult createWaylandSurface(VkInstance instance, Window::NativeHandle nativeHandle,  VkSurfaceKHR* surface);
 };
 
 } // namespace ocf::rhi

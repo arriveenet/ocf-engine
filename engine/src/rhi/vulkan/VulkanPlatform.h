@@ -15,6 +15,8 @@ class VulkanPlatform {
 public:
     static std::unique_ptr<VulkanPlatform> create();
 
+    virtual ~VulkanPlatform() = default;
+
     virtual Result<VkSurfaceKHR, VulkanError> createSurface(VkInstance instance,
                                                             Window::NativeHandle nativeHandle) = 0;
 };
