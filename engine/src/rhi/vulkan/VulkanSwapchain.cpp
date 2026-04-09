@@ -111,6 +111,18 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
 
 void VulkanSwapchain::destroy()
 {
+    destroyFrameContext();
+
+    VkDevice device = m_context.getDevice();
+    for (auto& view : m_imageViews) {
+        vkDestroyImageView(device, view, nullptr);
+    }
+    if (m_swapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(device, m_swapchain, nullptr);
+        m_swapchain = VK_NULL_HANDLE;
+    }
+    m_images.clear();
+    m_imageViews.clear();
 }
 
 VulkanResult VulkanSwapchain::acquireNextImage()

@@ -105,6 +105,16 @@ void VulkanContext::terminate()
         m_debugMessenger = VK_NULL_HANDLE;
     }
 
+    if (m_swapchain) {
+        m_swapchain->destroy();
+        m_swapchain.reset();
+    }
+
+    if (m_surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        m_surface = VK_NULL_HANDLE;
+    }
+
     vkDestroyDevice(m_device, nullptr);
     vkDestroyInstance(m_instance, nullptr);
     m_device = VK_NULL_HANDLE;
