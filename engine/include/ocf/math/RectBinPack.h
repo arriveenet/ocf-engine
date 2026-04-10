@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "ocf/math/Rect.h"
 #include "ocf/math/vec2.h"

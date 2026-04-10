@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanSwapchain.h"
 
 #include "VulkanContext.h"

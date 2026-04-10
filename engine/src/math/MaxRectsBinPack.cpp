@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/math/MaxRectsBinPack.h"
 #include <cmath>
 #include <cassert>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "ocf/math/qualifie.h"
 #include "ocf/math/vec3.h"

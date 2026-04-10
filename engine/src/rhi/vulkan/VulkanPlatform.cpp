@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanPlatform.h"
 
 #include "platform/VulkanPlatformLinux.h"

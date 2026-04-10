@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanPlatformWindows.h"
 
 #include "ocf/platform/Window.h"

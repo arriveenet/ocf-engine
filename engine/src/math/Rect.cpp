@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/math/Rect.h"
 
 namespace ocf {

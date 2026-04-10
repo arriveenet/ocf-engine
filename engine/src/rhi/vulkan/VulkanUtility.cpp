@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanUtility.h"
 
 #include "ocf/core/Logger.h"
