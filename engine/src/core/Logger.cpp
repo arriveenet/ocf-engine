@@ -1,4 +1,4 @@
-/* SPDX - License - Identifier : MIT */
+// SPDX-License-Identifier: MIT
 
 #include "ocf/core/Logger.h"
 #include <format>

@@ -1,4 +1,4 @@
-/* SPDX - License - Identifier : MIT */
+// SPDX-License-Identifier: MIT
 
 #include "ocf/scene/Node.h"
 #include "ocf/scene/Scene.h"

@@ -1,9 +1,5 @@
-/* SPDX - License - Identifier : MIT */
-/*
- *
- * Copyright (c) 2025 Tsuyoshi KATAYAMA
- *
- */
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Tsuyoshi Katayama
 
 #include "ocf/core/Engine.h"
 
