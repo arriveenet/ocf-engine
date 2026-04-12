@@ -23,6 +23,11 @@ TextureHandle VulkanDevice::createTexture()
     return TextureHandle();
 }
 
+ShaderHandle VulkanDevice::createShader(std::string_view filename)
+{
+    return ShaderHandle();
+}
+
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width,
                                               uint32_t height)
 {

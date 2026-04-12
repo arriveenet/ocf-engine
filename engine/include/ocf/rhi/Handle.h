@@ -9,6 +9,7 @@ namespace rhi {
 
 struct RHITexture;
 struct RHIVertexBuffer;
+struct RHIShader;
 struct RHISwapchain;
 
 template <typename T>
@@ -28,8 +29,9 @@ private:
     HandleId m_id;
 };
 
-using TextureHandle = Handle<RHITexture>;
 using VertexBufferHandle = Handle<RHIVertexBuffer>;
+using TextureHandle = Handle<RHITexture>;
+using ShaderHandle = Handle<RHIShader>;
 using SwapchainHandle = Handle<RHISwapchain>;
 
 } // namespace rhi
