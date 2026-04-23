@@ -174,7 +174,7 @@ void VulkanSwapchain::createFrameContext()
         vkCreateSemaphore(device, &semaphoreCI, nullptr, &frame.renderComplete);
     }
 
-    uint32_t presentCompleteSemaphoreCount = m_images.size() + 1;
+    size_t presentCompleteSemaphoreCount = m_images.size() + 1;
     m_presentSemaphoreList.resize(presentCompleteSemaphoreCount);
     for (auto& semaphore : m_presentSemaphoreList) {
         VkSemaphoreCreateInfo semaphoreCI{
