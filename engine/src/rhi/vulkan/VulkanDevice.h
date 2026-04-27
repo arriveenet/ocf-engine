@@ -12,7 +12,7 @@ namespace ocf::rhi {
 
 class VulkanContext;
 
-struct VulkanShader : public RHIShader {
+struct VulkanShaderModule : public RHIShaderModule {
     struct VK {
         VkShaderModule id = VK_NULL_HANDLE;
     } vk;
@@ -26,7 +26,7 @@ public:
 
     TextureHandle createTexture() override;
 
-    ShaderHandle createShader(std::string_view filename) override;
+    ShaderModuleHandle createShaderModule(std::string_view filename) override;
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 

@@ -25,7 +25,7 @@ struct RHITexture : public RHIResourceBase {
     uint16_t height;
 };
 
-struct RHIShader : public RHIResourceBase {
+struct RHIShaderModule : public RHIResourceBase {
     ShaderStage stage;
     const char* entryPoint;
 };
@@ -39,7 +39,7 @@ public:
 
     virtual TextureHandle createTexture() = 0;
 
-    virtual ShaderHandle createShader(std::string_view filename) = 0;
+    virtual ShaderModuleHandle createShaderModule(std::string_view filename) = 0;
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 

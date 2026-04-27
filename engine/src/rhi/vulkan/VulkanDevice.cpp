@@ -5,6 +5,10 @@
 #include "VulkanContext.h"
 #include "VulkanSwapchain.h"
 
+#include "ocf/core/Logger.h"
+
+#include <fstream>
+
 namespace ocf {
 namespace rhi {
 
@@ -24,11 +28,34 @@ TextureHandle VulkanDevice::createTexture()
     return TextureHandle();
 }
 
-ShaderHandle VulkanDevice::createShader(std::string_view filename)
+ShaderModuleHandle VulkanDevice::createShaderModule(std::string_view filename)
 {
-    Handle<VulkanShader> handle = initHandle<VulkanShader>();
+    Handle<VulkanShaderModule> handle = initHandle<VulkanShaderModule>();
 
-    return Handle<RHIShader>{handle.getId()};
+    VulkanShaderModule* shader = construct<VulkanShaderModule>(handle);
+
+    std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
+    if (!file.is_open()) {
+        OCF_LOG_ERROR("Failded to open shader file: {}", filename.data());
+    }
+
+    size_t fileSize = static_cast<size_t>(file.tellg());
+    std::vector<char> buffer(fileSize);
+    file.seekg(0).read(buffer.data(), fileSize);
+    file.close();
+
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = buffer.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+
+    VkDevice device = m_context.getDevice();
+    auto result = vkCreateShaderModule(device, &createInfo, nullptr, &shader->vk.id);
+    if (result != VK_SUCCESS) {
+        OCF_LOG_ERROR("Failded to create shader module from: {}", filename.data());
+    }
+ 
+    return Handle<RHIShaderModule>{handle.getId()};
 }
 
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height)
