@@ -30,6 +30,8 @@ public:
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
+    std::shared_ptr<CommandBuffer> createCommandBuffer() override;
+
 private:
     template <typename D, typename... ARGS>
     Handle<D> initHandle(ARGS&&... args)

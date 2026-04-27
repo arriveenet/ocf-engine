@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "VulkanCommandBuffer.h"
 #include "VulkanUtility.h"
 
 #include "ocf/rhi/Context.h"
@@ -9,8 +10,9 @@
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
-#include <optional>
 #include <memory>
+#include <optional>
+#include <vector>
 
 
 namespace ocf {
@@ -26,8 +28,10 @@ class VulkanSwapchain;
  */
 class VulkanContext : public Context {
 public:
+    const uint32_t MaxInflightFrames = 2;
+
     struct FrameContext {
-        //std::shared_ptr<CommandBuffer> commandBuffer;
+        std::shared_ptr<VulkanCommandBuffer> commandBuffer;
         VkFence inflightFence = VK_NULL_HANDLE;
     };
 
@@ -50,11 +54,20 @@ public:
     /** Get Vulkan surface */
     VkSurfaceKHR getSurface() const noexcept { return m_surface; }
 
+    /** Get Vulkan command pool */
+    VkCommandPool getCommandPool() const noexcept { return m_commandPool; }
+
     VulkanResult createSwapchain(Window* window, uint32_t width, uint32_t height);
 
     VulkanResult acquireNextImage();
 
     void submitPresent();
+
+    std::shared_ptr<VulkanCommandBuffer> createCommandBuffer();
+
+    void createFrameContexts();
+
+    uint32_t getCurrentFrameIndex() const noexcept { return m_currentFrameIndex; }
 
     FrameContext* getCurrentFrameContext();
 
@@ -81,6 +94,8 @@ private:
 
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 
+    void advanceFrame();
+
 private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
@@ -93,6 +108,8 @@ private:
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     PFN_vkSetDebugUtilsObjectNameEXT m_pfnSetDebugUtilsObjectNameEXT = nullptr;
     std::unique_ptr<VulkanSwapchain> m_swapchain;
+    std::vector<FrameContext> m_frameContext;
+    uint32_t m_currentFrameIndex = 0;
 };
 
 } // namespace rhi

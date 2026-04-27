@@ -3,6 +3,7 @@
 #include "VulkanDevice.h"
 
 #include "VulkanContext.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 
 #include "ocf/core/Logger.h"
@@ -65,6 +66,11 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
 
     // TODO: Handle create result
     return Handle<RHISwapchain>{handle.getId()};
+}
+
+std::shared_ptr<CommandBuffer> VulkanDevice::createCommandBuffer()
+{
+    return m_context.createCommandBuffer();
 }
 
 } // namespace rhi

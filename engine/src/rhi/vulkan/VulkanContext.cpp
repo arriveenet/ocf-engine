@@ -143,11 +143,76 @@ VulkanResult VulkanContext::createSwapchain(Window* window, uint32_t width, uint
 
 VulkanResult VulkanContext::acquireNextImage()
 {
+    auto* frame = getCurrentFrameContext();
+    auto fence = frame->inflightFence;
+    vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+    auto result = m_swapchain->acquireNextImage();
+    if (result.isOk()) {
+        vkResetFences(m_device, 1, &fence);
+    }
+    else {
+        auto& error = result.unwrapErr();
+        if (error.result == VK_ERROR_OUT_OF_DATE_KHR) {
+            // Todo
+        }
+        assert(error.result != VK_ERROR_DEVICE_LOST);
+    }
+   
     return VulkanResult::Ok();
 }
 
 void VulkanContext::submitPresent()
 {
+    auto& frame = m_frameContext[getCurrentFrameIndex()];
+
+    VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    };
+    VkSemaphore renderCompleteSemaphore = m_swapchain->getRenderCompleteSemaphore();
+    VkSemaphore presentComplateSemaphore = m_swapchain->getPresentCompleteSemaphore();
+
+    VkCommandBuffer commandBuffer = frame.commandBuffer->getHandle();
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    submitInfo.pWaitDstStageMask = &waitStageMask;
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &presentComplateSemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+    auto result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.inflightFence);
+    assert(result != VK_ERROR_DEVICE_LOST);
+
+    m_swapchain->queuePresent(m_graphicsQueue);
+    advanceFrame();
+}
+
+std::shared_ptr<VulkanCommandBuffer> VulkanContext::createCommandBuffer()
+{
+    VkCommandBufferAllocateInfo commandAI{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = m_commandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(m_device, &commandAI, &commandBuffer);
+
+    return std::make_shared<VulkanCommandBuffer>(*this, commandBuffer);
+}
+
+void VulkanContext::createFrameContexts()
+{
+    m_frameContext.resize(MaxInflightFrames);
+    for (auto& frame : m_frameContext) {
+        frame.commandBuffer = createCommandBuffer();
+        VkFenceCreateInfo fenceCI{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT
+        };
+        vkCreateFence(m_device, &fenceCI, nullptr, &frame.inflightFence);
+    }
 }
 
 VulkanContext::FrameContext* VulkanContext::getCurrentFrameContext()
@@ -391,6 +456,11 @@ VulkanContext::QueueFamilyIndices VulkanContext::findQueueFamilies(VkPhysicalDev
     }
 
     return indices;
+}
+
+void VulkanContext::advanceFrame()
+{
+    m_currentFrameIndex = (m_currentFrameIndex + 1) % MaxInflightFrames;
 }
 
 } // namespace rhi

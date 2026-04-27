@@ -148,19 +148,32 @@ VulkanResult VulkanSwapchain::acquireNextImage()
     return VulkanResult::Ok();
 }
 
-VulkanResult VulkanSwapchain::queuePresent(VkQueue presentQueue)
+VulkanResult VulkanSwapchain::queuePresent(VkQueue queuePresent)
 {
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &m_swapchain;
+    presentInfo.pImageIndices = &m_currentIndex;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &m_frames[m_currentIndex].renderComplete;
+
+    VkResult result = vkQueuePresentKHR(queuePresent, &presentInfo);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to queuePresent"));
+    }
+
     return VulkanResult::Ok();
 }
 
 VkSemaphore VulkanSwapchain::getPresentCompleteSemaphore() const
 {
-    return VkSemaphore();
+    return m_frames[m_currentIndex].presentComplete;
 }
 
 VkSemaphore VulkanSwapchain::getRenderCompleteSemaphore() const
 {
-    return VkSemaphore();
+    return m_frames[m_currentIndex].renderComplete;
 }
 
 void VulkanSwapchain::createFrameContext()

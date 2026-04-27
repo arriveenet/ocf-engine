@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <memory>
 
 namespace ocf {
 class Window;
@@ -15,6 +16,7 @@ class Window;
 namespace ocf::rhi {
 
 class Context;
+class CommandBuffer;
 
 struct RHIResourceBase {};
 
@@ -42,6 +44,8 @@ public:
     virtual ShaderModuleHandle createShaderModule(std::string_view filename) = 0;
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
+
+    virtual std::shared_ptr<CommandBuffer> createCommandBuffer() = 0;
 
 protected:
 };

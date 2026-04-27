@@ -22,7 +22,7 @@ public:
     void destroy();
 
     VulkanResult acquireNextImage();
-    VulkanResult queuePresent(VkQueue presentQueue);
+    VulkanResult queuePresent(VkQueue queuePresent);
 
     operator const VkSwapchainKHR() const noexcept { return m_swapchain; }
     VkSurfaceFormatKHR getImageFormat() const noexcept { return m_imageFormat; }
