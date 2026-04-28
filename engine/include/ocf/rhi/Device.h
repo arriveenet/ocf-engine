@@ -45,7 +45,11 @@ public:
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 
-    virtual std::shared_ptr<CommandBuffer> createCommandBuffer() = 0;
+    virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
+
+    virtual void beginFrame() = 0;
+
+    virtual void endFrame() = 0;
 
 protected:
 };

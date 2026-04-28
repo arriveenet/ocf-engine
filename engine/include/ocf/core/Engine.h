@@ -39,6 +39,7 @@ private:
     float m_deltaTime;
     std::chrono::steady_clock::time_point m_lastUpdate;
     std::unique_ptr<Scene> m_currentScene;
+    std::unique_ptr<Renderer> m_renderer;
     std::unique_ptr<rhi::Device> m_device;
 };
 

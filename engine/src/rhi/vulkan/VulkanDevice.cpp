@@ -9,6 +9,7 @@
 #include "ocf/core/Logger.h"
 
 #include <fstream>
+#include <thread>
 
 namespace ocf {
 namespace rhi {
@@ -68,9 +69,23 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     return Handle<RHISwapchain>{handle.getId()};
 }
 
-std::shared_ptr<CommandBuffer> VulkanDevice::createCommandBuffer()
+std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
 {
-    return m_context.createCommandBuffer();
+    auto* frameContext = m_context.getCurrentFrameContext();
+    return frameContext->commandBuffer;
+}
+
+void VulkanDevice::beginFrame()
+{
+    if (m_context.acquireNextImage().isErr()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        return;
+    }
+}
+
+void VulkanDevice::endFrame()
+{
+    m_context.submitPresent();
 }
 
 } // namespace rhi

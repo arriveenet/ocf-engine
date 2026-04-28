@@ -61,6 +61,7 @@ endfunction( add_filtered_std )
 add_filtered_std("core")
 add_filtered_std("math")
 add_filtered_std("platform")
+add_filtered_std("renderer")
 add_filtered_std("rhi")
 add_filtered_std("scene")
 

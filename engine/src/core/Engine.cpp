@@ -4,9 +4,10 @@
 #include "ocf/core/Engine.h"
 
 #include "ocf/core/Logger.h"
-#include "ocf/scene/Scene.h"
+#include "ocf/renderer/Renderer.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
+#include "ocf/scene/Scene.h"
 
 namespace ocf {
 
@@ -31,6 +32,8 @@ bool Engine::init()
     Logger::getInstance().setLogLevel(LogLevel::Debug);
 
     m_device = DeviceFactory::getInstance().create();
+
+    m_renderer = std::make_unique<Renderer>(m_device.get());
 
     return true;
 }
@@ -57,6 +60,9 @@ void Engine::update()
 
 void Engine::draw()
 {
+    m_renderer->beginFrame();
+    m_renderer->render();
+    m_renderer->endFrame();
 }
 
 void Engine::mainLoop()

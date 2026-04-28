@@ -30,7 +30,11 @@ public:
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
-    std::shared_ptr<CommandBuffer> createCommandBuffer() override;
+    std::shared_ptr<CommandBuffer> getCommandBuffer() override;
+
+    void beginFrame() override;
+
+    void endFrame() override;
 
 private:
     template <typename D, typename... ARGS>

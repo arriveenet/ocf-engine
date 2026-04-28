@@ -138,6 +138,8 @@ VulkanResult VulkanContext::createSwapchain(Window* window, uint32_t width, uint
 
     m_swapchain->create(width, height);
 
+    createFrameContexts();
+
     return VulkanResult::Ok();
 }
 
@@ -217,7 +219,7 @@ void VulkanContext::createFrameContexts()
 
 VulkanContext::FrameContext* VulkanContext::getCurrentFrameContext()
 {
-    return nullptr;
+    return &m_frameContext[m_currentFrameIndex];
 }
 
 VulkanResult VulkanContext::createInstance(const char* appName)
