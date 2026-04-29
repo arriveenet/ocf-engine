@@ -3,7 +3,7 @@
 
 #include "VulkanUtility.h"
 
-#include "ocf/rhi/Device.h"
+#include "ocf/rhi/Swapchain.h"
 
 #include <vulkan/vulkan.h>
 
@@ -14,7 +14,7 @@ namespace rhi {
 
 class VulkanDevice;
 
-class VulkanSwapchain : public RHISwapchain {
+class VulkanSwapchain : public Swapchain {
 public:
     explicit VulkanSwapchain(VulkanDevice& device);
 

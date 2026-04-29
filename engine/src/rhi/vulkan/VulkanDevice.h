@@ -103,6 +103,8 @@ private:
     /** Execute the command in the current frame context and publish the presentation */
     void submitPresent();
 
+    std::shared_ptr<VulkanSwapchain> getSwapchain() const noexcept { return m_swapchain; }
+
     std::shared_ptr<VulkanCommandBuffer> createCommandBuffer();
 
     void createFrameContexts();
@@ -115,6 +117,8 @@ private:
 
     void advanceFrame();
 
+    void buildFeatures();
+
 private:
     VulkanContext& m_context;
     HandleAllocatorVK m_handleAllocator;
@@ -124,9 +128,22 @@ private:
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceProperties m_deviceProperties{};
-    std::unique_ptr<VulkanSwapchain> m_swapchain;
+    std::shared_ptr<VulkanSwapchain> m_swapchain;
     std::vector<FrameContext> m_frameContext;
     uint32_t m_currentFrameIndex = 0;
+
+    VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    VkPhysicalDeviceVulkan11Features m_vulkan11Features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+    VkPhysicalDeviceVulkan12Features m_vulkan12Features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+    VkPhysicalDeviceVulkan13Features m_vulkan13Features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+    VkPhysicalDeviceShaderAtomicFloatFeaturesEXT m_atomicFloatFeatures{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT};
+
+    friend class VulkanCommandBuffer;
 };
 
 } // namespace ocf::rhi

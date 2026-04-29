@@ -11,6 +11,23 @@
 #include <fstream>
 #include <thread>
 
+namespace {
+
+template <typename T>
+void buildExtensionChain(T& last)
+{
+    last.pNext = nullptr;
+}
+
+template <typename T, typename U, typename... Rest>
+void buildExtensionChain(T& current, U& next, Rest&... rest)
+{
+    current.pNext = &next;
+    buildExtensionChain(next, rest...);
+}
+
+} // namespace
+
 namespace ocf {
 namespace rhi {
 
@@ -108,10 +125,11 @@ ShaderModuleHandle VulkanDevice::createShaderModule(std::string_view filename)
 
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height)
 {
-    Handle<VulkanSwapchain> handle = m_handleAllocator.allocate<Handle<VulkanSwapchain>>();
+    Handle<RHISwapchain> handle = m_handleAllocator.allocate<Handle<RHISwapchain>>();
+    RHISwapchain* swapchain = construct<RHISwapchain>(handle);
 
     if (m_swapchain == nullptr) {
-        m_swapchain = std::make_unique<VulkanSwapchain>(*this);
+        m_swapchain = std::make_shared<VulkanSwapchain>(*this);
     }
 
     if (m_context.getSurface() == VK_NULL_HANDLE) {
@@ -126,7 +144,8 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     destroyFrameContexts();
     createFrameContexts();
 
-    // TODO: Handle create result
+    swapchain->swapchain = m_swapchain.get();
+
     return Handle<RHISwapchain>{handle.getId()};
 }
 
@@ -161,6 +180,8 @@ VulkanResult VulkanDevice::createLogicalDevice()
     queueCreateInfo.queueCount = 1;
     queueCreateInfo.pQueuePriorities = &queuePriority;
 
+    // Extension settings
+    buildFeatures();
     std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
@@ -172,7 +193,7 @@ VulkanResult VulkanDevice::createLogicalDevice()
     createInfo.enabledExtensionCount = uint32_t(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    createInfo.pNext = nullptr;
+    createInfo.pNext = &m_physicalDeviceFeatures;
     createInfo.pEnabledFeatures = nullptr;
 
     VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &m_device);
@@ -301,6 +322,17 @@ VulkanDevice::FrameContext* VulkanDevice::getCurrentFrameContext()
 void VulkanDevice::advanceFrame()
 {
     m_currentFrameIndex = (m_currentFrameIndex + 1) % FRAMES_IN_FLIGHT_MAX;
+}
+
+void VulkanDevice::buildFeatures()
+{
+    buildExtensionChain(m_physicalDeviceFeatures, 
+                        m_vulkan11Features, m_vulkan12Features, m_vulkan13Features);
+
+    vkGetPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &m_physicalDeviceFeatures);
+
+    m_vulkan13Features.dynamicRendering = VK_TRUE;
+    m_vulkan13Features.synchronization2 = VK_TRUE;
 }
 
 } // namespace rhi

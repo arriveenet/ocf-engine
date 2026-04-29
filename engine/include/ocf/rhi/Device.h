@@ -17,6 +17,7 @@ namespace ocf::rhi {
 
 class Context;
 class CommandBuffer;
+class Swapchain;
 
 struct RHIResourceBase {};
 
@@ -32,7 +33,9 @@ struct RHIShaderModule : public RHIResourceBase {
     const char* entryPoint;
 };
 
-struct RHISwapchain : public RHIResourceBase {};
+struct RHISwapchain : public RHIResourceBase {
+    Swapchain* swapchain;
+};
 
 class Device {
 public:

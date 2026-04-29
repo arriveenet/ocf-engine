@@ -21,6 +21,12 @@ public:
 
     void reset() override;
 
+    void beginRendering(const RenderingInfo& info) override;
+
+    void endRendering() override;
+
+    void transitionLayout(ResourceState oldState, ResourceState newState) override;
+
     VkCommandBuffer getHandle() const noexcept { return m_commandBuffer; }
 
     operator VkCommandBuffer() noexcept  { return m_commandBuffer; }

@@ -30,7 +30,18 @@ void Renderer::render()
 {
     auto commandBuffer = m_device->getCommandBuffer();
     commandBuffer->begin();
+    // Change to color layout
+    commandBuffer->transitionLayout(rhi::ResourceState::Undefined,
+                                    rhi::ResourceState::ColorAttachment);
 
+    rhi::RenderingInfo info;
+    commandBuffer->beginRendering(info);
+
+    commandBuffer->endRendering();
+
+    // Change to present layout
+    commandBuffer->transitionLayout(rhi::ResourceState::ColorAttachment,
+                                    rhi::ResourceState::Present);
     commandBuffer->end();
 }
 

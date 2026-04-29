@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ocf/core/Result.h"
+#include "ocf/rhi/RHIEnums.h"
 
 #include <vulkan/vulkan.h>
 
@@ -19,6 +20,12 @@ struct VulkanError {
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
+};
+
+struct VulkanResourceStateInfo {
+    VkImageLayout layout;
+    VkAccessFlags accessMask;
+    VkPipelineStageFlags stageFlags;
 };
 
 using VulkanResult = ocf::Result<void, VulkanError>;
@@ -42,6 +49,8 @@ void assertVkError(VkResult ret, const char* function, size_t line) noexcept;
 void logError(const VulkanError& error);
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+
+VulkanResourceStateInfo getResourceState(ResourceState state);
 
 } // namespace VulkanUtility
 
