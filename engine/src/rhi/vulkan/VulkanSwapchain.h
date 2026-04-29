@@ -12,11 +12,11 @@
 namespace ocf {
 namespace rhi {
 
-class VulkanContext;
+class VulkanDevice;
 
 class VulkanSwapchain : public RHISwapchain {
 public:
-    explicit VulkanSwapchain(VulkanContext& context);
+    explicit VulkanSwapchain(VulkanDevice& device);
 
     VulkanResult create(uint32_t width, uint32_t height);
     void destroy();
@@ -41,7 +41,7 @@ private:
     void createFrameContext();
     void destroyFrameContext();
 
-    VulkanContext& m_context;
+    VulkanDevice& m_device;
     VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
     uint32_t m_currentIndex = 0;
 

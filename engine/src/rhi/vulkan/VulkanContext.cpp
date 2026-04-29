@@ -69,33 +69,12 @@ bool VulkanContext::initialize(const char* appName)
         return false;
     }
 
-    // Create logical device and queues
-    result = createLogicalDevice();
-    if (!result) {
-        VulkanUtility::logError(result.unwrapErr());
-        return false;
-    }
-
-    // Create command pool
-    result = createCommandPool();
-    if (!result) {
-        VulkanUtility::logError(result.unwrapErr());
-        return false;
-    }
-
-
     OCF_LOG_INFO("Vulkan instance created successfully");
     return true;
 }
 
 void VulkanContext::terminate()
 {
-    // Wait for the device to be idle before destroying resources
-    vkDeviceWaitIdle(m_device);
-
-    vkDestroyCommandPool(m_device, m_commandPool, nullptr);
-    m_commandPool = VK_NULL_HANDLE;
-
     if (m_debugMessenger != VK_NULL_HANDLE) {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             m_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -105,121 +84,15 @@ void VulkanContext::terminate()
         m_debugMessenger = VK_NULL_HANDLE;
     }
 
-    if (m_swapchain) {
-        m_swapchain->destroy();
-        m_swapchain.reset();
-    }
-
     if (m_surface != VK_NULL_HANDLE) {
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
         m_surface = VK_NULL_HANDLE;
     }
 
-    vkDestroyDevice(m_device, nullptr);
     vkDestroyInstance(m_instance, nullptr);
-    m_device = VK_NULL_HANDLE;
     m_instance = VK_NULL_HANDLE;
 
     OCF_LOG_INFO("Vulkan instance terminated.");
-}
-
-VulkanResult VulkanContext::createSwapchain(Window* window, uint32_t width, uint32_t height)
-{
-    if (m_swapchain == nullptr) {
-        m_swapchain = std::make_unique<VulkanSwapchain>(*this);
-    }
-
-    if (m_surface == VK_NULL_HANDLE) {
-        VulkanResult result = createSurface(window);
-        if (!result) {
-            return VulkanResult::Err(result.unwrapErr());
-        }
-    }
-
-    m_swapchain->create(width, height);
-
-    createFrameContexts();
-
-    return VulkanResult::Ok();
-}
-
-VulkanResult VulkanContext::acquireNextImage()
-{
-    auto* frame = getCurrentFrameContext();
-    auto fence = frame->inflightFence;
-    vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
-
-    auto result = m_swapchain->acquireNextImage();
-    if (result.isOk()) {
-        vkResetFences(m_device, 1, &fence);
-    }
-    else {
-        auto& error = result.unwrapErr();
-        if (error.result == VK_ERROR_OUT_OF_DATE_KHR) {
-            // Todo
-        }
-        assert(error.result != VK_ERROR_DEVICE_LOST);
-    }
-   
-    return VulkanResult::Ok();
-}
-
-void VulkanContext::submitPresent()
-{
-    auto& frame = m_frameContext[getCurrentFrameIndex()];
-
-    VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    };
-    VkSemaphore renderCompleteSemaphore = m_swapchain->getRenderCompleteSemaphore();
-    VkSemaphore presentComplateSemaphore = m_swapchain->getPresentCompleteSemaphore();
-
-    VkCommandBuffer commandBuffer = frame.commandBuffer->getHandle();
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
-    submitInfo.pWaitDstStageMask = &waitStageMask;
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &presentComplateSemaphore;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
-    auto result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.inflightFence);
-    assert(result != VK_ERROR_DEVICE_LOST);
-
-    m_swapchain->queuePresent(m_graphicsQueue);
-    advanceFrame();
-}
-
-std::shared_ptr<VulkanCommandBuffer> VulkanContext::createCommandBuffer()
-{
-    VkCommandBufferAllocateInfo commandAI{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool = m_commandPool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(m_device, &commandAI, &commandBuffer);
-
-    return std::make_shared<VulkanCommandBuffer>(*this, commandBuffer);
-}
-
-void VulkanContext::createFrameContexts()
-{
-    m_frameContext.resize(MaxInflightFrames);
-    for (auto& frame : m_frameContext) {
-        frame.commandBuffer = createCommandBuffer();
-        VkFenceCreateInfo fenceCI{
-            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
-        };
-        vkCreateFence(m_device, &fenceCI, nullptr, &frame.inflightFence);
-    }
-}
-
-VulkanContext::FrameContext* VulkanContext::getCurrentFrameContext()
-{
-    return &m_frameContext[m_currentFrameIndex];
 }
 
 VulkanResult VulkanContext::createInstance(const char* appName)
@@ -310,59 +183,20 @@ VulkanResult VulkanContext::createDebugMessenger()
     return VulkanResult::Ok();
 }
 
-VulkanResult VulkanContext::createLogicalDevice()
+void VulkanContext::setDebugObjectName(VkDevice device, void* objectHandle, VkObjectType type,
+                                       const char* name)
 {
-    const QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
-
-    float queuePriority = 1.0f;
-    VkDeviceQueueCreateInfo queueCreateInfo{};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
-
-    std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
-
-    VkDeviceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount = 1;
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.enabledExtensionCount = uint32_t(deviceExtensions.size());
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-    createInfo.pNext = nullptr;
-    createInfo.pEnabledFeatures = nullptr;
-
-    VkResult result = vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device);
-    if (result != VK_SUCCESS) {
-        return VulkanResult::Err(VK_ERROR(result, "Failed to create logical device"));
+#ifndef NDEBUG
+    if (m_pfnSetDebugUtilsObjectNameEXT) {
+        VkDebugUtilsObjectNameInfoEXT nameInfo{
+            .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .objectType = type,
+            .objectHandle = reinterpret_cast<uint64_t>(objectHandle),
+            .pObjectName = name,
+        };
+        m_pfnSetDebugUtilsObjectNameEXT(device, &nameInfo);
     }
-
-    vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
-
-    return VulkanResult::Ok();
-}
-
-VulkanResult VulkanContext::createCommandPool()
-{
-    const QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
-
-    VkCommandPoolCreateInfo commandPoolCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    };
-    commandPoolCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-    VkResult result =
-        vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_commandPool);
-
-    if (result != VK_SUCCESS) {
-        return VulkanResult::Err(VK_ERROR(result, "Failed to create command pool"));
-    }
-
-    return VulkanResult::Ok();
+#endif
 }
 
 VulkanResult VulkanContext::createSurface(Window* window)
@@ -375,7 +209,7 @@ VulkanResult VulkanContext::createSurface(Window* window)
 
     m_surface = surface.unwrap();
 
-    QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+    QueueFamilyIndices indices = VulkanUtility::findQueueFamilies(m_physicalDevice);
     VkBool32 presentSupport = VK_FALSE;
     vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, indices.graphicsFamily.value(),
                                          m_surface, &presentSupport);
@@ -385,21 +219,6 @@ VulkanResult VulkanContext::createSurface(Window* window)
     }
 
     return VulkanResult::Ok();
-}
-
-void VulkanContext::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
-{
-#ifndef NDEBUG
-    if (m_pfnSetDebugUtilsObjectNameEXT) {
-        VkDebugUtilsObjectNameInfoEXT nameInfo{
-            .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .objectType = type,
-            .objectHandle = reinterpret_cast<uint64_t>(objectHandle),
-            .pObjectName = name,
-        };
-        m_pfnSetDebugUtilsObjectNameEXT(m_device, &nameInfo);
-    }
-#endif
 }
 
 VulkanResult VulkanContext::pickPhysicalDevice()
@@ -425,44 +244,13 @@ VulkanResult VulkanContext::pickPhysicalDevice()
             VK_ERROR(VK_ERROR_INITIALIZATION_FAILED, "Failed to find a suitable GPU"));
     }
 
-    // Get memory properties and device properties
-    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
-    vkGetPhysicalDeviceProperties(m_physicalDevice, &m_deviceProperties);
-
-    OCF_LOG_DEBUG("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
-                  static_cast<int>(m_deviceProperties.deviceType));
     return VulkanResult::Ok();
 }
 
 bool VulkanContext::isDeviceSuitable(VkPhysicalDevice device)
 {
-    QueueFamilyIndices indices = findQueueFamilies(device);
+    QueueFamilyIndices indices = VulkanUtility::findQueueFamilies(device);
     return indices.graphicsFamily.has_value();
-}
-
-VulkanContext::QueueFamilyIndices VulkanContext::findQueueFamilies(VkPhysicalDevice device) const
-{
-    QueueFamilyIndices indices;
-
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-    for (uint32_t i = 0; const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
-            break;
-        }
-        i++;
-    }
-
-    return indices;
-}
-
-void VulkanContext::advanceFrame()
-{
-    m_currentFrameIndex = (m_currentFrameIndex + 1) % MaxInflightFrames;
 }
 
 } // namespace rhi

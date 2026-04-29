@@ -36,6 +36,10 @@ struct RHISwapchain : public RHIResourceBase {};
 
 class Device {
 public:
+    struct DeviceConfig {
+        size_t handlePoolSize = 0;
+    };
+
     Device();
     virtual ~Device();
 

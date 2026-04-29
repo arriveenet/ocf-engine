@@ -8,11 +8,11 @@
 
 namespace ocf::rhi {
 
-class VulkanContext;
+class VulkanDevice;
 
 class VulkanCommandBuffer : public CommandBuffer {
 public:
-    VulkanCommandBuffer(VulkanContext& context, VkCommandBuffer commandBuffer);
+    VulkanCommandBuffer(VulkanDevice& device, VkCommandBuffer commandBuffer);
     ~VulkanCommandBuffer() override;
 
     void begin() override;
@@ -27,7 +27,7 @@ public:
     operator VkCommandBuffer() const noexcept { return m_commandBuffer; }
 
 private:
-    VulkanContext& m_context;
+    VulkanDevice& m_device;
     VkCommandBuffer m_commandBuffer;
 };
 

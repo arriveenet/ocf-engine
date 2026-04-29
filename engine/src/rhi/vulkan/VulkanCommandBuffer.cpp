@@ -1,18 +1,18 @@
 #include "VulkanCommandBuffer.h"
 
-#include "VulkanContext.h"
+#include "VulkanDevice.h"
 
 namespace ocf::rhi {
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context, VkCommandBuffer commandBuffer)
-    : m_context(context)
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandBuffer commandBuffer)
+    : m_device(device)
     , m_commandBuffer(commandBuffer)
 {
 }
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-    vkFreeCommandBuffers(m_context.getDevice(), m_context.getCommandPool(), 1, &m_commandBuffer);
+    vkFreeCommandBuffers(m_device.getDevice(), m_device.getCommandPool(), 1, &m_commandBuffer);
     m_commandBuffer = VK_NULL_HANDLE;
 }
 

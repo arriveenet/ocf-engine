@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <optional>
+
 namespace ocf {
 namespace rhi {
 
@@ -13,6 +15,10 @@ struct VulkanError {
     const char* message;
     const char* file;
     size_t line;
+};
+
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
 };
 
 using VulkanResult = ocf::Result<void, VulkanError>;
@@ -34,6 +40,8 @@ void assertVkError(VkResult ret, const char* function, size_t line) noexcept;
     }
 
 void logError(const VulkanError& error);
+
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
 } // namespace VulkanUtility
 

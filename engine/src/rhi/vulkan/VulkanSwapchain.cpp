@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
+#include "VulkanContext.h"
 #include "VulkanSwapchain.h"
 
-#include "VulkanContext.h"
+#include "VulkanDevice.h"
 
 namespace ocf {
 namespace rhi {
 
-VulkanSwapchain::VulkanSwapchain(VulkanContext& context)
-    : m_context(context)
+VulkanSwapchain::VulkanSwapchain(VulkanDevice& device)
+    : m_device(device)
 {
 }
 
 VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
 {
-    VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    VkDevice device = m_context.getDevice();
-    VkSurfaceKHR surface = m_context.getSurface();
+    VkPhysicalDevice physicalDevice = m_device.getContext().getPhysicalDevice();
+    VkDevice device = m_device.getDevice();
+    VkSurfaceKHR surface = m_device.getContext().getSurface();
 
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
@@ -114,7 +115,7 @@ void VulkanSwapchain::destroy()
 {
     destroyFrameContext();
 
-    VkDevice device = m_context.getDevice();
+    VkDevice device = m_device.getDevice();
     for (auto& view : m_imageViews) {
         vkDestroyImageView(device, view, nullptr);
     }
@@ -128,7 +129,7 @@ void VulkanSwapchain::destroy()
 
 VulkanResult VulkanSwapchain::acquireNextImage()
 {
-    VkDevice device = m_context.getDevice();
+    VkDevice device = m_device.getDevice();
 
     assert(!m_presentSemaphoreList.empty());
     VkSemaphore acquireSemaphore = m_presentSemaphoreList.back();
@@ -178,7 +179,7 @@ VkSemaphore VulkanSwapchain::getRenderCompleteSemaphore() const
 
 void VulkanSwapchain::createFrameContext()
 {
-    VkDevice device = m_context.getDevice();
+    VkDevice device = m_device.getDevice();
     m_frames.resize(m_images.size());
     for (auto& frame : m_frames) {
         VkSemaphoreCreateInfo semaphoreCI{
@@ -199,7 +200,7 @@ void VulkanSwapchain::createFrameContext()
 
 void VulkanSwapchain::destroyFrameContext()
 {
-    VkDevice device = m_context.getDevice();
+    VkDevice device = m_device.getDevice();
     for (auto& frame : m_frames) {
         vkDestroySemaphore(device, frame.renderComplete, nullptr);
         vkDestroySemaphore(device, frame.presentComplete, nullptr);

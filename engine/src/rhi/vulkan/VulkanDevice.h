@@ -3,14 +3,20 @@
 #pragma once
 
 #include "rhi/HandleAllocator.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanUtility.h"
 
 #include "ocf/rhi/Device.h"
 
 #include <vulkan/vulkan.h>
 
+#include <memory>
+#include <vector>
+
 namespace ocf::rhi {
 
 class VulkanContext;
+class VulkanSwapchain;
 
 struct VulkanShaderModule : public RHIShaderModule {
     struct VK {
@@ -21,8 +27,13 @@ struct VulkanShaderModule : public RHIShaderModule {
 
 class VulkanDevice : public Device {
 public:
-    VulkanDevice(VulkanContext& context);
+    const uint32_t FRAMES_IN_FLIGHT_MAX = 2;
+
+    VulkanDevice(const DeviceConfig& config, VulkanContext& context);
     ~VulkanDevice() override;
+
+    bool initialize();
+    void terminate();
 
     TextureHandle createTexture() override;
 
@@ -36,7 +47,18 @@ public:
 
     void endFrame() override;
 
+    VkDevice getDevice() const noexcept { return m_device; }
+
+    VulkanContext& getContext() const noexcept { return m_context; }
+
+    VkCommandPool getCommandPool() const noexcept { return m_commandPool; }
+
 private:
+    struct FrameContext {
+        std::shared_ptr<VulkanCommandBuffer> commandBuffer;
+        VkFence inFlightFence = VK_NULL_HANDLE;
+    };
+
     template <typename D, typename... ARGS>
     Handle<D> initHandle(ARGS&&... args)
     {
@@ -69,9 +91,42 @@ private:
         return m_handleAllocator.handle_cast<Dp, B>(handle);
     }
 
+    VulkanResult createLogicalDevice();
+
+    VulkanResult createCommandPool();
+
+    void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
+
+    /** Switches the drawable swapchain image */
+    VulkanResult acquireNextImage();
+
+    /** Execute the command in the current frame context and publish the presentation */
+    void submitPresent();
+
+    std::shared_ptr<VulkanCommandBuffer> createCommandBuffer();
+
+    void createFrameContexts();
+
+    void destroyFrameContexts();
+
+    uint32_t getCurrentFrameIndex() const noexcept { return m_currentFrameIndex; }
+
+    FrameContext* getCurrentFrameContext();
+
+    void advanceFrame();
+
 private:
     VulkanContext& m_context;
     HandleAllocatorVK m_handleAllocator;
+
+    VkDevice m_device = VK_NULL_HANDLE;
+    VkQueue m_graphicsQueue = VK_NULL_HANDLE;
+    VkCommandPool m_commandPool = VK_NULL_HANDLE;
+    VkPhysicalDeviceMemoryProperties m_memoryProperties{};
+    VkPhysicalDeviceProperties m_deviceProperties{};
+    std::unique_ptr<VulkanSwapchain> m_swapchain;
+    std::vector<FrameContext> m_frameContext;
+    uint32_t m_currentFrameIndex = 0;
 };
 
 } // namespace ocf::rhi
