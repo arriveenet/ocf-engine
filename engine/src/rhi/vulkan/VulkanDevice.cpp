@@ -125,11 +125,11 @@ ShaderModuleHandle VulkanDevice::createShaderModule(std::string_view filename)
 
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height)
 {
-    Handle<RHISwapchain> handle = m_handleAllocator.allocate<Handle<RHISwapchain>>();
-    RHISwapchain* swapchain = construct<RHISwapchain>(handle);
+    Handle<VulkanSwapchain> handle = initHandle<VulkanSwapchain>(*this);
+    VulkanSwapchain* swapchain = handle_cast<VulkanSwapchain*>(handle);
 
     if (m_swapchain == nullptr) {
-        m_swapchain = std::make_shared<VulkanSwapchain>(*this);
+        m_swapchain = std::shared_ptr<VulkanSwapchain>(swapchain);
     }
 
     if (m_context.getSurface() == VK_NULL_HANDLE) {
@@ -139,12 +139,10 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
         }
     }
 
-    m_swapchain->create(width, height);
+    swapchain->create(width, height);
 
     destroyFrameContexts();
     createFrameContexts();
-
-    swapchain->swapchain = m_swapchain.get();
 
     return Handle<RHISwapchain>{handle.getId()};
 }

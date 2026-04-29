@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/rhi/Device.h"
 #include "VulkanUtility.h"
-
-#include "ocf/rhi/Swapchain.h"
 
 #include <vulkan/vulkan.h>
 
@@ -14,9 +13,10 @@ namespace rhi {
 
 class VulkanDevice;
 
-class VulkanSwapchain : public Swapchain {
+class VulkanSwapchain : public RHISwapchain {
 public:
     explicit VulkanSwapchain(VulkanDevice& device);
+    ~VulkanSwapchain();
 
     VulkanResult create(uint32_t width, uint32_t height);
     void destroy();

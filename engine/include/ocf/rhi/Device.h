@@ -21,7 +21,8 @@ class Swapchain;
 
 struct RHIResourceBase {};
 
-struct RHIVertexBuffer : public RHIResourceBase {};
+struct RHIVertexBuffer : public RHIResourceBase {
+};
 
 struct RHITexture : public RHIResourceBase {
     uint16_t width;
@@ -34,7 +35,6 @@ struct RHIShaderModule : public RHIResourceBase {
 };
 
 struct RHISwapchain : public RHIResourceBase {
-    Swapchain* swapchain;
 };
 
 class Device {

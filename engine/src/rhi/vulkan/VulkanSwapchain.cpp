@@ -12,6 +12,10 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice& device)
 {
 }
 
+VulkanSwapchain::~VulkanSwapchain()
+{
+}
+
 VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
 {
     VkPhysicalDevice physicalDevice = m_device.getContext().getPhysicalDevice();
