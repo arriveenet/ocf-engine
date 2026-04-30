@@ -2,14 +2,29 @@
 
 #include "ocf/renderer/Renderer.h"
 
+#include "ocf/core/Engine.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
 
+#include <vector>
+
 namespace ocf {
 
-Renderer::Renderer(rhi::Device* device)
-    : m_device(device)
+using namespace rhi;
+
+Renderer::Renderer(Engine& engine, rhi::Device* device)
+    : m_engine(engine)
+    , m_device(device)
 {
+    const std::vector<Vertex> triangleVertices = {
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, // Red
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Green
+        {{ 0.0f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Blue
+    };
+    const size_t bufferSize = sizeof(Vertex) * triangleVertices.size();
+
+    m_vertexBuffer = VertexBuffer::Builder().bufferCount(3).build(engine);
+    m_vertexBuffer->setBufferData(engine, triangleVertices.data(), bufferSize, 0);
 }
 
 Renderer::~Renderer()

@@ -11,6 +11,7 @@ namespace rhi {
 
 struct RHITexture;
 struct RHIVertexBuffer;
+struct RHIVertexBufferInfo;
 struct RHIShaderModule;
 struct RHISwapchain;
 
@@ -89,6 +90,7 @@ struct Handle : public HandleBase {
     }
 };
 
+using VertexBufferInfoHandle = Handle<RHIVertexBufferInfo>;
 using VertexBufferHandle = Handle<RHIVertexBuffer>;
 using TextureHandle = Handle<RHITexture>;
 using ShaderModuleHandle = Handle<RHIShaderModule>;

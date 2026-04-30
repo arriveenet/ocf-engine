@@ -15,6 +15,8 @@ class Renderer;
 
 class Engine {
 public:
+    using Device = rhi::Device;
+
     static Engine* create();
     static void destroy(Engine* engine);
 
@@ -25,7 +27,7 @@ public:
 
     Scene* createScene();
 
-    rhi::Device* getDevice() const;
+    rhi::Device& getDevice() const;
 
 private:
     Engine();

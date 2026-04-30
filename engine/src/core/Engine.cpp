@@ -33,7 +33,7 @@ bool Engine::init()
 
     m_device = DeviceFactory::getInstance().create();
 
-    m_renderer = std::make_unique<Renderer>(m_device.get());
+    m_renderer = std::make_unique<Renderer>(*this, m_device.get());
 
     return true;
 }
@@ -77,9 +77,9 @@ Scene* Engine::createScene()
     return m_currentScene.get();
 }
 
-Device* Engine::getDevice() const
+Device& Engine::getDevice() const
 {
-    return m_device.get();
+    return *m_device.get();
 }
 
 void Engine::calculateDeltaTime()

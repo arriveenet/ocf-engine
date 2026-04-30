@@ -35,11 +35,20 @@ public:
     bool initialize();
     void terminate();
 
+    VertexBufferInfoHandle createVertexBufferInfo(uint8_t attributeCount,
+                                                  AttributeArray attributes) override;
+
+    VertexBufferHandle createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
+                                          BufferUsage usage, VertexBufferInfoHandle vbih) override;
+
     TextureHandle createTexture() override;
 
     ShaderModuleHandle createShaderModule(std::string_view filename) override;
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
+
+    void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
+                          size_t offset) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 
@@ -103,7 +112,7 @@ private:
     /** Execute the command in the current frame context and publish the presentation */
     void submitPresent();
 
-    std::shared_ptr<VulkanSwapchain> getSwapchain() const noexcept { return m_swapchain; }
+    VulkanSwapchain* getSwapchain() const noexcept { return m_swapchain; }
 
     std::shared_ptr<VulkanCommandBuffer> createCommandBuffer();
 
@@ -128,7 +137,7 @@ private:
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
     VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceProperties m_deviceProperties{};
-    std::shared_ptr<VulkanSwapchain> m_swapchain;
+    VulkanSwapchain* m_swapchain = nullptr;
     std::vector<FrameContext> m_frameContext;
     uint32_t m_currentFrameIndex = 0;
 

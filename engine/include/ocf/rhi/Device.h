@@ -21,7 +21,29 @@ class Swapchain;
 
 struct RHIResourceBase {};
 
+struct RHIVertexBufferInfo : public RHIResourceBase {
+    uint8_t attributeCount;
+    bool padding[3] = {};
+
+    RHIVertexBufferInfo() noexcept = default;
+    RHIVertexBufferInfo(uint8_t attributeCount)
+        : attributeCount(attributeCount)
+    {
+    }
+};
+
 struct RHIVertexBuffer : public RHIResourceBase {
+    uint32_t vertexCount;
+    uint32_t byteCount;
+    uint8_t bufferObjectVertion = 0xff;
+    bool padding[3] = {};
+
+    RHIVertexBuffer() noexcept = default;
+    RHIVertexBuffer(uint32_t vertexCount, uint32_t byteCount)
+        : vertexCount(vertexCount)
+        , byteCount(byteCount)
+    {
+    }
 };
 
 struct RHITexture : public RHIResourceBase {
@@ -46,11 +68,21 @@ public:
     Device();
     virtual ~Device();
 
+    virtual VertexBufferInfoHandle createVertexBufferInfo(uint8_t attributeCount,
+                                                          AttributeArray attributes) = 0;
+
+    virtual VertexBufferHandle createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
+                                                  BufferUsage usage,
+                                                  VertexBufferInfoHandle vbih) = 0;
+
     virtual TextureHandle createTexture() = 0;
 
     virtual ShaderModuleHandle createShaderModule(std::string_view filename) = 0;
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
+
+    virtual void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
+                                  size_t offset) = 0;
 
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
 

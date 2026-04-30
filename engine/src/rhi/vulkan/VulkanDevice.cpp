@@ -2,11 +2,14 @@
 
 #include "VulkanDevice.h"
 
+#include "VulkanBuffer.h"
 #include "VulkanContext.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
 
 #include "ocf/core/Logger.h"
+
+#include <string.h>
 
 #include <fstream>
 #include <thread>
@@ -75,9 +78,9 @@ void VulkanDevice::terminate()
 
     destroyFrameContexts();
 
-    if (m_swapchain) {
+    if (m_swapchain != nullptr) {
         m_swapchain->destroy();
-        m_swapchain.reset();
+        m_swapchain = nullptr;
     }
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
@@ -87,6 +90,24 @@ void VulkanDevice::terminate()
     m_device = VK_NULL_HANDLE;
 
     m_context.terminate();
+}
+
+VertexBufferInfoHandle VulkanDevice::createVertexBufferInfo(uint8_t attributeCount,
+                                                            AttributeArray attributes)
+{
+    return VertexBufferInfoHandle();
+}
+
+VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
+                                                    BufferUsage usage, VertexBufferInfoHandle vbih)
+{
+    Handle<VulkanVertexBuffer> handle = initHandle<VulkanVertexBuffer>(m_device);
+    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+
+    vb->initialize(vertexCount,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    return Handle<VertexBufferHandle>{handle.getId()};
 }
 
 TextureHandle VulkanDevice::createTexture()
@@ -129,7 +150,7 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     VulkanSwapchain* swapchain = handle_cast<VulkanSwapchain*>(handle);
 
     if (m_swapchain == nullptr) {
-        m_swapchain = std::shared_ptr<VulkanSwapchain>(swapchain);
+        m_swapchain = swapchain;
     }
 
     if (m_context.getSurface() == VK_NULL_HANDLE) {
@@ -145,6 +166,15 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     createFrameContexts();
 
     return Handle<RHISwapchain>{handle.getId()};
+}
+
+void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
+                                    size_t offset)
+{
+    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+    void* p = vb->map();
+    memcpy(p, data, size);
+    vb->unmap();
 }
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
