@@ -29,6 +29,9 @@ class VulkanDevice : public Device {
 public:
     const uint32_t FRAMES_IN_FLIGHT_MAX = 2;
 
+    static uint32_t findMemoryType(const VkMemoryRequirements& requirements,
+                                   VkMemoryPropertyFlags properties);
+
     VulkanDevice(const DeviceConfig& config, VulkanContext& context);
     ~VulkanDevice() override;
 
@@ -129,13 +132,14 @@ private:
     void buildFeatures();
 
 private:
+    static VkPhysicalDeviceMemoryProperties s_memoryProperties;
+
     VulkanContext& m_context;
     HandleAllocatorVK m_handleAllocator;
 
     VkDevice m_device = VK_NULL_HANDLE;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
-    VkPhysicalDeviceMemoryProperties m_memoryProperties{};
     VkPhysicalDeviceProperties m_deviceProperties{};
     VulkanSwapchain* m_swapchain = nullptr;
     std::vector<FrameContext> m_frameContext;

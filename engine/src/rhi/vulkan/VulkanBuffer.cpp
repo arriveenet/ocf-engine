@@ -1,5 +1,7 @@
 #include "VulkanBuffer.h"
 
+#include "VulkanDevice.h"
+
 namespace ocf::rhi {
 
 template <typename T>
@@ -52,7 +54,7 @@ bool BufferResource<T>::createBuffer(const VkBufferCreateInfo& createInfo,
     VkMemoryAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = memRequirements.size,
-        .memoryTypeIndex = 0,
+        .memoryTypeIndex = VulkanDevice::findMemoryType(memRequirements, memProps),
     };
 
     result = vkAllocateMemory(m_device, &allocInfo, nullptr, &m_memory);

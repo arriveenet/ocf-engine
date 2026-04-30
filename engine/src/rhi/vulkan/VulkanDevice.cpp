@@ -34,6 +34,25 @@ void buildExtensionChain(T& current, U& next, Rest&... rest)
 namespace ocf {
 namespace rhi {
 
+VkPhysicalDeviceMemoryProperties VulkanDevice::s_memoryProperties = {};
+
+uint32_t VulkanDevice::findMemoryType(const VkMemoryRequirements& requirements,
+                                      VkMemoryPropertyFlags properties)
+{
+    for (uint32_t i = 0; i < s_memoryProperties.memoryTypeCount; i++) {
+        const bool isTypeCompatible = (requirements.memoryTypeBits & (1 << i)) != 0;
+        const bool hasDesiredProperties =
+            (s_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
+
+        if (isTypeCompatible && hasDesiredProperties) {
+            return i;
+        }
+    }
+
+    OCF_LOG_FATAL("Faild to find suitable memory type");
+    return 0;
+}
+
 VulkanDevice::VulkanDevice(const DeviceConfig& config, VulkanContext& context)
     : m_context(context)
     , m_handleAllocator("Handles", config.handlePoolSize)
@@ -63,7 +82,7 @@ bool VulkanDevice::initialize()
 
     // Get memory properties and device properties
     VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &m_memoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
     vkGetPhysicalDeviceProperties(physicalDevice, &m_deviceProperties);
 
     OCF_LOG_DEBUG("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
@@ -104,8 +123,11 @@ VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t vertexCount, uint32
     Handle<VulkanVertexBuffer> handle = initHandle<VulkanVertexBuffer>(m_device);
     VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
 
-    vb->initialize(vertexCount,
-                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if(!vb->initialize(vertexCount, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        OCF_LOG_ERROR("Failed to create vertex buffer");
+        return Handle<VertexBufferHandle>{HandleBase::nullid};
+    }
 
     return Handle<VertexBufferHandle>{handle.getId()};
 }
