@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstddef>
 #include <variant>
 
 namespace ocf::rhi {
