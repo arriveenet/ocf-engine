@@ -25,6 +25,14 @@ public:
 
     void endRendering() override;
 
+    void bindPipeline(PipelineHandle ph) override;
+
+    void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+                           VertexBufferHandle vbh) override;
+
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+              uint32_t firstInstance) override;
+
     void transitionLayout(ResourceState oldState, ResourceState newState) override;
 
     VkCommandBuffer getHandle() const noexcept { return m_commandBuffer; }

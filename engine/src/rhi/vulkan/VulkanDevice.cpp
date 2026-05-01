@@ -6,6 +6,7 @@
 #include "VulkanContext.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanSwapchain.h"
+#include "VulkanPipelineBuilder.h"
 
 #include "ocf/core/Logger.h"
 
@@ -119,14 +120,14 @@ VertexBufferInfoHandle VulkanDevice::createVertexBufferInfo(uint8_t attributeCou
     return VertexBufferInfoHandle{handle.getId()};
 }
 
-VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
-                                                    BufferUsage usage, VertexBufferInfoHandle vbih)
+VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t bufferSize, BufferUsage usage,
+                                                    VertexBufferInfoHandle vbih)
 {
-    Handle<VulkanVertexBuffer> handle = initHandle<VulkanVertexBuffer>(m_device);
+    Handle<VulkanVertexBuffer> handle = initHandle<VulkanVertexBuffer>(m_device, vbih);
     VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
 
-    if(!vb->initialize(vertexCount, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+    if (!vb->initialize(bufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
         OCF_LOG_ERROR("Failed to create vertex buffer");
         return Handle<VertexBufferHandle>{HandleBase::nullid};
     }
@@ -172,6 +173,81 @@ ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::stri
     return Handle<RHIShaderModule>{handle.getId()};
 }
 
+PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
+{
+    Handle<VulkanPipeline> handle = initHandle<VulkanPipeline>();
+    VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
+
+    // Create pipeline layout
+    VkPipelineLayoutCreateInfo layoutInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+    };
+    VkPipelineLayout pipelineLayout;
+    auto result = vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &pipelineLayout);
+    if (result != VK_SUCCESS) {
+        OCF_LOG_ERROR("Failed to create pipeline layout");
+
+    }
+    pipeline->vk.layout = pipelineLayout;
+
+    VulkanShaderModule* vs = handle_cast<VulkanShaderModule*>(state.vertexShader);
+    VulkanShaderModule* fs = handle_cast<VulkanShaderModule*>(state.fragmentShader);
+
+    VulkanVertexBufferInfo* vbi = handle_cast<VulkanVertexBufferInfo*>(state.vertexBufferInfo);
+    uint32_t stride = 0;
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    for (size_t i = 0, n = vbi->attributes.size(); i < n; i++) {
+        const auto& attribute = vbi->attributes[i];
+        const uint8_t buffer = attribute.buffer;
+        if (buffer != Attribute::BUFFER_UNUSED) {
+            VkVertexInputAttributeDescription attributeDescription{
+                .location = uint32_t(i),
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = attribute.offset
+            };
+            attributeDescriptions.push_back(attributeDescription);
+
+            stride = attribute.stride;
+        }
+    }
+
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+    VkVertexInputBindingDescription bindingDescription{
+        .binding = 0,
+        .stride = stride,
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
+    bindingDescriptions.push_back(bindingDescription);
+
+    auto swapchainExtent = m_swapchain->getExtent();
+    VkRect2D scissor = {
+        .offset{0, 0},
+        .extent = swapchainExtent,
+    };
+    VkViewport viewport = {
+        .x = 0, .y = 0,
+        .width = float(swapchainExtent.width),
+        .height = float(swapchainExtent.height),
+        .minDepth = 0.0f, .maxDepth = 1.0f
+    };
+
+    // Build pipeline
+    VulkanPipelineBuilder builder{};
+    builder.addShaderStage(VK_SHADER_STAGE_VERTEX_BIT, vs->vk.id, vs->entryPoint);
+    builder.addShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, fs->vk.id, fs->entryPoint);
+    builder.setVertexInput(bindingDescriptions.data(), uint32_t(bindingDescriptions.size()),
+                           attributeDescriptions.data(), uint32_t(attributeDescriptions.size()));
+    builder.setViewport(viewport, scissor);
+    builder.setPipelineLayout(pipelineLayout);
+    builder.useDynamicRendering(m_swapchain->getImageFormat().format);
+    pipeline->vk.pipeline = builder.build(m_device);
+
+    vkDestroyShaderModule(m_device, vs->vk.id, nullptr);
+    vkDestroyShaderModule(m_device, fs->vk.id, nullptr);
+
+    return Handle<RHIPipeline>{handle.getId()};
+}
+
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height)
 {
     Handle<VulkanSwapchain> handle = initHandle<VulkanSwapchain>(*this);
@@ -196,10 +272,41 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     return Handle<RHISwapchain>{handle.getId()};
 }
 
+void VulkanDevice::destroyVertexBufferInfo(VertexBufferInfoHandle handle)
+{
+    if (handle) {
+        VulkanVertexBufferInfo* vbi = handle_cast<VulkanVertexBufferInfo*>(handle);
+        destruct(handle, vbi);
+    }
+}
+
 void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
 {
-    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
-    destruct(handle, vb);
+    if (handle) {
+        VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+        destruct(handle, vb);
+    }
+}
+
+void VulkanDevice::destroyPipeline(PipelineHandle handle)
+{
+    if (handle) {
+        VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
+        if (pipeline == nullptr) {
+            return;
+        }
+
+        vkDeviceWaitIdle(m_device);
+
+        if (pipeline->vk.pipeline != VK_NULL_HANDLE) {
+            vkDestroyPipeline(m_device, pipeline->vk.pipeline, nullptr);
+            pipeline->vk.pipeline = VK_NULL_HANDLE;
+        }
+        if (pipeline->vk.layout != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(m_device, pipeline->vk.layout, nullptr);
+            pipeline->vk.layout = VK_NULL_HANDLE;
+        }
+    }
 }
 
 void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,

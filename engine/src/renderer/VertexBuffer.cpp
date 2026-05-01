@@ -63,6 +63,8 @@ VertexBuffer* VertexBuffer::Builder::build(Engine& engine)
 }
 
 VertexBuffer::VertexBuffer(Engine& engine, const Builder& builder)
+    : m_vertexCount(builder->vertexCount)
+    , m_byteCount(builder->bufferCount)
 {
     // calculate buffer sizes
     uint32_t bufferSize = {};
@@ -79,14 +81,14 @@ VertexBuffer::VertexBuffer(Engine& engine, const Builder& builder)
 
     // create the buffer
     Engine::Device& device = engine.getDevice();
-    m_vertexBufferInfoHandle = device.createVertexBufferInfo(0, m_attributes);
-    m_handle =
-        device.createVertexBuffer(m_vertexCount, m_byteCount, m_usage, m_vertexBufferInfoHandle);
+    m_vertexBufferInfoHandle = device.createVertexBufferInfo(uint8_t(m_attributes.size()), m_attributes);
+    m_handle = device.createVertexBuffer(bufferSize, m_usage, m_vertexBufferInfoHandle);
 }
 
 void VertexBuffer::terminate(Engine& engine)
 {
     engine.getDevice().destroyVertexBuffer(m_handle);
+    engine.getDevice().destroyVertexBufferInfo(m_vertexBufferInfoHandle);
 }
 
 void VertexBuffer::setBufferData(Engine& engine, const void* data, size_t size, size_t offset) const

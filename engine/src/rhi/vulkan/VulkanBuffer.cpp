@@ -69,8 +69,9 @@ bool BufferResource<T>::createBuffer(const VkBufferCreateInfo& createInfo,
     return true;
 }
 
-VulkanVertexBuffer::VulkanVertexBuffer(VkDevice device)
-    : BufferResource(device)
+VulkanVertexBuffer::VulkanVertexBuffer(VkDevice device, Handle<RHIVertexBufferInfo> vbih)
+    : vbih(vbih)
+    , BufferResource(device)
 {
 }
 

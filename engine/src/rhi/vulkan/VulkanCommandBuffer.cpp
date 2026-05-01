@@ -1,5 +1,6 @@
 #include "VulkanCommandBuffer.h"
 
+#include "VulkanBuffer.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapchain.h"
 #include "VulkanUtility.h"
@@ -41,13 +42,15 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
 {
     auto swapchain = m_device.getSwapchain();
 
+    const math::vec4 color = info.clearColor;
+
     VkRenderingAttachmentInfo colorAttachment{
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = swapchain->getCurrentImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue = VkClearValue{.color = {0.6f, 0.2f, 0.3f, 1.0f}},
+        .clearValue = VkClearValue{.color = {color.x, color.y, color.z, color.w}},
     };
 
     VkRenderingInfo renderingInfo{
@@ -64,6 +67,28 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
 void VulkanCommandBuffer::endRendering()
 {
     vkCmdEndRendering(m_commandBuffer);
+}
+
+void VulkanCommandBuffer::bindPipeline(PipelineHandle ph)
+{
+    VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
+
+    vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.pipeline);
+}
+
+void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+                                            VertexBufferHandle vbh)
+{
+    VulkanVertexBuffer* vb = m_device.handle_cast<VulkanVertexBuffer*>(vbh);
+    VkBuffer buffer = vb->getBuffer();
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(m_commandBuffer, firstBinding, bindingCount, &buffer, offsets);
+}
+
+void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                               uint32_t firstInstance)
+{
+    vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void VulkanCommandBuffer::transitionLayout(ResourceState oldState, ResourceState newState)

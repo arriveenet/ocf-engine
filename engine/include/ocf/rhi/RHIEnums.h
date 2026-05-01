@@ -80,16 +80,68 @@ enum class ResourceState : uint8_t {
     Present,
 };
 
-struct PipelineState {
-};
-
-
-
 struct ClearValue {
     std::variant<math::vec4> color;
 };
 
 struct RenderingInfo {
+    math::vec4 clearColor;
+};
+
+/**
+ * @brief Face culling mode
+ */
+enum class CullingMode : uint8_t {
+    None,
+    Front,
+    Back,
+    FrontAndBack
+};
+
+/**
+ * @brief Blend function
+ */
+enum class BlendFunction : uint8_t {
+    Zero,
+    One,
+    SrcColor,
+    OneMinusSrcColor,
+    DstColor,
+    OneMinusDstColor,
+    SrcAlpha,
+    OneMinusSrcAlpha,
+    DstAlpha,
+    OneMinusDstAlpha,
+};
+
+enum class SamplerCompareFunc : uint8_t {
+    Never,
+    Less,
+    LessEqual,
+    Equal,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always,
+};
+
+/**
+ * @brief Raster state descriptor
+ */
+struct RasterState {
+    using CullingMode = rhi::CullingMode;
+    using DepthFunc = rhi::SamplerCompareFunc;
+    using BlendFunction = rhi::BlendFunction;
+
+    CullingMode culling = CullingMode::None;
+    BlendFunction blendSrc = BlendFunction::One;
+    BlendFunction blendDst = BlendFunction::Zero;
+    DepthFunc depthFunc = DepthFunc::Less;
+
+    bool hasBlending() const noexcept
+    {
+        return !(blendSrc == BlendFunction::One && blendDst == BlendFunction::Zero);
+    }
 };
 
 } // namespace ocf::rhi

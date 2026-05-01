@@ -84,9 +84,9 @@ private:
     VulkanVertexBuffer() = default;
 
 public:
-    explicit VulkanVertexBuffer(VkDevice device);
+    Handle<RHIVertexBufferInfo> vbih;
 
-public:
+    explicit VulkanVertexBuffer(VkDevice device, Handle<RHIVertexBufferInfo> vbih);
     ~VulkanVertexBuffer() override = default;
 
     void* map() override;

@@ -35,6 +35,14 @@ struct VulkanShaderModule : public RHIShaderModule {
     } vk;
 };
 
+struct VulkanPipeline : public RHIPipeline {
+
+    struct VK {
+        VkPipelineLayout layout = VK_NULL_HANDLE;
+        VkPipeline pipeline = VK_NULL_HANDLE;
+    } vk;
+};
+
 class VulkanDevice : public Device {
 public:
     const uint32_t FRAMES_IN_FLIGHT_MAX = 2;
@@ -51,17 +59,23 @@ public:
     VertexBufferInfoHandle createVertexBufferInfo(uint8_t attributeCount,
                                                   AttributeArray attributes) override;
 
-    VertexBufferHandle createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
-                                          BufferUsage usage, VertexBufferInfoHandle vbih) override;
+    VertexBufferHandle createVertexBuffer(uint32_t bufferSize, BufferUsage usage,
+                                          VertexBufferInfoHandle vbih) override;
 
     TextureHandle createTexture() override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                           const char* entryPoint = "main") override;
 
+    PipelineHandle createPipeline(const PipelineState& pipeline) override;
+
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
+    void destroyVertexBufferInfo(VertexBufferInfoHandle handle) override;
+
     void destroyVertexBuffer(VertexBufferHandle handle) override;
+
+    void destroyPipeline(PipelineHandle handle) override;
 
     void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                           size_t offset) override;

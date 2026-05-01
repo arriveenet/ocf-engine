@@ -3,11 +3,12 @@
 #pragma once
 
 #include "ocf/rhi/Handle.h"
+#include "ocf/rhi/PipelineState.h"
 #include "ocf/rhi/RHIEnums.h"
 
 #include <cstdint>
-#include <string_view>
 #include <memory>
+#include <string_view>
 
 namespace ocf {
 class Window;
@@ -22,7 +23,7 @@ class Swapchain;
 struct RHIResourceBase {};
 
 struct RHIVertexBufferInfo : public RHIResourceBase {
-    uint8_t attributeCount;
+    uint8_t attributeCount = 0;
     bool padding[3] = {};
 
     RHIVertexBufferInfo() noexcept = default;
@@ -56,6 +57,9 @@ struct RHIShaderModule : public RHIResourceBase {
     const char* entryPoint;
 };
 
+struct RHIPipeline : public RHIResourceBase {
+};
+
 struct RHISwapchain : public RHIResourceBase {
 };
 
@@ -71,8 +75,7 @@ public:
     virtual VertexBufferInfoHandle createVertexBufferInfo(uint8_t attributeCount,
                                                           AttributeArray attributes) = 0;
 
-    virtual VertexBufferHandle createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
-                                                  BufferUsage usage,
+    virtual VertexBufferHandle createVertexBuffer(uint32_t bufferSize, BufferUsage usage,
                                                   VertexBufferInfoHandle vbih) = 0;
 
     virtual TextureHandle createTexture() = 0;
@@ -80,9 +83,15 @@ public:
     virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                                   const char* entryPoint = "main") = 0;
 
+    virtual PipelineHandle createPipeline(const PipelineState& pipeline) = 0;
+
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 
+    virtual void destroyVertexBufferInfo(VertexBufferInfoHandle handle) = 0;
+
     virtual void destroyVertexBuffer(VertexBufferHandle handle) = 0;
+
+    virtual void destroyPipeline(PipelineHandle handle) = 0;
 
     virtual void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                   size_t offset) = 0;

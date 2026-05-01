@@ -4,6 +4,7 @@
 
 #include "ocf/math/vec3.h"
 #include "ocf/renderer/VertexBuffer.h"
+#include <ocf/rhi/Handle.h>
 
 namespace ocf {
 
@@ -21,6 +22,8 @@ public:
     Renderer(Engine& engine, rhi::Device* device);
     ~Renderer();
 
+    bool init();
+
     void beginFrame();
 
     void endFrame();
@@ -31,6 +34,7 @@ private:
     Engine& m_engine;
     rhi::Device* m_device = nullptr;
     VertexBuffer* m_vertexBuffer = nullptr;
+    rhi::PipelineHandle m_pipelineHandle;
 };
 
 } // namespace ocf

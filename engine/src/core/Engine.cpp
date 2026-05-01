@@ -86,6 +86,11 @@ Device& Engine::getDevice() const
     return *m_device.get();
 }
 
+Renderer& Engine::getRenderer() const
+{
+    return *m_renderer.get();
+}
+
 void Engine::calculateDeltaTime()
 {
     auto now = std::chrono::steady_clock::now();

@@ -29,6 +29,8 @@ public:
 
     rhi::Device& getDevice() const;
 
+    Renderer& getRenderer() const;
+
 private:
     Engine();
     ~Engine();
