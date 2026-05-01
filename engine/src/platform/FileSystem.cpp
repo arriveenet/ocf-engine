@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/platform/FileSystem.h"
 #include <filesystem>
 

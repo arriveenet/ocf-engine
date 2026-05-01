@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "ocf/renderer/MaterialEnums.h"
 #include "ocf/rhi/Handle.h"

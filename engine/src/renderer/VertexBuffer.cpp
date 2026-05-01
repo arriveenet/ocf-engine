@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/renderer/VertexBuffer.h"
 
 #include "ocf/core/Engine.h"
