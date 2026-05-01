@@ -29,6 +29,7 @@ Renderer::Renderer(Engine& engine, rhi::Device* device)
 
 Renderer::~Renderer()
 {
+    m_vertexBuffer->terminate(m_engine);
 }
 
 void Renderer::beginFrame()

@@ -114,7 +114,9 @@ void VulkanDevice::terminate()
 VertexBufferInfoHandle VulkanDevice::createVertexBufferInfo(uint8_t attributeCount,
                                                             AttributeArray attributes)
 {
-    return VertexBufferInfoHandle();
+    Handle<VulkanVertexBufferInfo> handle = initHandle<VulkanVertexBufferInfo>();
+    construct<VulkanVertexBufferInfo>(handle, attributeCount, attributes);
+    return VertexBufferInfoHandle{handle.getId()};
 }
 
 VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t vertexCount, uint32_t byteCount,
@@ -137,11 +139,15 @@ TextureHandle VulkanDevice::createTexture()
     return TextureHandle();
 }
 
-ShaderModuleHandle VulkanDevice::createShaderModule(std::string_view filename)
+ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::string_view filename,
+                                                    const char* entryPoint)
 {
     Handle<VulkanShaderModule> handle = initHandle<VulkanShaderModule>();
 
     VulkanShaderModule* shader = construct<VulkanShaderModule>(handle);
+
+    shader->stage = stage;
+    shader->entryPoint = entryPoint;
 
     std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
@@ -188,6 +194,12 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     createFrameContexts();
 
     return Handle<RHISwapchain>{handle.getId()};
+}
+
+void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
+{
+    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+    destruct(handle, vb);
 }
 
 void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,

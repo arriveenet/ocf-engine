@@ -33,8 +33,8 @@ struct RHIVertexBufferInfo : public RHIResourceBase {
 };
 
 struct RHIVertexBuffer : public RHIResourceBase {
-    uint32_t vertexCount;
-    uint32_t byteCount;
+    uint32_t vertexCount = 0;
+    uint32_t byteCount = 0;
     uint8_t bufferObjectVertion = 0xff;
     bool padding[3] = {};
 
@@ -77,9 +77,12 @@ public:
 
     virtual TextureHandle createTexture() = 0;
 
-    virtual ShaderModuleHandle createShaderModule(std::string_view filename) = 0;
+    virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
+                                                  const char* entryPoint = "main") = 0;
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
+
+    virtual void destroyVertexBuffer(VertexBufferHandle handle) = 0;
 
     virtual void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                   size_t offset) = 0;

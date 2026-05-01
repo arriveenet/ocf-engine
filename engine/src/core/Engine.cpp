@@ -8,6 +8,7 @@
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
 #include "ocf/scene/Scene.h"
+#include "ocf/platform/FileSystem.h"
 
 namespace ocf {
 
@@ -22,6 +23,8 @@ Engine::Engine()
 
 Engine::~Engine()
 {
+    m_renderer.reset();
+    m_device.reset();
 }
 
 bool Engine::init()
@@ -50,6 +53,7 @@ Engine* Engine::create()
 
 void Engine::destroy(Engine* engine)
 {
+    FileSystem::destroyInstance();
     delete engine;
 }
 

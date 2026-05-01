@@ -41,7 +41,8 @@ public:
     };
 
     VertexBuffer(Engine& engine, const Builder& builder);
-    ~VertexBuffer();
+
+    void terminate(Engine& engine);
 
     VertexBufferHandle getHandle() const noexcept
     {

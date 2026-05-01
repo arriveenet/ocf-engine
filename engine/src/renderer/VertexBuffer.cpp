@@ -84,8 +84,9 @@ VertexBuffer::VertexBuffer(Engine& engine, const Builder& builder)
         device.createVertexBuffer(m_vertexCount, m_byteCount, m_usage, m_vertexBufferInfoHandle);
 }
 
-VertexBuffer::~VertexBuffer()
+void VertexBuffer::terminate(Engine& engine)
 {
+    engine.getDevice().destroyVertexBuffer(m_handle);
 }
 
 void VertexBuffer::setBufferData(Engine& engine, const void* data, size_t size, size_t offset) const
