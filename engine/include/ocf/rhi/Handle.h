@@ -12,7 +12,10 @@ namespace rhi {
 struct RHITexture;
 struct RHIVertexBuffer;
 struct RHIVertexBufferInfo;
+struct RHIIndexBuffer;
 struct RHIShaderModule;
+struct RHIDescriptorSetLayout;
+struct RHIDescriptorSet;
 struct RHIPipeline;
 struct RHISwapchain;
 
@@ -93,8 +96,11 @@ struct Handle : public HandleBase {
 
 using VertexBufferInfoHandle = Handle<RHIVertexBufferInfo>;
 using VertexBufferHandle = Handle<RHIVertexBuffer>;
+using IndexBufferHandle = Handle<RHIIndexBuffer>;
 using TextureHandle = Handle<RHITexture>;
 using ShaderModuleHandle = Handle<RHIShaderModule>;
+using DescriptorSetLayoutHandle =  Handle<RHIDescriptorSetLayout>;
+using DescriptorSetHandle = Handle<RHIDescriptorSet>;
 using PipelineHandle = Handle<RHIPipeline>;
 using SwapchainHandle = Handle<RHISwapchain>;
 

@@ -5,8 +5,8 @@
 
 #include <array>
 #include <cstdint>
-#include <cstddef>
-#include <variant>
+#include <type_traits>
+#include <vector>
 
 namespace ocf::rhi {
 
@@ -68,20 +68,39 @@ struct Attribute {
 
 using AttributeArray = std::array<Attribute, VERTEX_ATTRIBUTE_COUNT_MAX>;
 
-enum class ShaderStage : uint8_t {
-    Vertex,
-    Fragment,
-    Compute,
+enum class ShaderStage : uint32_t {
+    Vertex = 1 << 0,
+    Fragment = 1 << 1,
+    Compute = 1 << 2,
+    AllStage = 0x7FFFFFFF,
+};
+using ShaderStageFlags = ShaderStage;
+
+inline ShaderStageFlags operator|(ShaderStageFlags lhs, ShaderStageFlags rhs)
+{
+    return static_cast<ShaderStageFlags>(
+        static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) |
+        static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs));
+}
+
+inline bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
+{
+    return static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) &
+           static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs);
+}
+
+enum class DescriptorType : uint8_t {
+    Sampler,
+    CombinedImageSampler,
+    StorageImage,
+    UniformBuffer,
+    StorageBuffer,
 };
 
 enum class ResourceState : uint8_t {
     Undefined,
     ColorAttachment,
     Present,
-};
-
-struct ClearValue {
-    std::variant<math::vec4> color;
 };
 
 struct RenderingInfo {
@@ -142,6 +161,16 @@ struct RasterState {
     {
         return !(blendSrc == BlendFunction::One && blendDst == BlendFunction::Zero);
     }
+};
+
+struct DescriptorLayoutBinding {
+    uint32_t binding;
+    DescriptorType type;
+    ShaderStageFlags shaderStageFlags;
+};
+
+struct DescriptorSetLayout {
+    std::vector<DescriptorLayoutBinding> descriptors;
 };
 
 } // namespace ocf::rhi
