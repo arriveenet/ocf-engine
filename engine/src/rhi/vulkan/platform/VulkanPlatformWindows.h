@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#pragma once
 #include "../VulkanPlatform.h"
 
 namespace ocf::rhi {

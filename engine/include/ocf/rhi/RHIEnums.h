@@ -76,14 +76,14 @@ enum class ShaderStage : uint32_t {
 };
 using ShaderStageFlags = ShaderStage;
 
-inline ShaderStageFlags operator|(ShaderStageFlags lhs, ShaderStageFlags rhs)
+constexpr ShaderStageFlags operator|(ShaderStageFlags lhs, ShaderStageFlags rhs)
 {
     return static_cast<ShaderStageFlags>(
         static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) |
         static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs));
 }
 
-inline bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
+constexpr bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
 {
     return static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) &
            static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs);

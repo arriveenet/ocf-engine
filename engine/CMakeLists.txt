@@ -66,6 +66,7 @@ add_filtered_std("rhi")
 add_filtered_std("scene")
 
 add_filtered_std("rhi/vulkan")
+add_filtered_std("rhi/vulkan/resource")
 
 if (WIN32)
     set(PLATFORM_HEADER_FILES
@@ -109,7 +110,8 @@ else()
 endif()
 
 target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/rhi)
 
 set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 

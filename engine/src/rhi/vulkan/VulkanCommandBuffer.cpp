@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanCommandBuffer.h"
 
 #include "VulkanBuffer.h"
@@ -28,6 +29,15 @@ void VulkanCommandBuffer::begin()
     vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
 }
 
+void VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
+{
+    VkCommandBufferBeginInfo beginInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = flags,
+    };
+    vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+}
+
 void VulkanCommandBuffer::end()
 {
     vkEndCommandBuffer(m_commandBuffer);
@@ -44,6 +54,7 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
 
     const math::vec4 color = info.clearColor;
 
+    // Color
     VkRenderingAttachmentInfo colorAttachment{
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = swapchain->getCurrentImageView(),
@@ -52,13 +63,23 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = VkClearValue{.color = {color.x, color.y, color.z, color.w}},
     };
+    // Depth
+    VkRenderingAttachmentInfo depthAttachment{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView = swapchain->getCurrentImageView(),
+        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue = {.depthStencil{1.0f, 0}}
+    };
 
     VkRenderingInfo renderingInfo{
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
         .renderArea = {{0, 0}, swapchain->getExtent()},
         .layerCount = 1,
         .colorAttachmentCount = 1,
-        .pColorAttachments = &colorAttachment
+        .pColorAttachments = &colorAttachment,
+        .pDepthAttachment = &depthAttachment,
     };
 
     vkCmdBeginRendering(m_commandBuffer, &renderingInfo);
@@ -85,10 +106,26 @@ void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bind
     vkCmdBindVertexBuffers(m_commandBuffer, firstBinding, bindingCount, &buffer, offsets);
 }
 
+void VulkanCommandBuffer::bindIndexBuffer(IndexBufferHandle ibh, uint32_t offset)
+{
+    VulkanIndexBuffer* ib = m_device.handle_cast<VulkanIndexBuffer*>(ibh);
+    VkBuffer buffer = ib->getBuffer();
+    VkIndexType indexType = (ib->elementSize == 4) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+    vkCmdBindIndexBuffer(m_commandBuffer, buffer, 0, indexType);
+}
+
 void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                uint32_t firstInstance)
 {
     vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
+                                    uint32_t firstIndex, uint32_t vertexOffset,
+                                    uint32_t firstInstance)
+{
+    vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset,
+                     firstInstance);
 }
 
 void VulkanCommandBuffer::transitionLayout(ResourceState oldState, ResourceState newState)

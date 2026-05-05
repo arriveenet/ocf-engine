@@ -4,6 +4,7 @@
 
 #include "ocf/math/vec3.h"
 #include "ocf/renderer/VertexBuffer.h"
+#include "ocf/renderer/IndexBuffer.h"
 #include <ocf/rhi/Handle.h>
 
 namespace ocf {
@@ -14,6 +15,7 @@ class Device;
 
 struct Vertex {
     math::vec3 position;
+    math::vec3 normal;
     math::vec3 color;
 };
 
@@ -34,6 +36,7 @@ private:
     Engine& m_engine;
     rhi::Device* m_device = nullptr;
     VertexBuffer* m_vertexBuffer = nullptr;
+    IndexBuffer* m_indexBuffer = nullptr;
     rhi::PipelineHandle m_pipelineHandle;
 };
 

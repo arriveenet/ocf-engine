@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: MIT
 #pragma once
+
+#include "vulkan/resource/GpuResourceBase.h"
 
 #include "ocf/rhi/Device.h"
 
@@ -7,21 +10,6 @@
 #include <memory>
 
 namespace ocf::rhi {
-
-template<typename T>
-class GpuResourceBase {
-public:
-    // Copy is prohibited
-    GpuResourceBase(const GpuResourceBase&) = delete;
-    GpuResourceBase& operator=(const GpuResourceBase&) = delete;
-
-    virtual ~GpuResourceBase() = default;
-
-    static std::shared_ptr<T> create() { return std::shared_ptr<T>(new T()); }
-
-protected:
-    GpuResourceBase() = default;
-};
 
 class IBufferResource {
 public:
@@ -67,6 +55,8 @@ public:
     VkDescriptorBufferInfo getDescriptorInfo() const override;
 
 protected:
+    BufferResource() = default;
+
     bool createBuffer(const VkBufferCreateInfo& createInfo, VkMemoryPropertyFlags memProps);
 
     VkDevice m_device = VK_NULL_HANDLE;
@@ -78,12 +68,6 @@ protected:
 };
 
 struct VulkanVertexBuffer : public RHIVertexBuffer, BufferResource<VulkanVertexBuffer> {
-private:
-    friend class GpuResourceBase<VulkanVertexBuffer>;
-
-    VulkanVertexBuffer() = default;
-
-public:
     Handle<RHIVertexBufferInfo> vbih;
 
     explicit VulkanVertexBuffer(VkDevice device, Handle<RHIVertexBufferInfo> vbih);
@@ -93,6 +77,62 @@ public:
     void unmap() override;
 
     bool initialize(VkDeviceSize size, VkMemoryPropertyFlags memProps);
+
+};
+
+struct VulkanIndexBuffer : public RHIIndexBuffer, BufferResource<VulkanIndexBuffer> {
+    explicit VulkanIndexBuffer(VkDevice device);
+    ~VulkanIndexBuffer() override = default;
+
+    void* map() override;
+    void unmap() override;
+
+    bool initialize(VkDeviceSize size, VkMemoryPropertyFlags memProps);
+};
+
+class StagingBuffer : public BufferResource<StagingBuffer> {
+    friend class GpuResourceBase<StagingBuffer>;
+
+private:
+    StagingBuffer();
+
+public:
+    virtual ~StagingBuffer() = default;
+
+    void* map() override;
+    void unmap() override;
+
+    bool initialize(VkDevice device, VkDeviceSize size);
+
+    static std::shared_ptr<StagingBuffer> create(VkDevice device, VkDeviceSize size) {
+        auto buffer = GpuResourceBase::create();
+        if (!buffer->initialize(device, size)) {
+            return nullptr;
+        }
+        return buffer;
+    }
+};
+
+class UniformBuffer : public BufferResource<UniformBuffer> {
+    friend class GpuResourceBase<StagingBuffer>;
+
+public:
+    UniformBuffer() = default;
+    virtual ~UniformBuffer() = default;
+
+    void* map() override;
+    void unmap() override;
+
+    bool initialize(VkDevice device, VkDeviceSize size);
+
+    static std::shared_ptr<UniformBuffer> create(VkDevice device, VkDeviceSize size)
+    {
+        auto buffer = GpuResourceBase::create();
+        if (!buffer->initialize(device, size)) {
+            return nullptr;
+        }
+        return buffer;
+    }
 
 };
 

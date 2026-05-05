@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "VulkanPipelineBuilder.h"
 
 namespace ocf::rhi {

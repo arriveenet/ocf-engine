@@ -43,34 +43,5 @@ QueueFamilyIndices VulkanUtility::findQueueFamilies(VkPhysicalDevice device)
     return indices;
 }
 
-VulkanResourceStateInfo VulkanUtility::getResourceState(ResourceState state)
-{
-    switch (state) {
-    case ocf::rhi::ResourceState::Undefined:
-        return {.layout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .accessMask = 0,
-                .stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        };
-    case ocf::rhi::ResourceState::ColorAttachment:
-        return {
-            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .accessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            .stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        };
-    case ocf::rhi::ResourceState::Present:
-        return {
-            .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            .accessMask = 0,
-            .stageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        };
-    default:
-        return {
-            .layout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .accessMask = 0,
-            .stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        };
-    }
-}
-
 } // namespace rhi
 } // namespace ocf

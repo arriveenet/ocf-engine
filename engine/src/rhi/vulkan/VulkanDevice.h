@@ -3,20 +3,23 @@
 #pragma once
 
 #include "rhi/HandleAllocator.h"
-#include "VulkanCommandBuffer.h"
 #include "VulkanUtility.h"
 
 #include "ocf/rhi/Device.h"
 
 #include <vulkan/vulkan.h>
 
+#include <array>
 #include <memory>
 #include <vector>
 
 namespace ocf::rhi {
 
+class VulkanCommandBuffer;
 class VulkanContext;
 class VulkanSwapchain;
+class ResourceUploader;
+class UniformBuffer;
 
 struct VulkanVertexBufferInfo : public RHIVertexBufferInfo {
     AttributeArray attributes;
@@ -27,6 +30,14 @@ struct VulkanVertexBufferInfo : public RHIVertexBufferInfo {
         , attributes(attributes)
     {
     }
+};
+
+struct VulkanDescriptorSetLayout : public RHIDescriptorSetLayout {
+    struct VK {
+        VkDescriptorSetLayout id = VK_NULL_HANDLE;
+    } vk;
+
+    DescriptorSetLayout layout;
 };
 
 struct VulkanShaderModule : public RHIShaderModule {
@@ -44,8 +55,11 @@ struct VulkanPipeline : public RHIPipeline {
 };
 
 class VulkanDevice : public Device {
+    friend class VulkanCommandBuffer;
+    friend class ResourceUploader;
+
 public:
-    const uint32_t FRAMES_IN_FLIGHT_MAX = 2;
+    static const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
     static uint32_t findMemoryType(const VkMemoryRequirements& requirements,
                                    VkMemoryPropertyFlags properties);
@@ -62,10 +76,17 @@ public:
     VertexBufferHandle createVertexBuffer(uint32_t bufferSize, BufferUsage usage,
                                           VertexBufferInfoHandle vbih) override;
 
+    IndexBufferHandle createIndexBuffer(ElementType elementType, uint32_t indexCount,
+                                        BufferUsage usage) override;
+
     TextureHandle createTexture() override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                           const char* entryPoint = "main") override;
+
+    DescriptorSetLayoutHandle createDescriptorLayoutSet(const DescriptorSetLayout& layout) override;
+
+    DescriptorSetHandle createDescriptorSet(DescriptorSetLayoutHandle dslh) override;
 
     PipelineHandle createPipeline(const PipelineState& pipeline) override;
 
@@ -75,10 +96,15 @@ public:
 
     void destroyVertexBuffer(VertexBufferHandle handle) override;
 
+    void destroyIndexBuffer(IndexBufferHandle handle) override;
+
     void destroyPipeline(PipelineHandle handle) override;
 
     void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                           size_t offset) override;
+
+    void updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
+                               size_t offset) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 
@@ -91,6 +117,8 @@ public:
     VulkanContext& getContext() const noexcept { return m_context; }
 
     VkCommandPool getCommandPool() const noexcept { return m_commandPool; }
+
+    VkQueue getGraphicsQueue() const noexcept { return m_graphicsQueue; }
 
 private:
     struct FrameContext {
@@ -134,6 +162,10 @@ private:
 
     VulkanResult createCommandPool();
 
+    VulkanResult createDescriptorPool();
+
+    VkDescriptorSet allocateDescriptorSet(VkDescriptorSetLayout layout);
+
     void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
 
     /** Switches the drawable swapchain image */
@@ -167,10 +199,13 @@ private:
     VkDevice m_device = VK_NULL_HANDLE;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;
     VkCommandPool m_commandPool = VK_NULL_HANDLE;
+    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties m_deviceProperties{};
     VulkanSwapchain* m_swapchain = nullptr;
     std::vector<FrameContext> m_frameContext;
     uint32_t m_currentFrameIndex = 0;
+
+    std::unique_ptr<ResourceUploader> m_resourceUploader;
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
@@ -182,8 +217,6 @@ private:
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT m_atomicFloatFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT};
-
-    friend class VulkanCommandBuffer;
 };
 
 } // namespace ocf::rhi

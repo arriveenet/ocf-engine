@@ -17,6 +17,8 @@ public:
 
     void begin() override;
 
+    void begin(VkCommandBufferUsageFlags flags);
+
     void end() override;
 
     void reset() override;
@@ -30,8 +32,13 @@ public:
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                            VertexBufferHandle vbh) override;
 
+    void bindIndexBuffer(IndexBufferHandle ibh, uint32_t offset) override;
+
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
               uint32_t firstInstance) override;
+
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+                   uint32_t vertexOffset, uint32_t firstInstance) override;
 
     void transitionLayout(ResourceState oldState, ResourceState newState) override;
 

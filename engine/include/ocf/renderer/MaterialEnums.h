@@ -5,22 +5,22 @@
 namespace ocf {
 
 enum class VertexAttribute : uint8_t {
-    POSITION = 0,
-    NORMAL = 1,
-    COLOR = 2,
-    TEXCOORD0 = 3,
-    TEXCOORD1 = 4,
-    BONE_INDICES = 5,
-    BONE_WEIGHTS = 6,
-    CUSTOM0 = 7,
-    CUSTOM1 = 8,
-    CUSTOM2 = 9,
-    CUSTOM3 = 10,
-    CUSTOM4 = 11,
-    CUSTOM5 = 12,
-    CUSTOM6 = 13,
-    CUSTOM7 = 14,
-    CUSTOM8 = 15
+    Position = 0,
+    Normal = 1,
+    Color = 2,
+    TexCoord0 = 3,
+    TexCoord1 = 4,
+    BoneIndices = 5,
+    BoneWeights = 6,
+    Custom0 = 7,
+    Custom1 = 8,
+    Custom2 = 9,
+    Custom3 = 10,
+    Custom4 = 11,
+    Custom5 = 12,
+    Custom6 = 13,
+    Custom7 = 14,
+    Custom8 = 15
 };
 
 } // namespace ocf

@@ -2,15 +2,14 @@
 
 #include "VulkanDevice.h"
 
+#include "vulkan/resource/ResourceUploader.h"
 #include "VulkanBuffer.h"
-#include "VulkanContext.h"
 #include "VulkanCommandBuffer.h"
-#include "VulkanSwapchain.h"
+#include "VulkanContext.h"
 #include "VulkanPipelineBuilder.h"
+#include "VulkanSwapchain.h"
 
 #include "ocf/core/Logger.h"
-
-#include <string.h>
 
 #include <fstream>
 #include <thread>
@@ -81,6 +80,17 @@ bool VulkanDevice::initialize()
         return false;
     }
 
+    // Create descriptor pool
+    result = createDescriptorPool();
+    if (!result) {
+        VulkanUtility::logError(result.unwrapErr());
+        return false;
+    }
+
+    // Initialize Resource Uploader
+    m_resourceUploader = std::make_unique<ResourceUploader>();
+    m_resourceUploader->initialize(*this);
+
     // Get memory properties and device properties
     VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
@@ -95,6 +105,8 @@ void VulkanDevice::terminate()
 {
     // Wait for the device to be idle before destroying resources
     vkDeviceWaitIdle(m_device);
+
+    m_resourceUploader->cleanup();
 
     destroyFrameContexts();
 
@@ -126,13 +138,32 @@ VertexBufferHandle VulkanDevice::createVertexBuffer(uint32_t bufferSize, BufferU
     Handle<VulkanVertexBuffer> handle = initHandle<VulkanVertexBuffer>(m_device, vbih);
     VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
 
-    if (!vb->initialize(bufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+    if (!vb->initialize(bufferSize, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
         OCF_LOG_ERROR("Failed to create vertex buffer");
         return Handle<VertexBufferHandle>{HandleBase::nullid};
     }
 
     return Handle<VertexBufferHandle>{handle.getId()};
+}
+
+IndexBufferHandle VulkanDevice::createIndexBuffer(ElementType elementType, uint32_t indexCount,
+                                                  BufferUsage usage)
+{
+    Handle<VulkanIndexBuffer> handle = initHandle<VulkanIndexBuffer>(m_device);
+    VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
+
+    const uint8_t elementSize = static_cast<uint8_t>(getElementTypeSize(elementType));
+    const VkDeviceSize size = elementSize * static_cast<VkDeviceSize>(indexCount);
+
+    ib->count = indexCount;
+    ib->elementSize = elementSize;
+
+    if (!ib->initialize(size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+        OCF_LOG_ERROR("Failed to create index buffer");
+        return Handle<IndexBufferHandle>{HandleBase::nullid};
+    }
+
+    return Handle<IndexBufferHandle>{handle.getId()};
 }
 
 TextureHandle VulkanDevice::createTexture()
@@ -165,12 +196,53 @@ ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::stri
     createInfo.codeSize = buffer.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
 
-    auto result = vkCreateShaderModule(m_device, &createInfo, nullptr, &shader->vk.id);
-    if (result != VK_SUCCESS) {
-        OCF_LOG_ERROR("Failded to create shader module from: {}", filename.data());
-    }
+    VkResult result = vkCreateShaderModule(m_device, &createInfo, nullptr, &shader->vk.id);
+    VK_CHECK_RESULT(result);
  
     return Handle<RHIShaderModule>{handle.getId()};
+}
+
+DescriptorSetLayoutHandle VulkanDevice::createDescriptorLayoutSet(const DescriptorSetLayout& layout)
+{
+    Handle<VulkanDescriptorSetLayout> handle = initHandle<VulkanDescriptorSetLayout>();
+    VulkanDescriptorSetLayout* dsl = construct<VulkanDescriptorSetLayout>(handle);
+
+    dsl->layout = layout;
+
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    for (const auto& descriptor : layout.descriptors) {
+        VkDescriptorSetLayoutBinding binding
+        {
+            .binding = descriptor.binding,
+            .descriptorType = VulkanUtility::getDescriptorType(descriptor.type),
+            .descriptorCount = 1,
+            .stageFlags = VulkanUtility::getShaderStageFlagBits(descriptor.shaderStageFlags),
+            .pImmutableSamplers = nullptr,
+        };
+        bindings.push_back(binding);
+    }
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = uint32_t(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+
+    VkResult result = vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &dsl->vk.id);
+    VK_CHECK_RESULT(result);
+
+    return Handle<RHIDescriptorSetLayout>{handle.getId()};
+}
+
+DescriptorSetHandle VulkanDevice::createDescriptorSet(DescriptorSetLayoutHandle dslh)
+{
+    VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(dslh);
+
+    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        allocateDescriptorSet(dsl->vk.id);
+    }
+
+    return DescriptorSetHandle();
 }
 
 PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
@@ -231,6 +303,26 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
         .minDepth = 0.0f, .maxDepth = 1.0f
     };
 
+    // Depth buffer settings
+    VkPipelineDepthStencilStateCreateInfo depthStencilState{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VulkanUtility::getDepthFunc(state.rasterState.depthFunc),
+    };
+
+    // Culling settings
+    VkPipelineRasterizationStateCreateInfo rasterizerState{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE,
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VulkanUtility::getCullMode(state.rasterState.culling),
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .depthBiasEnable = VK_FALSE,
+        .lineWidth = 1.0f,
+    };
+
     // Build pipeline
     VulkanPipelineBuilder builder{};
     builder.addShaderStage(VK_SHADER_STAGE_VERTEX_BIT, vs->vk.id, vs->entryPoint);
@@ -239,6 +331,8 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
                            attributeDescriptions.data(), uint32_t(attributeDescriptions.size()));
     builder.setViewport(viewport, scissor);
     builder.setPipelineLayout(pipelineLayout);
+    builder.setDepthStencilState(depthStencilState);
+    builder.setRasterizationState(rasterizerState);
     builder.useDynamicRendering(m_swapchain->getImageFormat().format);
     pipeline->vk.pipeline = builder.build(m_device);
 
@@ -288,6 +382,14 @@ void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
     }
 }
 
+void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
+{
+    if (handle) {
+        VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
+        destruct(handle, ib);
+    }
+}
+
 void VulkanDevice::destroyPipeline(PipelineHandle handle)
 {
     if (handle) {
@@ -312,10 +414,19 @@ void VulkanDevice::destroyPipeline(PipelineHandle handle)
 void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                     size_t offset)
 {
-    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
-    void* p = vb->map();
-    memcpy(p, data, size);
-    vb->unmap();
+    if (handle) {
+        VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+        m_resourceUploader->uploadBuffer(vb, data, size, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+    }
+}
+
+void VulkanDevice::updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
+                                         size_t offset)
+{
+    if (handle) {
+        VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
+        m_resourceUploader->uploadBuffer(ib, data, size, VK_ACCESS_INDEX_READ_BIT);
+    }
 }
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
@@ -330,6 +441,8 @@ void VulkanDevice::beginFrame()
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return;
     }
+
+    m_resourceUploader->submitAndWait();
 }
 
 void VulkanDevice::endFrame()
@@ -353,6 +466,8 @@ VulkanResult VulkanDevice::createLogicalDevice()
     buildFeatures();
     std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        // Enable the extension to switch to a right-handed coordinate system
+        VK_KHR_MAINTENANCE1_EXTENSION_NAME,
     };
 
     VkDeviceCreateInfo createInfo{};
@@ -394,6 +509,46 @@ VulkanResult VulkanDevice::createCommandPool()
     }
 
     return VulkanResult::Ok();
+}
+
+VulkanResult VulkanDevice::createDescriptorPool()
+{
+    std::vector<VkDescriptorPoolSize> poolSize = {
+        {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 0x1000,
+        },
+    };
+    VkDescriptorPoolCreateInfo poolInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        .maxSets = 0x1000,
+        .poolSizeCount = uint32_t(poolSize.size()),
+        .pPoolSizes = poolSize.data()
+    };
+
+    VkResult result = vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool);
+    if (result != VK_SUCCESS) {
+        return VulkanResult::Err(VK_ERROR(result, "Failed to create descriptor pool"));
+    }
+
+    return VulkanResult::Ok();
+}
+
+VkDescriptorSet VulkanDevice::allocateDescriptorSet(VkDescriptorSetLayout layout)
+{
+    VkDescriptorSetAllocateInfo allocInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = m_descriptorPool,
+        .descriptorSetCount = 1,
+        .pSetLayouts = &layout,
+    };
+
+    VkDescriptorSet descriptorSet;
+    if (vkAllocateDescriptorSets(m_device, &allocInfo, &descriptorSet) != VK_SUCCESS) {
+        OCF_LOG_ERROR("Failed to allocate descriptor set");
+    }
+    return descriptorSet;
 }
 
 void VulkanDevice::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)
@@ -465,7 +620,7 @@ std::shared_ptr<VulkanCommandBuffer> VulkanDevice::createCommandBuffer()
 
 void VulkanDevice::createFrameContexts()
 {
-    m_frameContext.resize(FRAMES_IN_FLIGHT_MAX);
+    m_frameContext.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& frame : m_frameContext) {
         frame.commandBuffer = createCommandBuffer();
         VkFenceCreateInfo fenceCI{
@@ -490,7 +645,7 @@ VulkanDevice::FrameContext* VulkanDevice::getCurrentFrameContext()
 
 void VulkanDevice::advanceFrame()
 {
-    m_currentFrameIndex = (m_currentFrameIndex + 1) % FRAMES_IN_FLIGHT_MAX;
+    m_currentFrameIndex = (m_currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void VulkanDevice::buildFeatures()

@@ -47,6 +47,24 @@ struct RHIVertexBuffer : public RHIResourceBase {
     }
 };
 
+struct RHIIndexBuffer : public RHIResourceBase {
+    uint32_t count : 27;
+    uint32_t elementSize : 5;
+
+    RHIIndexBuffer() noexcept
+        : count{}
+        , elementSize{}
+    {
+    }
+    RHIIndexBuffer(uint8_t elementSize, uint32_t indexCount)
+        : count(indexCount)
+        , elementSize(elementSize)
+    {
+        assert(elementSize > 0 && elementSize <= 16);
+        assert(indexCount < (1u << 27));
+    }
+};
+
 struct RHITexture : public RHIResourceBase {
     uint16_t width;
     uint16_t height;
@@ -55,6 +73,12 @@ struct RHITexture : public RHIResourceBase {
 struct RHIShaderModule : public RHIResourceBase {
     ShaderStage stage;
     const char* entryPoint;
+};
+
+struct RHIDescriptorSetLayout : public RHIResourceBase {
+};
+
+struct RHIDescriptorSet : public RHIResourceBase {
 };
 
 struct RHIPipeline : public RHIResourceBase {
@@ -69,6 +93,8 @@ public:
         size_t handlePoolSize = 0;
     };
 
+    static size_t getElementTypeSize(ElementType type);
+
     Device();
     virtual ~Device();
 
@@ -78,10 +104,17 @@ public:
     virtual VertexBufferHandle createVertexBuffer(uint32_t bufferSize, BufferUsage usage,
                                                   VertexBufferInfoHandle vbih) = 0;
 
+    virtual IndexBufferHandle createIndexBuffer(ElementType elementType, uint32_t indexCount,
+                                                BufferUsage usage) = 0;
+
     virtual TextureHandle createTexture() = 0;
 
     virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                                   const char* entryPoint = "main") = 0;
+
+    virtual DescriptorSetLayoutHandle createDescriptorLayoutSet(const DescriptorSetLayout& layout) = 0;
+
+    virtual DescriptorSetHandle createDescriptorSet(DescriptorSetLayoutHandle dslh) = 0;
 
     virtual PipelineHandle createPipeline(const PipelineState& pipeline) = 0;
 
@@ -91,10 +124,15 @@ public:
 
     virtual void destroyVertexBuffer(VertexBufferHandle handle) = 0;
 
+    virtual void destroyIndexBuffer(IndexBufferHandle handle) = 0;
+
     virtual void destroyPipeline(PipelineHandle handle) = 0;
 
     virtual void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                   size_t offset) = 0;
+
+    virtual void updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
+                                       size_t offset) = 0;
 
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
 
