@@ -24,7 +24,7 @@ public:
     VulkanResult acquireNextImage();
     VulkanResult queuePresent(VkQueue queuePresent);
 
-    operator const VkSwapchainKHR() const noexcept { return m_swapchain; }
+    operator VkSwapchainKHR() const noexcept { return m_swapchain; }
     VkSurfaceFormatKHR getImageFormat() const noexcept { return m_imageFormat; }
     VkExtent2D getExtent() const noexcept { return m_imageExtent; }
 

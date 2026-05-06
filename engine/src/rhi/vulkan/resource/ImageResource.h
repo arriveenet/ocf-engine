@@ -9,6 +9,8 @@ namespace ocf::rhi {
 
 class IImageResource {
 public:
+    virtual ~IImageResource() = default;
+
     virtual VkFormat getFormat() const = 0;
     virtual VkExtent2D getExtent() const = 0;
     virtual uint32_t getMipmapCount() const = 0;
@@ -28,7 +30,7 @@ public:
     ImageResource& operator=(const ImageResource&) = delete;
 
     explicit ImageResource(VkDevice device)
-        : m_device(device) {};
+        : m_device(device) {}
     virtual ~ImageResource() = default;
 
     virtual void cleanup() = 0;

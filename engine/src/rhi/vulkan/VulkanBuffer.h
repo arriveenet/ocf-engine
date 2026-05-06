@@ -13,6 +13,8 @@ namespace ocf::rhi {
 
 class IBufferResource {
 public:
+    virtual ~IBufferResource() = default;
+
     virtual bool isHostAccessible() const = 0;
 
     virtual void setAccessFlags(const VkAccessFlags flags) = 0;
@@ -34,7 +36,7 @@ public:
     BufferResource& operator=(const BufferResource&) = delete;
 
     explicit BufferResource(VkDevice device)
-        : m_device{device} {};
+        : m_device{device} {}
     virtual ~BufferResource() { cleanup(); }
     virtual void cleanup();
 

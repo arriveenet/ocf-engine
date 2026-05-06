@@ -39,9 +39,6 @@ IndexBuffer::IndexBuffer(Engine& engine, const Builder& builder)
     : m_indexCount(builder->indexCount)
     , m_indexType(builder->indexType)
 {
-    const size_t bufferSize =
-        m_indexCount * (m_indexType == IndexType::USHORT ? sizeof(uint16_t) : sizeof(uint32_t));
-
     Engine::Device& device = engine.getDevice();
     m_handle = device.createIndexBuffer(static_cast<ElementType>(m_indexType), m_indexCount,
                                         BufferUsage::Static);
