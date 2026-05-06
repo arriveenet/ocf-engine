@@ -23,32 +23,32 @@ enum class PrimitiveType : uint8_t {
 
 
 enum class ElementType : uint8_t {
-    BYTE,
-    BYTE2,
-    BYTE3,
-    BYTE4,
-    UNSIGNED_BYTE,
-    UNSIGNED_BYTE2,
-    UNSIGNED_BYTE3,
-    UNSIGNED_BYTE4,
-    SHORT,
-    SHORT2,
-    SHORT3,
-    SHORT4,
-    UNSIGNED_SHORT,
-    UNSIGNED_SHORT2,
-    UNSIGNED_SHORT3,
-    UNSIGNED_SHORT4,
-    INT,
-    UNSIGNED_INT,
-    FLOAT,
-    FLOAT2,
-    FLOAT3,
-    FLOAT4,
-    DOUBLE,
-    DOUBLE2,
-    DOUBLE3,
-    DOUBLE4
+    Byte,
+    Byte2,
+    Byte3,
+    Byte4,
+    Ubyte,
+    Ubyte2,
+    Ubyte3,
+    Ubyte4,
+    Short,
+    Short2,
+    Short3,
+    Short4,
+    Ushort,
+    Ushort2,
+    Ushort3,
+    Ushort4,
+    Int,
+    Uint,
+    Float,
+    Float2,
+    Float3,
+    Float4,
+    Double,
+    Double2,
+    Double3,
+    Double4
 };
 
 enum class BufferUsage : uint8_t {
@@ -62,7 +62,7 @@ struct Attribute {
     uint32_t offset = 0;
     uint8_t stride = 0;
     uint8_t buffer = BUFFER_UNUSED;
-    ElementType type = ElementType::FLOAT;
+    ElementType type = ElementType::Float;
     uint8_t flags = 0;
 };
 

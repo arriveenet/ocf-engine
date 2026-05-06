@@ -79,11 +79,11 @@ bool Renderer::init()
 
     const size_t vertexBufferSize = sizeof(Vertex) * vertices.size();
     m_vertexBuffer = VertexBuffer::Builder()
-                         .attribute(VertexAttribute::Position, VertexBuffer::AttributeType::FLOAT3,
+                         .attribute(VertexAttribute::Position, VertexBuffer::AttributeType::Float3,
                                     sizeof(Vertex), offsetof(Vertex, position))
-                         .attribute(VertexAttribute::Normal, VertexBuffer::AttributeType::FLOAT3,
+                         .attribute(VertexAttribute::Normal, VertexBuffer::AttributeType::Float3,
                                     sizeof(Vertex), offsetof(Vertex, normal))
-                         .attribute(VertexAttribute::Color, VertexBuffer::AttributeType::FLOAT3,
+                         .attribute(VertexAttribute::Color, VertexBuffer::AttributeType::Float3,
                                     sizeof(Vertex), offsetof(Vertex, color))
                          .bufferCount(1)
                          .vertexCount(uint32_t(vertices.size()))

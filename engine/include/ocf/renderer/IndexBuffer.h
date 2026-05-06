@@ -16,8 +16,8 @@ public:
     using ElementType = rhi::ElementType;
 
     enum class IndexType : uint8_t {
-        USHORT = uint8_t(ElementType::UNSIGNED_SHORT),
-        UINT = uint8_t(ElementType::UNSIGNED_INT)
+        Ushort = uint8_t(ElementType::Ushort),
+        Uint = uint8_t(ElementType::Uint)
     };
 
     class Builder {
@@ -64,7 +64,7 @@ public:
 protected:
     IndexBufferHandle m_handle;
     uint32_t m_indexCount = 0;
-    IndexType m_indexType = IndexType::USHORT;
+    IndexType m_indexType = IndexType::Ushort;
 };
 
 } // namespace ocf

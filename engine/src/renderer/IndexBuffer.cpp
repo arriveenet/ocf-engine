@@ -10,7 +10,7 @@ using namespace rhi;
 
 struct IndexBuffer::BuilderDetails {
     uint32_t indexCount = 0;
-    IndexBuffer::IndexType indexType = IndexBuffer::IndexType::USHORT;
+    IndexBuffer::IndexType indexType = IndexBuffer::IndexType::Ushort;
 };
 
 IndexBuffer::Builder::Builder()
