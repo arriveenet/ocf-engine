@@ -51,6 +51,12 @@ enum class ElementType : uint8_t {
     Double4
 };
 
+enum class BufferType : uint8_t {
+    Vertex,
+    Index,
+    Uniform,
+};
+
 enum class BufferUsage : uint8_t {
     Static,
     Dynamic,

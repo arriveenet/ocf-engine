@@ -6,61 +6,115 @@
 #include "ocf/platform/FileSystem.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
+#include "ocf/renderer/VertexBuffer.h"
+#include "ocf/renderer/IndexBuffer.h"
+#include "ocf/renderer/Material.h"
+#include "ocf/math/matrix_transform.h"
+#include "ocf/math/constants.h"
 
 #include <cstddef>
-#include <ocf/rhi/PipelineState.h>
+#include <cmath>
 #include <vector>
 
 namespace ocf {
 
 using namespace rhi;
 
-const math::vec3 A(-0.5f, 0.5f, 0.5f), B(-0.5f, -0.5f, 0.5f), C(0.5f, 0.5f, 0.5f),
-D(0.5f, -0.5f, 0.5f), E(-0.5f, 0.5f, -0.5f), F(-0.5f, -0.5f, -0.5f), G(0.5f, 0.5f, -0.5f),
-H(0.5f, -0.5f, -0.5f);
+static std::vector<Vertex> vertices{};
 
-std::vector<Vertex> vertices = {
-    // front
-    {A, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 1.0f}},
-    {B, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}},
-    {C, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 1.0f}},
-    {D, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f}},
-    // back
-    {E, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}},
-    {F, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 0.0f}},
-    {G, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 1.0f}},
-    {H, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}},
-    // right
-    {C, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {D, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-    {G, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-    {H, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-    // left
-    {E, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-    {F, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-    {A, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-    {B, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-    // top
-    {E, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-    {A, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 1.0f}},
-    {G, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-    {C, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    // bottom
-    {B, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-    {F, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 0.0f}},
-    {D, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-    {H, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-};
+static std::vector<uint32_t> indices{};
 
-std::vector<uint32_t> indices = {
-    0,  1,  2,  2,  1,  3,  // front
-    6,  7,  4,  4,  7,  5,  // back
-    8,  9,  10, 10, 9,  11, // right
-    12, 13, 14, 14, 13, 15, // left
-    16, 17, 18, 18, 17, 19, // top
-    20, 21, 22, 22, 21, 23, // bottom
-};
+static void createCubeGeometry()
+{
+    const math::vec3 A(-0.5f, 0.5f, 0.5f), B(-0.5f, -0.5f, 0.5f),
+    C(0.5f, 0.5f, 0.5f), D(0.5f, -0.5f, 0.5f),
+    E(-0.5f, 0.5f, -0.5f), F(-0.5f, -0.5f, -0.5f),
+    G(0.5f, 0.5f, -0.5f), H(0.5f, -0.5f, -0.5f);
 
+    vertices =
+    {
+        // front
+        { A, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f } },
+        { B, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+        { C, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f } },
+        { D, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+        // back
+        { E, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 1.0f } },
+        { F, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f } },
+        { G, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 1.0f } },
+        { H, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f } },
+        // right
+        { C, { 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
+        { D, { 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } },
+        { G, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 1.0f } },
+        { H, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+        // left
+        { E, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        { F, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
+        { A, { -1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 1.0f } },
+        { B, { -1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        // top
+        { E, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
+        { A, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 1.0f } },
+        { G, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 1.0f } },
+        { C, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
+        // bottom
+        { B, { 0.0f, -1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        { F, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
+        { D, { 0.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } },
+        { H, { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+    };
+
+    indices = {
+        0, 1, 2, 2, 1, 3,       // front
+        6, 7, 4, 4, 7, 5,       // back
+        8, 9, 10, 10, 9, 11,    // right
+        12, 13, 14, 14, 13, 15, // left
+        16, 17, 18, 18, 17, 19, // top
+        20, 21, 22, 22, 21, 23, // bottom
+    };
+}
+
+static void createSphareGeometry()
+{
+    const int stackCount = 32;
+    const int sliceCount = 48;
+    constexpr auto PI = math::pi<float>();
+    const auto sliceStep = PI * 2.0f / sliceCount;
+    const auto stackStep = PI / stackCount;
+
+    for (int stack = 0; stack <= stackCount; ++stack) {
+        auto stackAngle = (float)PI / 2 - stack * stackStep;
+
+        for (int slice = 0; slice <= sliceCount; ++slice) {
+            auto sliceAngle = slice * sliceStep;
+
+            auto x = std::cosf(stackAngle) * std::cosf(sliceAngle);
+            auto y = std::sinf(stackAngle);
+            auto z = std::cosf(stackAngle) * std::sinf(sliceAngle);
+
+            Vertex v;
+            v.position = math::vec3(x, y, z);
+            v.normal = normalize(v.position);
+            v.color = math::vec3(0.7f, 0.85f, 0.9f);
+            vertices.push_back(v);
+        }
+    }
+
+    for (int stack = 0; stack < stackCount; ++stack) {
+        uint32_t k1 = stack * (sliceCount + 1);
+        uint32_t k2 = k1 + sliceCount + 1;
+
+        for (int slice = 0; slice < sliceCount; ++slice, ++k1, ++k2) {
+            if (stack != 0) {
+                indices.insert(indices.end(), { k1, k1 + 1, k2 });
+            }
+            if (stack != (stackCount - 1)) {
+                indices.insert(indices.end(), { k1 + 1, k2 + 1, k2 });
+            }
+        }
+    }
+}
 
 Renderer::Renderer(Engine& engine, rhi::Device* device)
     : m_engine(engine)
@@ -72,10 +126,14 @@ Renderer::~Renderer()
 {
     m_device->destroyPipeline(m_pipelineHandle);
     m_vertexBuffer->terminate(m_engine);
+    m_indexBuffer->terminate(m_engine);
+    m_material->terminate(m_engine);
 }
 
 bool Renderer::init()
 {
+    createCubeGeometry();
+    //createSphareGeometry();
 
     const size_t vertexBufferSize = sizeof(Vertex) * vertices.size();
     m_vertexBuffer = VertexBuffer::Builder()
@@ -92,6 +150,7 @@ bool Renderer::init()
 
     const size_t indexBufferSize = sizeof(uint32_t) * indices.size();
     m_indexBuffer = IndexBuffer::Builder()
+                        .indexType(IndexBuffer::IndexType::Uint)
                         .indexCount(uint32_t(indices.size()))
                         .build(m_engine);
     m_indexBuffer->setBufferData(m_engine, indices.data(), indexBufferSize, 0);
@@ -102,19 +161,13 @@ bool Renderer::init()
     ShaderModuleHandle vs = m_device->createShaderModule(ShaderStage::Vertex, vsPath);
     ShaderModuleHandle fs = m_device->createShaderModule(ShaderStage::Fragment, fsPath);
 
-    DescriptorSetLayout descriptorSetLayout;
-    DescriptorLayoutBinding binding{
-        .binding = 0,
-        .type = DescriptorType::UniformBuffer,
-        .shaderStageFlags = ShaderStageFlags::Vertex | ShaderStageFlags::Fragment
-    };
-    descriptorSetLayout.descriptors.push_back(binding);
-    m_device->createDescriptorLayoutSet(descriptorSetLayout);
+    m_material = Material::Builder().build(m_engine);
 
     PipelineState pipeline;
     pipeline.vertexShader = vs;
     pipeline.fragmentShader = fs;
     pipeline.vertexBufferInfo = m_vertexBuffer->getVertexBufferInfoHandle();
+    pipeline.layout = m_material->getDescriptorSetLayout();
 
     m_pipelineHandle = m_device->createPipeline(pipeline);
 
@@ -133,6 +186,23 @@ void Renderer::endFrame()
 
 void Renderer::render()
 {
+    const uint32_t frameIndex = m_device->getCurrentFrameIndex();
+
+    SceneConstants sceneConstants{};
+    math::vec3 eyePos = math::vec3(2, 1, 4);
+
+    static float angle = 0.0f;
+    angle += 20.0f * 0.016666f;
+
+    sceneConstants.mtxWorld = math::rotateY(math::radians(angle));
+    sceneConstants.mtxView = math::lookAt(eyePos, math::vec3(0,0,0), math::vec3(0,1,0));
+    sceneConstants.mtxProj = math::perspective(math::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+    sceneConstants.lightDir = math::normalize(math::vec4(0.5f, 2.0f, 1.0f, 0.0f));
+    sceneConstants.eyePosition = math::vec4(eyePos, 0);
+
+    auto ubo = m_material->getUniformBuffer(frameIndex);
+    m_device->updateBufferObject(ubo, &sceneConstants, sizeof(SceneConstants), 0);
+
     auto commandBuffer = m_device->getCommandBuffer();
     commandBuffer->begin();
     // Change to color layout
@@ -144,6 +214,7 @@ void Renderer::render()
     commandBuffer->beginRendering(info);
 
     commandBuffer->bindPipeline(m_pipelineHandle);
+    commandBuffer->bindDescriptorSets(m_pipelineHandle, m_material->getDescriptorSet(frameIndex));
     commandBuffer->bindVertexBuffers(0, 1, m_vertexBuffer->getHandle());
     commandBuffer->bindIndexBuffer(m_indexBuffer->getHandle(), 0);
     commandBuffer->drawIndexed(uint32_t(indices.size()), 1, 0, 0, 0);

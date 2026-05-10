@@ -4,6 +4,7 @@
 
 #include "rhi/HandleAllocator.h"
 #include "VulkanUtility.h"
+#include "VulkanHandles.h"
 
 #include "ocf/rhi/Device.h"
 
@@ -19,40 +20,7 @@ class VulkanCommandBuffer;
 class VulkanContext;
 class VulkanSwapchain;
 class ResourceUploader;
-class UniformBuffer;
-
-struct VulkanVertexBufferInfo : public RHIVertexBufferInfo {
-    AttributeArray attributes;
-
-    VulkanVertexBufferInfo() noexcept = default;
-    VulkanVertexBufferInfo(uint8_t attributeCount, AttributeArray attributes)
-        : RHIVertexBufferInfo(attributeCount)
-        , attributes(attributes)
-    {
-    }
-};
-
-struct VulkanDescriptorSetLayout : public RHIDescriptorSetLayout {
-    struct VK {
-        VkDescriptorSetLayout id = VK_NULL_HANDLE;
-    } vk;
-
-    DescriptorSetLayout layout;
-};
-
-struct VulkanShaderModule : public RHIShaderModule {
-    struct VK {
-        VkShaderModule id = VK_NULL_HANDLE;
-    } vk;
-};
-
-struct VulkanPipeline : public RHIPipeline {
-
-    struct VK {
-        VkPipelineLayout layout = VK_NULL_HANDLE;
-        VkPipeline pipeline = VK_NULL_HANDLE;
-    } vk;
-};
+class DepthBuffer;
 
 class VulkanDevice : public Device {
     friend class VulkanCommandBuffer;
@@ -79,6 +47,8 @@ public:
     IndexBufferHandle createIndexBuffer(ElementType elementType, uint32_t indexCount,
                                         BufferUsage usage) override;
 
+    BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) override;
+
     TextureHandle createTexture() override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
@@ -92,6 +62,8 @@ public:
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
+    void createDepthBuffer(uint32_t width, uint32_t height) override;
+
     void destroyVertexBufferInfo(VertexBufferInfoHandle handle) override;
 
     void destroyVertexBuffer(VertexBufferHandle handle) override;
@@ -100,13 +72,27 @@ public:
 
     void destroyPipeline(PipelineHandle handle) override;
 
+    void destroyBufferObject(BufferObjectHandle handle) override;
+
+    void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) override;
+
+    void destroyDescriptorSet(DescriptorSetHandle handle) override;
+
     void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                           size_t offset) override;
 
     void updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
                                size_t offset) override;
 
+    void updateBufferObject(BufferObjectHandle handle, const void* data, size_t size,
+                            size_t offset) override;
+
+    void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
+                             size_t offset) override;
+
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
+
+    uint32_t getCurrentFrameIndex() override  { return m_currentFrameIndex; }
 
     void beginFrame() override;
 
@@ -119,6 +105,8 @@ public:
     VkCommandPool getCommandPool() const noexcept { return m_commandPool; }
 
     VkQueue getGraphicsQueue() const noexcept { return m_graphicsQueue; }
+
+    std::shared_ptr<DepthBuffer> getDepthBuffer() const noexcept { return m_depthBuffer; }
 
 private:
     struct FrameContext {
@@ -166,6 +154,8 @@ private:
 
     VkDescriptorSet allocateDescriptorSet(VkDescriptorSetLayout layout);
 
+    void freeDescriptorSet(VkDescriptorSet descriptorSet);
+
     void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
 
     /** Switches the drawable swapchain image */
@@ -181,8 +171,6 @@ private:
     void createFrameContexts();
 
     void destroyFrameContexts();
-
-    uint32_t getCurrentFrameIndex() const noexcept { return m_currentFrameIndex; }
 
     FrameContext* getCurrentFrameContext();
 
@@ -206,6 +194,7 @@ private:
     uint32_t m_currentFrameIndex = 0;
 
     std::unique_ptr<ResourceUploader> m_resourceUploader;
+    std::shared_ptr<DepthBuffer> m_depthBuffer;
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};

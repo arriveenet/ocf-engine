@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -33,6 +34,9 @@ public:
         {
             return m_impl;
         }
+
+        Builder& indexType(IndexType type) noexcept;
+
         Builder& indexCount(uint32_t indexCount) noexcept;
 
         IndexBuffer* build(Engine& engine);
@@ -43,6 +47,8 @@ public:
 
     IndexBuffer(Engine& engine, const Builder& builder);
     ~IndexBuffer();
+
+    void terminate(Engine& engine);
 
     void setBufferData(Engine& engine, const void* data, size_t size, size_t offset) noexcept;
 

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/RHIEnums.h"
 
@@ -11,6 +12,7 @@ struct PipelineState {
     Handle<RHIShaderModule> vertexShader;
     Handle<RHIShaderModule> fragmentShader;
     Handle<RHIVertexBufferInfo> vertexBufferInfo;
+    Handle<RHIDescriptorSetLayout> layout;
 };
 
 } // namespace ocf::rhi

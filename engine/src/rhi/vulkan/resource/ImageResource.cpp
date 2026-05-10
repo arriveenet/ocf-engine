@@ -2,13 +2,9 @@
 #include "ImageResource.h"
 
 #include "vulkan/VulkanDevice.h"
+#include <vulkan/vulkan_core.h>
 
 namespace ocf::rhi {
-
-DepthBuffer::DepthBuffer(VkDevice device)
-    : ImageResource(device)
-{
-}
 
 void DepthBuffer::cleanup()
 {
@@ -26,9 +22,9 @@ void DepthBuffer::cleanup()
     m_memory = VK_NULL_HANDLE;
 }
 
-bool DepthBuffer::initalize(VkExtent2D extent, VkFormat depthFormat)
+bool DepthBuffer::initalize(VkDevice device, VkExtent2D extent, VkFormat depthFormat)
 {
-
+    m_device = device;
     m_format = depthFormat;
     m_extent = extent;
     m_mipLevels = 1;
@@ -42,7 +38,8 @@ bool DepthBuffer::initalize(VkExtent2D extent, VkFormat depthFormat)
         .arrayLayers = 1,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = VK_SHARING_MODE_EXCLUSIVE,
+        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 

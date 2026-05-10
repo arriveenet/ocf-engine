@@ -2,7 +2,9 @@
 
 #include "VulkanDevice.h"
 
+#include "VulkanHandles.h"
 #include "vulkan/resource/ResourceUploader.h"
+#include "vulkan/resource/ImageResource.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanContext.h"
@@ -11,8 +13,10 @@
 
 #include "ocf/core/Logger.h"
 
+#include <cstring>
 #include <fstream>
 #include <thread>
+#include <vulkan/vulkan_core.h>
 
 namespace {
 
@@ -106,7 +110,15 @@ void VulkanDevice::terminate()
     // Wait for the device to be idle before destroying resources
     vkDeviceWaitIdle(m_device);
 
-    m_resourceUploader->cleanup();
+    if (m_depthBuffer) {
+        m_depthBuffer->cleanup();
+        m_depthBuffer.reset();
+    }
+
+    if (m_resourceUploader) {
+        m_resourceUploader->cleanup();
+        m_resourceUploader.reset();
+    }
 
     destroyFrameContexts();
 
@@ -114,6 +126,8 @@ void VulkanDevice::terminate()
         m_swapchain->destroy();
         m_swapchain = nullptr;
     }
+
+    vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
     m_commandPool = VK_NULL_HANDLE;
@@ -164,6 +178,18 @@ IndexBufferHandle VulkanDevice::createIndexBuffer(ElementType elementType, uint3
     }
 
     return Handle<IndexBufferHandle>{handle.getId()};
+}
+
+BufferObjectHandle VulkanDevice::createBufferObject(BufferType type, uint32_t byteCount)
+{
+    Handle<VulkanBufferObject> handle = initHandle<VulkanBufferObject>();
+    VulkanBufferObject* bo = handle_cast<VulkanBufferObject*>(handle);
+
+    if (type == BufferType::Uniform) {
+        bo->buffer = UniformBuffer::create(m_device, byteCount);
+    }
+
+    return Handle<BufferObjectHandle>{handle.getId()};
 }
 
 TextureHandle VulkanDevice::createTexture()
@@ -236,23 +262,30 @@ DescriptorSetLayoutHandle VulkanDevice::createDescriptorLayoutSet(const Descript
 
 DescriptorSetHandle VulkanDevice::createDescriptorSet(DescriptorSetLayoutHandle dslh)
 {
+    Handle<VulkanDescriptorSet> handle = initHandle<VulkanDescriptorSet>();
+    VulkanDescriptorSet* ds = handle_cast<VulkanDescriptorSet*>(handle);
+
     VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(dslh);
 
-    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        allocateDescriptorSet(dsl->vk.id);
-    }
+    ds->vk.id = allocateDescriptorSet(dsl->vk.id);
 
-    return DescriptorSetHandle();
+
+    return Handle<RHIDescriptorSet>{handle.getId()};
 }
 
 PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
 {
     Handle<VulkanPipeline> handle = initHandle<VulkanPipeline>();
     VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
+    VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(state.layout);
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo layoutInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 1,
+        .pSetLayouts = &dsl->vk.id,
+        .pushConstantRangeCount = 0,
+        .pPushConstantRanges = nullptr,
     };
     VkPipelineLayout pipelineLayout;
     auto result = vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &pipelineLayout);
@@ -323,6 +356,10 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
         .lineWidth = 1.0f,
     };
 
+    // Format
+    auto colorFormat = m_swapchain->getImageFormat().format;
+    auto depthFormat = m_depthBuffer ? m_depthBuffer->getFormat() : VK_FORMAT_UNDEFINED;
+
     // Build pipeline
     VulkanPipelineBuilder builder{};
     builder.addShaderStage(VK_SHADER_STAGE_VERTEX_BIT, vs->vk.id, vs->entryPoint);
@@ -333,7 +370,7 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     builder.setPipelineLayout(pipelineLayout);
     builder.setDepthStencilState(depthStencilState);
     builder.setRasterizationState(rasterizerState);
-    builder.useDynamicRendering(m_swapchain->getImageFormat().format);
+    builder.useDynamicRendering(colorFormat, depthFormat);
     pipeline->vk.pipeline = builder.build(m_device);
 
     vkDestroyShaderModule(m_device, vs->vk.id, nullptr);
@@ -366,6 +403,16 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     return Handle<RHISwapchain>{handle.getId()};
 }
 
+void VulkanDevice::createDepthBuffer(uint32_t width, uint32_t height)
+{
+    VkExtent2D extent {
+        .width = width,
+        .height = height,
+    };
+
+    m_depthBuffer = DepthBuffer::create(m_device, extent, VK_FORMAT_D32_SFLOAT);
+}
+
 void VulkanDevice::destroyVertexBufferInfo(VertexBufferInfoHandle handle)
 {
     if (handle) {
@@ -390,44 +437,129 @@ void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
     }
 }
 
+void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanBufferObject* bo = handle_cast<VulkanBufferObject*>(handle);
+    destruct(handle, bo);
+}
+
+void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(handle);
+    vkDestroyDescriptorSetLayout(m_device, dsl->vk.id, nullptr);
+
+    destruct(handle, dsl);
+}
+
+void VulkanDevice::destroyDescriptorSet(DescriptorSetHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanDescriptorSet* ds = handle_cast<VulkanDescriptorSet*>(handle);
+    freeDescriptorSet(ds->vk.id);
+
+    destruct(handle, ds);
+}
+
 void VulkanDevice::destroyPipeline(PipelineHandle handle)
 {
-    if (handle) {
-        VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
-        if (pipeline == nullptr) {
-            return;
-        }
-
-        vkDeviceWaitIdle(m_device);
-
-        if (pipeline->vk.pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(m_device, pipeline->vk.pipeline, nullptr);
-            pipeline->vk.pipeline = VK_NULL_HANDLE;
-        }
-        if (pipeline->vk.layout != VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(m_device, pipeline->vk.layout, nullptr);
-            pipeline->vk.layout = VK_NULL_HANDLE;
-        }
+    if (!handle) {
+        return;
     }
+
+    VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
+    if (pipeline == nullptr) {
+        return;
+    }
+
+    vkDeviceWaitIdle(m_device);
+
+    if (pipeline->vk.pipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(m_device, pipeline->vk.pipeline, nullptr);
+        pipeline->vk.pipeline = VK_NULL_HANDLE;
+    }
+    if (pipeline->vk.layout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(m_device, pipeline->vk.layout, nullptr);
+        pipeline->vk.layout = VK_NULL_HANDLE;
+    }
+
 }
 
 void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                     size_t offset)
 {
-    if (handle) {
-        VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
-        m_resourceUploader->uploadBuffer(vb, data, size, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
+    if (!handle) {
+        return;
     }
+
+    VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
+    m_resourceUploader->uploadBuffer(vb, data, size, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT);
 }
 
 void VulkanDevice::updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
                                          size_t offset)
 {
-    if (handle) {
-        VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
-        m_resourceUploader->uploadBuffer(ib, data, size, VK_ACCESS_INDEX_READ_BIT);
+    if (!handle) {
+        return;
+    }
+
+    VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
+    m_resourceUploader->uploadBuffer(ib, data, size, VK_ACCESS_INDEX_READ_BIT);
+}
+
+void VulkanDevice::updateBufferObject(BufferObjectHandle handle, const void* data, size_t size,
+                                      size_t offset)
+{
+    if(!handle){
+        return;
+    }
+
+    VulkanBufferObject* bufferObject = handle_cast<VulkanBufferObject*>(handle);
+    if(void* p = bufferObject->buffer->map(); p != nullptr) {
+        memcpy(p, data, size);
+        bufferObject->buffer->unmap();
     }
 }
+
+void VulkanDevice::updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
+                                       size_t offset)
+{
+    if (!handle || !buffer) {
+        return;
+    }
+
+    VulkanDescriptorSet* descriptorSet = handle_cast<VulkanDescriptorSet*>(handle);
+    VulkanBufferObject* bufferObject = handle_cast<VulkanBufferObject*>(buffer);
+
+    VkDescriptorBufferInfo bufferInfo{
+        .buffer = bufferObject->buffer->getBuffer(),
+        .offset = 0,
+        .range = bufferObject->buffer->getBufferSize(),
+    };
+
+    VkWriteDescriptorSet write{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet = descriptorSet->vk.id,
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .pBufferInfo = &bufferInfo,
+    };
+
+    vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
+}
+
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
 {
@@ -549,6 +681,11 @@ VkDescriptorSet VulkanDevice::allocateDescriptorSet(VkDescriptorSetLayout layout
         OCF_LOG_ERROR("Failed to allocate descriptor set");
     }
     return descriptorSet;
+}
+
+void VulkanDevice::freeDescriptorSet(VkDescriptorSet descriptorSet)
+{
+    vkFreeDescriptorSets(m_device, m_descriptorPool, 1, &descriptorSet);
 }
 
 void VulkanDevice::setDebugObjectName(void* objectHandle, VkObjectType type, const char* name)

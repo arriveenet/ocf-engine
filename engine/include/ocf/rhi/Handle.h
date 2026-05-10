@@ -9,10 +9,11 @@
 namespace ocf {
 namespace rhi {
 
-struct RHITexture;
 struct RHIVertexBuffer;
 struct RHIVertexBufferInfo;
 struct RHIIndexBuffer;
+struct RHITexture;
+struct RHIBufferObject;
 struct RHIShaderModule;
 struct RHIDescriptorSetLayout;
 struct RHIDescriptorSet;
@@ -97,6 +98,7 @@ struct Handle : public HandleBase {
 using VertexBufferInfoHandle = Handle<RHIVertexBufferInfo>;
 using VertexBufferHandle = Handle<RHIVertexBuffer>;
 using IndexBufferHandle = Handle<RHIIndexBuffer>;
+using BufferObjectHandle = Handle<RHIBufferObject>;
 using TextureHandle = Handle<RHITexture>;
 using ShaderModuleHandle = Handle<RHIShaderModule>;
 using DescriptorSetLayoutHandle =  Handle<RHIDescriptorSetLayout>;

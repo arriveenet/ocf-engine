@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Handle.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/PipelineState.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -65,6 +66,14 @@ struct RHIIndexBuffer : public RHIResourceBase {
     }
 };
 
+struct RHIBufferObject : public RHIResourceBase {
+    uint32_t byteCount;
+
+    RHIBufferObject() noexcept = default;
+    RHIBufferObject(uint32_t byteCount) :byteCount(byteCount) {}
+};
+
+
 struct RHITexture : public RHIResourceBase {
     uint16_t width;
     uint16_t height;
@@ -107,6 +116,8 @@ public:
     virtual IndexBufferHandle createIndexBuffer(ElementType elementType, uint32_t indexCount,
                                                 BufferUsage usage) = 0;
 
+    virtual BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) = 0;
+
     virtual TextureHandle createTexture() = 0;
 
     virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
@@ -120,11 +131,19 @@ public:
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 
+    virtual void createDepthBuffer(uint32_t width, uint32_t height) = 0;
+
     virtual void destroyVertexBufferInfo(VertexBufferInfoHandle handle) = 0;
 
     virtual void destroyVertexBuffer(VertexBufferHandle handle) = 0;
 
     virtual void destroyIndexBuffer(IndexBufferHandle handle) = 0;
+
+    virtual void destroyBufferObject(BufferObjectHandle handle) = 0;
+
+    virtual void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) = 0;
+
+    virtual void destroyDescriptorSet(DescriptorSetHandle handle) = 0;
 
     virtual void destroyPipeline(PipelineHandle handle) = 0;
 
@@ -134,7 +153,16 @@ public:
     virtual void updateIndexBufferData(IndexBufferHandle handle, const void* data, size_t size,
                                        size_t offset) = 0;
 
+    virtual void updateBufferObject(BufferObjectHandle handle, const void* data, size_t size,
+                                    size_t offset) = 0;
+
+    virtual void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
+                                     size_t offset) = 0;
+
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
+
+    // @TODO
+    virtual uint32_t getCurrentFrameIndex() = 0;
 
     virtual void beginFrame() = 0;
 

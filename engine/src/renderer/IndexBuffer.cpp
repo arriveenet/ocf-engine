@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/renderer/IndexBuffer.h"
 
 #include "ocf/core/Engine.h"
@@ -23,6 +24,12 @@ IndexBuffer::Builder::~Builder()
     delete m_impl;
 }
 
+IndexBuffer::Builder& IndexBuffer::Builder::indexType(IndexType type) noexcept
+{
+    m_impl->indexType = type;
+    return *this;
+}
+
 IndexBuffer::Builder& IndexBuffer::Builder::indexCount(uint32_t indexCount) noexcept
 {
     m_impl->indexCount = indexCount;
@@ -46,6 +53,11 @@ IndexBuffer::IndexBuffer(Engine& engine, const Builder& builder)
 
 IndexBuffer::~IndexBuffer()
 {
+}
+
+void IndexBuffer::terminate(Engine& engine)
+{
+    engine.getDevice().destroyIndexBuffer(m_handle);
 }
 
 void IndexBuffer::setBufferData(Engine& engine, const void* data, size_t size,

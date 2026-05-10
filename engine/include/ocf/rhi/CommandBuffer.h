@@ -23,6 +23,8 @@ public:
 
     virtual void bindPipeline(PipelineHandle ph) = 0;
 
+    virtual void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh) = 0;
+
     virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                                    VertexBufferHandle vbh) = 0;
 

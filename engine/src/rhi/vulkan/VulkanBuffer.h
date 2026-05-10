@@ -116,7 +116,7 @@ public:
 };
 
 class UniformBuffer : public BufferResource<UniformBuffer> {
-    friend class GpuResourceBase<StagingBuffer>;
+    friend class GpuResourceBase<UniformBuffer>;
 
 public:
     UniformBuffer() = default;

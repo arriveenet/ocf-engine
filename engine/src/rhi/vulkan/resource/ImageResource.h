@@ -64,11 +64,19 @@ class DepthBuffer : public ImageResource<DepthBuffer> {
     friend class GpuResourceBase<DepthBuffer>;
 
 public:
-    DepthBuffer(VkDevice device);
+    static std::shared_ptr<DepthBuffer> create(VkDevice device, VkExtent2D extent, VkFormat depthFormat)
+    {
+        auto image = GpuResourceBase::create();
+        if (!image->initalize(device, extent, depthFormat)) {
+            return nullptr;
+        }
+        return image;
+    }
+
     ~DepthBuffer() override { cleanup(); }
     void cleanup() override;
 
-    bool initalize(VkExtent2D extent, VkFormat depthFormat);
+    bool initalize(VkDevice device, VkExtent2D extent, VkFormat depthFormat);
 
     VkImageView getImageView() const { return m_imageView; }
 

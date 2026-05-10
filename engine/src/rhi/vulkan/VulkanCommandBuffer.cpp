@@ -3,8 +3,10 @@
 
 #include "VulkanBuffer.h"
 #include "VulkanDevice.h"
+#include "VulkanHandles.h"
 #include "VulkanSwapchain.h"
 #include "VulkanUtility.h"
+#include "resource/ImageResource.h"
 
 namespace ocf::rhi {
 
@@ -51,6 +53,7 @@ void VulkanCommandBuffer::reset()
 void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
 {
     auto swapchain = m_device.getSwapchain();
+    auto depthBuffer = m_device.getDepthBuffer();
 
     const math::vec4 color = info.clearColor;
 
@@ -66,8 +69,8 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
     // Depth
     VkRenderingAttachmentInfo depthAttachment{
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = swapchain->getCurrentImageView(),
-        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .imageView = depthBuffer->getImageView(),
+        .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = {.depthStencil{1.0f, 0}}
@@ -95,6 +98,16 @@ void VulkanCommandBuffer::bindPipeline(PipelineHandle ph)
     VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
 
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.pipeline);
+
+}
+
+void VulkanCommandBuffer::bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh)
+{
+    VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
+    VulkanDescriptorSet* descriptorSet = m_device.handle_cast<VulkanDescriptorSet*>(dsh);
+
+    vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.layout,
+                            0, 1, &descriptorSet->vk.id, 0, nullptr);
 }
 
 void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,

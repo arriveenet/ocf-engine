@@ -29,6 +29,8 @@ public:
 
     void bindPipeline(PipelineHandle ph) override;
 
+    void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh) override;
+
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                            VertexBufferHandle vbh) override;
 
