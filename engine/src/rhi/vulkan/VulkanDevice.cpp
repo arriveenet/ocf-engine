@@ -325,15 +325,9 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     bindingDescriptions.push_back(bindingDescription);
 
     auto swapchainExtent = m_swapchain->getExtent();
-    VkRect2D scissor = {
-        .offset{0, 0},
-        .extent = swapchainExtent,
-    };
-    VkViewport viewport = {
-        .x = 0, .y = 0,
-        .width = float(swapchainExtent.width),
-        .height = float(swapchainExtent.height),
-        .minDepth = 0.0f, .maxDepth = 1.0f
+    VkExtent2D viewport = {
+        .width = swapchainExtent.width,
+        .height = swapchainExtent.height,
     };
 
     // Depth buffer settings
@@ -366,7 +360,7 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     builder.addShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, fs->vk.id, fs->entryPoint);
     builder.setVertexInput(bindingDescriptions.data(), uint32_t(bindingDescriptions.size()),
                            attributeDescriptions.data(), uint32_t(attributeDescriptions.size()));
-    builder.setViewport(viewport, scissor);
+    builder.setViewport(viewport);
     builder.setPipelineLayout(pipelineLayout);
     builder.setDepthStencilState(depthStencilState);
     builder.setRasterizationState(rasterizerState);
