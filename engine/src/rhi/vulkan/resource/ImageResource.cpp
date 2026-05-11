@@ -86,4 +86,6 @@ bool DepthBuffer::initalize(VkDevice device, VkExtent2D extent, VkFormat depthFo
     return true;
 }
 
+template class ImageResource<DepthBuffer>;
+
 } // namespace ocf::rhi

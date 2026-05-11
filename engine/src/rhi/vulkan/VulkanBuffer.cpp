@@ -204,4 +204,9 @@ bool UniformBuffer::initialize(VkDevice device, VkDeviceSize size)
     return createBuffer(bufferInfo, memProps);
 }
 
+template class BufferResource<VulkanVertexBuffer>;
+template class BufferResource<VulkanIndexBuffer>;
+template class BufferResource<StagingBuffer>;
+template class BufferResource<UniformBuffer>;
+
 } // namespace ocf::rhi
