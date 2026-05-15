@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 
 #include <optional>
+#include <vulkan/vulkan_core.h>
 
 namespace ocf {
 namespace rhi {
@@ -140,6 +141,18 @@ constexpr VkCullModeFlags getCullMode(CullingMode mode)
     default:
         assert(false && "Unknown CullingMode");
         return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+    }
+}
+
+constexpr const char* getPhysicalDeviceTypeString(VkPhysicalDeviceType type)
+{
+    switch (type) {
+    case VK_PHYSICAL_DEVICE_TYPE_OTHER:             return "Other";
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:    return "Integrated GPU";
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:      return "Discrete GPU";
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:       return "Virtual GPU";
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:               return "CPU";
+    default:                                        return "Unknown";
     }
 }
 

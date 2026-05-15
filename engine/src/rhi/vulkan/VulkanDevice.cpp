@@ -3,6 +3,7 @@
 #include "VulkanDevice.h"
 
 #include "VulkanHandles.h"
+#include "VulkanUtility.h"
 #include "vulkan/resource/ResourceUploader.h"
 #include "vulkan/resource/ImageResource.h"
 #include "VulkanBuffer.h"
@@ -100,8 +101,8 @@ bool VulkanDevice::initialize()
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
     vkGetPhysicalDeviceProperties(physicalDevice, &m_deviceProperties);
 
-    OCF_LOG_DEBUG("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
-                  static_cast<int>(m_deviceProperties.deviceType));
+    OCF_LOG_INFO("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
+                 VulkanUtility::getPhysicalDeviceTypeString(m_deviceProperties.deviceType));
     return true;
 }
 
