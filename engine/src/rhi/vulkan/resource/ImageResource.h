@@ -4,6 +4,7 @@
 #include "GpuResourceBase.h"
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 namespace ocf::rhi {
 
@@ -78,10 +79,39 @@ public:
 
     bool initalize(VkDevice device, VkExtent2D extent, VkFormat depthFormat);
 
-    VkImageView getImageView() const { return m_imageView; }
+    VkImageView getImageView() const noexcept { return m_imageView; }
 
 private:
     VkImageView m_imageView{};
+};
+
+class Texture2D : public ImageResource<Texture2D> {
+  friend class GpuResourceBase<Texture2D>;
+
+public:
+    static std::shared_ptr<Texture2D> create(VkDevice device, VkExtent2D extent,
+                                             VkFormat depthFormat, uint32_t mipLevels)
+    {
+        auto image = GpuResourceBase::create();
+        if (!image->initalize(device, extent, depthFormat, mipLevels)) {
+            return nullptr;
+        }
+        return image;
+    }
+
+    ~Texture2D() override { cleanup();}
+    void cleanup() override;
+
+    bool initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels);
+
+    VkImageView getImageView() const noexcept { return m_imageView; }
+    VkImageSubresourceRange getSubresourceRange() const noexcept { return m_subresourceRange; }
+
+    VkDescriptorImageInfo getDescriptorInfo(VkSampler sampler) const;
+
+private:
+    VkImageView m_imageView;
+    VkImageSubresourceRange m_subresourceRange;
 };
 
 } // namespace ocf::rhi
