@@ -49,7 +49,8 @@ public:
 
     BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) override;
 
-    TextureHandle createTexture() override;
+    TextureHandle createTexture(SamplerType target, uint8_t levels, TextureFormat format,
+                                uint32_t width, uint32_t height, uint32_t depth) override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                           const char* entryPoint = "main") override;
@@ -89,6 +90,10 @@ public:
 
     void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
                              size_t offset) override;
+
+    void updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset, uint32_t yoffset,
+                            uint32_t zoffset, uint32_t width, uint32_t height, uint32_t depth,
+                            PixelBufferDescriptor&& data) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 

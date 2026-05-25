@@ -5,6 +5,7 @@
 #include "ocf/rhi/Device.h"
 
 #include "VulkanBuffer.h"
+#include "resource/ImageResource.h"
 
 namespace  ocf::rhi {
 
@@ -37,6 +38,10 @@ struct VulkanDescriptorSet : public RHIDescriptorSet {
     struct VK {
         VkDescriptorSet id = VK_NULL_HANDLE;
     } vk;
+};
+
+struct VulkanTexture : public RHITexture {
+    std::shared_ptr<Texture2D> texture;
 };
 
 struct VulkanShaderModule : public RHIShaderModule {
