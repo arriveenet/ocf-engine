@@ -3,17 +3,20 @@
 #include "ocf/renderer/Renderer.h"
 
 #include "ocf/core/Engine.h"
+#include "ocf/math/constants.h"
+#include "ocf/math/matrix_transform.h"
 #include "ocf/platform/FileSystem.h"
-#include "ocf/rhi/CommandBuffer.h"
-#include "ocf/rhi/Device.h"
-#include "ocf/renderer/VertexBuffer.h"
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/renderer/Material.h"
-#include "ocf/math/matrix_transform.h"
-#include "ocf/math/constants.h"
+#include "ocf/renderer/Texture.h"
+#include "ocf/renderer/VertexBuffer.h"
+#include "ocf/rhi/CommandBuffer.h"
+#include "ocf/rhi/Device.h"
 
-#include <cstddef>
+#include <stb_image.h>
+
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 namespace ocf {
@@ -128,6 +131,11 @@ Renderer::~Renderer()
     m_vertexBuffer->terminate(m_engine);
     m_indexBuffer->terminate(m_engine);
     m_material->terminate(m_engine);
+
+    delete m_vertexBuffer;
+    delete m_indexBuffer;
+    delete m_material;
+    delete m_texture;
 }
 
 bool Renderer::init()
@@ -154,6 +162,23 @@ bool Renderer::init()
                         .indexCount(uint32_t(indices.size()))
                         .build(m_engine);
     m_indexBuffer->setBufferData(m_engine, indices.data(), indexBufferSize, 0);
+
+    auto texPath = FileSystem::getInstance()->getAssetFullPath("textures/test-texture.png");
+    int w, h, n;
+    unsigned char* data = stbi_load(texPath.c_str(), &w, &h, &n, 4);
+    assert(data != nullptr);
+
+    Texture::PixelBufferDescriptor buffer(
+    data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::Ubyte,
+    (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+
+    m_texture = Texture::Builder()
+                    .width(uint32_t(w))
+                    .height(uint32_t(h))
+                    .sampler(Texture::Sampler::Sampler2D)
+                    .format(Texture::InternalFormat::RGBA8)
+                    .build(m_engine);
+    m_texture->setImage(m_engine, 0, std::move(buffer));
 
     auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.vert.spv");
     auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.frag.spv");

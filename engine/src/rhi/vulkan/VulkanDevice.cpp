@@ -206,45 +206,10 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
 
     // TODO
     const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    const uint32_t mipLevels = 0;
-    const size_t imageSize = width * height * sizeof(uint32_t);
+    const uint32_t mipLevels = 1;
 
     // Set the destination texture
     tex->texture = Texture2D::create(m_device, extent, vkFormat, mipLevels);
-
-    // Create staging buffer
-    auto staging = StagingBuffer::create(m_device, imageSize);
-    memcpy(staging->map(), nullptr, imageSize);
-    staging->unmap();
-
-    // Set transfer region
-    VkBufferImageCopy region{
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource = {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-        },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {
-            .width = extent.width,
-            .height = extent.height,
-            .depth = 1
-        }
-    };
-
-    TextureUploadRequest request{
-        .staging = staging,
-        .copyRegions = {region},
-        .nextAccessFlags = VK_ACCESS_SHADER_READ_BIT,
-        .nextLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        .nextStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-    };
-
-    m_resourceUploader->uploadImage(tex->texture, request);
 
     return Handle<TextureHandle>{handle.getId()};
 }
@@ -610,6 +575,44 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
                                       uint32_t yoffset, uint32_t zoffset, uint32_t width,
                                       uint32_t height, uint32_t depth, PixelBufferDescriptor&& data)
 {
+    if (!handle) {
+        return;
+    }
+
+    VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
+
+    VkExtent2D extent{
+        .width = width,
+        .height = height,
+    };
+
+    // Create staging buffer
+    auto staging = StagingBuffer::create(m_device, data.size);
+    memcpy(staging->map(), data.getBuffer(), data.size);
+    staging->unmap();
+
+    // Set transfer region
+    VkBufferImageCopy region{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {.width = extent.width, .height = extent.height, .depth = 1}};
+
+    TextureUploadRequest request{.staging = staging,
+                                 .copyRegions = {region},
+                                 .nextAccessFlags = VK_ACCESS_SHADER_READ_BIT,
+                                 .nextLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                 .nextStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+
+    m_resourceUploader->uploadImage(tex->texture, request);
 }
 
 

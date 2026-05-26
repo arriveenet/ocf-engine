@@ -119,6 +119,7 @@ set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 # Dependencies
 # ==================================================================================================
 target_link_libraries(${TARGET} PRIVATE glfw)
+target_link_libraries(${TARGET} PRIVATE stb)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
 # ==================================================================================================

@@ -9,6 +9,7 @@ namespace ocf {
 
 class VertexBuffer;
 class IndexBuffer;
+class Texture;
 class Material;
 class Engine;
 
@@ -40,6 +41,7 @@ private:
     rhi::Device* m_device = nullptr;
     VertexBuffer* m_vertexBuffer = nullptr;
     IndexBuffer* m_indexBuffer = nullptr;
+    Texture* m_texture = nullptr;
     Material* m_material = nullptr;
     rhi::PipelineHandle m_pipelineHandle;
 };

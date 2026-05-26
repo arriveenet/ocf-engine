@@ -108,7 +108,7 @@ bool Texture2D::initalize(VkDevice device, VkExtent2D extent, VkFormat format, u
     m_device = device;
     m_extent = extent;
     m_format = format;
-    m_mipLevels = m_mipLevels;
+    m_mipLevels = mipLevels;
 
     VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
     usageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
