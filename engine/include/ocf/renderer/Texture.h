@@ -31,6 +31,12 @@ public:
         BuilderDetails* operator->() noexcept { return m_impl; }
         const BuilderDetails* operator->() const noexcept { return m_impl; }
 
+        Builder& width(uint32_t width);
+        Builder& height(uint32_t height);
+        Builder& depth(uint32_t depth);
+        Builder& format(InternalFormat format);
+        Builder& sampler(Sampler sampler);
+
         Texture* build(Engine& engine);
 
     private:

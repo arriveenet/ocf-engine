@@ -6,13 +6,70 @@
 namespace  ocf {
 
 struct Texture::BuilderDetails {
-    uint32_t width;
-    uint32_t height;
+    uint32_t width = 1;
+    uint32_t height = 1;
+    uint32_t depth = 1;
+    InternalFormat format = InternalFormat::RGBA8;
+    Sampler sampler = Sampler::Sampler2D;
 };
 
 
-Texture::Texture(Engine& engine, const Builder& builder)
+Texture::Builder::Builder()
 {
+    m_impl = new BuilderDetails();
+}
+
+Texture::Builder::~Builder()
+{
+    delete m_impl;
+}
+
+Texture::Builder& Texture::Builder::width(uint32_t width)
+{
+    m_impl->width = width;
+    return *this;
+}
+
+Texture::Builder& Texture::Builder::height(uint32_t height)
+{
+    m_impl->height = height;
+    return *this;
+}
+
+Texture::Builder& Texture::Builder::depth(uint32_t depth)
+{
+    m_impl->depth = depth;
+    return *this;
+}
+
+Texture::Builder& Texture::Builder::format(InternalFormat format)
+{
+    m_impl->format = format;
+    return *this;
+}
+
+Texture::Builder& Texture::Builder::sampler(Sampler sampler)
+{
+    m_impl->sampler = sampler;
+    return *this;
+}
+
+Texture* Texture::Builder::build(Engine& engine)
+{
+    Texture* texture = new Texture(engine, *this);
+    return texture;
+}
+
+
+Texture::Texture(Engine& engine, const Builder& builder)
+    : m_width(builder->width)
+    , m_height(builder->height)
+    , m_depth(builder->depth)
+    , m_format(builder->format)
+    , m_sampler(builder->sampler)
+{
+    Engine::Device& device = engine.getDevice();
+    m_handle = device.createTexture(m_sampler, m_levelCount, m_format, m_width, m_height, m_depth);
 }
 
 void Texture::terminate(Engine& engine)

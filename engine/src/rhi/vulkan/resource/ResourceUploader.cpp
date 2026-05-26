@@ -115,22 +115,15 @@ void ResourceUploader::submitAndWait()
         vkCmdPipelineBarrier2(*commandBuffer, &depInfo);
     }
 
-    commandBuffer->end();
-    auto cmd = commandBuffer->getHandle();
-    VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &cmd
-    };
-
-    vkResetFences(device, 1, &m_transferFence);
-    vkQueueSubmit(queue, 1, &submitInfo, m_transferFence);
-    vkWaitForFences(device, 1, &m_transferFence, VK_TRUE, UINT64_MAX);
+    // Save the final resource state
+    for (auto& entry : m_transferEntries) {
+        entry.destinationBuffer->setAccessFlags(entry.dstAccessMask);
+    }
 
     // Process image
     for (auto& entry : m_transferImageEntries) {
-        auto dst = entry.destinationTexture;
-        auto src = entry.stagingBuffer;
+        auto& dst = entry.destinationTexture;
+        auto& src = entry.stagingBuffer;
 
         VkImageSubresourceRange range{
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -160,6 +153,7 @@ void ResourceUploader::submitAndWait()
         };
         vkCmdPipelineBarrier2(*commandBuffer, &dependencyInfo);
 
+        // Transfer and write the image
         vkCmdCopyBufferToImage(*commandBuffer, src->getBuffer(), dst->getImage(),
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                uint32_t(entry.copyRegions.size()), entry.copyRegions.data());
@@ -189,7 +183,20 @@ void ResourceUploader::submitAndWait()
         }
     }
 
+    commandBuffer->end();
+    auto cmd = commandBuffer->getHandle();
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd
+    };
+
+    vkResetFences(device, 1, &m_transferFence);
+    vkQueueSubmit(queue, 1, &submitInfo, m_transferFence);
+    vkWaitForFences(device, 1, &m_transferFence, VK_TRUE, UINT64_MAX);
+
     m_transferEntries.clear();
+    m_transferImageEntries.clear();
     commandBuffer.reset();
 }
 
