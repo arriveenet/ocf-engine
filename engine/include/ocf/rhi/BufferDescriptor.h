@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <cstddef>
+
 namespace ocf::rhi {
 
 class BufferDescriptor {
