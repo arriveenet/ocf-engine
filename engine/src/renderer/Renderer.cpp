@@ -9,6 +9,7 @@
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/Texture.h"
+#include "ocf/renderer/TextureSampler.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
@@ -22,6 +23,8 @@
 namespace ocf {
 
 using namespace rhi;
+using MinFilter = TextureSampler::MinFilter;
+using MagFilter = TextureSampler::MagFilter;
 
 static std::vector<Vertex> vertices{};
 
@@ -179,6 +182,7 @@ bool Renderer::init()
                     .format(Texture::InternalFormat::RGBA8)
                     .build(m_engine);
     m_texture->setImage(m_engine, 0, std::move(buffer));
+    TextureSampler sampler(MinFilter::Linear, MagFilter::Linear);
 
     auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.vert.spv");
     auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.frag.spv");

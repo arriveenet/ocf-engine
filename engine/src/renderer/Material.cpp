@@ -34,12 +34,21 @@ Material::Material(Engine& engine, const Builder& builder)
 
     // Create descriptor set layout
     DescriptorSetLayout descriptorSetLayout;
-    DescriptorLayoutBinding binding{
-        .binding = 0,
-        .type = DescriptorType::UniformBuffer,
-        .shaderStageFlags = ShaderStageFlags::Vertex | ShaderStageFlags::Fragment
+    DescriptorLayoutBinding bindings[2] = {
+        {
+            .binding = 0,
+            .type = DescriptorType::UniformBuffer,
+            .shaderStageFlags = ShaderStageFlags::Vertex | ShaderStageFlags::Fragment
+        },
+    {
+            .binding = 1,
+            .type = DescriptorType::CombinedImageSampler,
+            .shaderStageFlags = ShaderStageFlags::Fragment,
+        }
     };
-    descriptorSetLayout.descriptors.push_back(binding);
+    descriptorSetLayout.descriptors.insert(descriptorSetLayout.descriptors.end(),
+        std::begin(bindings), std::end(bindings));
+
     m_descriptorSetLayoutHandle = device.createDescriptorLayoutSet(descriptorSetLayout);
 
     // Create UniformBuffer
