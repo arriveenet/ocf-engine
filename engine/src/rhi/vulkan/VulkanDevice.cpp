@@ -558,12 +558,6 @@ void VulkanDevice::updateDescriptorSet(DescriptorSetHandle handle, BufferObjectH
         .range = bufferObject->buffer->getBufferSize(),
     };
 
-    VkDescriptorImageInfo imageInfo{
-        .sampler = VK_NULL_HANDLE,
-        .imageView = bufferObject->imageView->getImageView(),
-        .imageLayout = bufferObject->imageLayout->getImageLayout(),
-    };
-
     std::vector<VkWriteDescriptorSet> writes{
         {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -574,15 +568,6 @@ void VulkanDevice::updateDescriptorSet(DescriptorSetHandle handle, BufferObjectH
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .pBufferInfo = &bufferInfo,
         },
-        {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = descriptorSet->vk.id,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo,
-        }
     };
 
     vkUpdateDescriptorSets(m_device, uint32_t(writes.size()), writes.data(), 0, nullptr);

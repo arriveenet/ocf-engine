@@ -8,6 +8,7 @@
 #include "ocf/platform/FileSystem.h"
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/renderer/Material.h"
+#include "ocf/renderer/MaterialInstance.h"
 #include "ocf/renderer/Texture.h"
 #include "ocf/renderer/TextureSampler.h"
 #include "ocf/renderer/VertexBuffer.h"
@@ -190,7 +191,16 @@ bool Renderer::init()
     ShaderModuleHandle vs = m_device->createShaderModule(ShaderStage::Vertex, vsPath);
     ShaderModuleHandle fs = m_device->createShaderModule(ShaderStage::Fragment, fsPath);
 
-    m_material = Material::Builder().build(m_engine);
+    m_material = Material::Builder()
+                    .uniformBlock(0, "SceneContents", 224)
+                    .uniformMember("SceneContents", "matWorld",    UniformType::Mat4, 0, 64)
+                    .uniformMember("SceneContents", "matView",     UniformType::Mat4, 64, 64)
+                    .uniformMember("SceneContents", "matProj",     UniformType::Mat4, 128, 64)
+                    .uniformMember("SceneContents", "lightDir",    UniformType::Float4, 144, 16)
+                    .uniformMember("SceneContents", "eyePosition", UniformType::Float4, 128, 16)
+                    .build(m_engine);
+
+    m_materialInstance = m_material->createInstance();
 
     PipelineState pipeline;
     pipeline.vertexShader = vs;
@@ -216,21 +226,23 @@ void Renderer::endFrame()
 void Renderer::render()
 {
     const uint32_t frameIndex = m_device->getCurrentFrameIndex();
+    m_materialInstance->setFrameIndex(frameIndex);
 
-    SceneConstants sceneConstants{};
     math::vec3 eyePos = math::vec3(2, 1, 4);
-
     static float angle = 0.0f;
     angle += 20.0f * 0.016666f;
 
-    sceneConstants.mtxWorld = math::rotateY(math::radians(angle));
-    sceneConstants.mtxView = math::lookAt(eyePos, math::vec3(0,0,0), math::vec3(0,1,0));
-    sceneConstants.mtxProj = math::perspective(math::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-    sceneConstants.lightDir = math::normalize(math::vec4(0.5f, 2.0f, 1.0f, 0.0f));
-    sceneConstants.eyePosition = math::vec4(eyePos, 0);
+    math::mat4 matWorld = math::rotateY(math::radians(angle));
+    math::mat4 matView = math::lookAt(eyePos, math::vec3(0, 0, 0), math::vec3(0, 1, 0));
+    math::mat4 matProj = math::perspective(math::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+    math::vec4 lightDir = math::normalize(math::vec4(0.5f, 2.0f, 1.0f, 0.0f));
+    math::vec4 eyePosition = math::vec4(eyePos, 0);
 
-    auto ubo = m_material->getUniformBuffer(frameIndex);
-    m_device->updateBufferObject(ubo, &sceneConstants, sizeof(SceneConstants), 0);
+    m_materialInstance->setParameter("matWorld", matWorld);
+    m_materialInstance->setParameter("matView", matView);
+    m_materialInstance->setParameter("matProj", matProj);
+    m_materialInstance->setParameter("lightDir", lightDir);
+    m_materialInstance->setParameter("eyePosition", eyePosition);
 
     auto commandBuffer = m_device->getCommandBuffer();
     commandBuffer->begin();
@@ -243,7 +255,8 @@ void Renderer::render()
     commandBuffer->beginRendering(info);
 
     commandBuffer->bindPipeline(m_pipelineHandle);
-    commandBuffer->bindDescriptorSets(m_pipelineHandle, m_material->getDescriptorSet(frameIndex));
+    commandBuffer->bindDescriptorSets(m_pipelineHandle,
+                                      m_materialInstance->getDescriptorSetHandle());
     commandBuffer->bindVertexBuffers(0, 1, m_vertexBuffer->getHandle());
     commandBuffer->bindIndexBuffer(m_indexBuffer->getHandle(), 0);
     commandBuffer->drawIndexed(uint32_t(indices.size()), 1, 0, 0, 0);

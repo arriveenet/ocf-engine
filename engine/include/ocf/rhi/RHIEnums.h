@@ -157,10 +157,10 @@ struct Attribute {
 using AttributeArray = std::array<Attribute, VERTEX_ATTRIBUTE_COUNT_MAX>;
 
 enum class ShaderStage : uint32_t {
-    Vertex = 1 << 0,
-    Fragment = 1 << 1,
-    Compute = 1 << 2,
-    AllStage = 0x7FFFFFFF,
+    Vertex      = 1 << 0,
+    Fragment    = 1 << 1,
+    Compute     = 1 << 2,
+    AllStage    = 0x7FFFFFFF,
 };
 using ShaderStageFlags = ShaderStage;
 
@@ -176,6 +176,23 @@ constexpr bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
     return static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) &
            static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs);
 }
+
+enum class UniformType : uint8_t {
+    Bool,
+    Bool2,
+    Bool3,
+    Bool4,
+    Int,
+    Int2,
+    Int3,
+    Int4,
+    Float,
+    Float2,
+    Float3,
+    Float4,
+    Mat3,
+    Mat4,
+};
 
 enum class DescriptorType : uint8_t {
     Sampler,

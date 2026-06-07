@@ -1,15 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/renderer/Material.h"
 
+#include "renderer/DescriptorSet.h"
+
 #include "ocf/core/Engine.h"
+#include "ocf/renderer/MaterialInstance.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/RHIEnums.h"
 
+#include <utility>
+#include <vector>
+
 namespace ocf {
 
-using namespace rhi;
-
 struct Material::BuilderDetails {
+   DescriptorSetLayout descriptorSetLayout;
 };
 
 Material::Builder::Builder()
@@ -22,6 +27,22 @@ Material::Builder::~Builder()
     delete m_impl;
 }
 
+Material::Builder& Material::Builder::uniformBlock(uint32_t binding, std::string_view blockName,
+                                         size_t totalSize)
+{
+    m_impl->descriptorSetLayout.addUniformBlock(binding, blockName.data(), totalSize);
+    return *this;
+}
+
+Material::Builder& Material::Builder::uniformMember(std::string_view blockName,
+                                                    std::string_view memberName,
+                                                    UniformType type, size_t offset, size_t size)
+{
+    m_impl->descriptorSetLayout.addUniformMember(blockName.data(), memberName.data(), type,
+                                                 offset, size);
+    return *this;
+}
+
 Material* Material::Builder::build(Engine& engine)
 {
     Material* material = new Material(engine, *this);
@@ -32,37 +53,8 @@ Material::Material(Engine& engine, const Builder& builder)
 {
     Engine::Device& device = engine.getDevice();
 
-    // Create descriptor set layout
-    DescriptorSetLayout descriptorSetLayout;
-    DescriptorLayoutBinding bindings[2] = {
-        {
-            .binding = 0,
-            .type = DescriptorType::UniformBuffer,
-            .shaderStageFlags = ShaderStageFlags::Vertex | ShaderStageFlags::Fragment
-        },
-    {
-            .binding = 1,
-            .type = DescriptorType::CombinedImageSampler,
-            .shaderStageFlags = ShaderStageFlags::Fragment,
-        }
-    };
-    descriptorSetLayout.descriptors.insert(descriptorSetLayout.descriptors.end(),
-        std::begin(bindings), std::end(bindings));
-
-    m_descriptorSetLayoutHandle = device.createDescriptorLayoutSet(descriptorSetLayout);
-
-    // Create UniformBuffer
-    for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
-        m_uniformBuffers[i] = device.createBufferObject(BufferType::Uniform, sizeof(SceneConstants));
-    }
-
-    // Create DescriptorSet
-    for (uint32_t i = 0; i< m_descriptorSets.size(); i++) {
-        m_descriptorSets[i] = device.createDescriptorSet(m_descriptorSetLayoutHandle);
-
-        device.updateDescriptorSet(m_descriptorSets[i], m_uniformBuffers[i], 0);
-    }
-
+    m_descriptorSetLayout = std::move(builder->descriptorSetLayout);
+    m_descriptorSetLayout.create(engine);
 }
 
 Material::~Material()
@@ -71,17 +63,12 @@ Material::~Material()
 
 void Material::terminate(Engine& engine)
 {
-    auto& device = engine.getDevice();
+    m_descriptorSetLayout.terminate(engine);
+}
 
-    for (uint32_t i = 0; i < m_uniformBuffers.size(); i++) {
-        device.destroyBufferObject(m_uniformBuffers[i]);
-    }
-
-    for (uint32_t i = 0; i < m_descriptorSets.size(); i++) {
-        device.destroyDescriptorSet(m_descriptorSets[i]);
-    }
-
-    device.destroyDescriptorSetLayout(m_descriptorSetLayoutHandle);
+std::shared_ptr<MaterialInstance> Material::createInstance()
+{
+    return std::make_shared<MaterialInstance>(this);
 }
 
 } // namespace ocf
