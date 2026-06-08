@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/renderer/MaterialInstance.h"
 
-#include "ocf/math/mat4.h"
-#include "ocf/math/vec4.h"
 #include "ocf/renderer/Material.h"
 
 namespace ocf {
@@ -21,20 +19,9 @@ void MaterialInstance::commit()
     
 }
 
-template <typename T>
+template <MaterialParameterType T>
 void MaterialInstance::setParameter(std::string_view name, const T& value)
 {
-    const auto* routingInfo = layout->getParameterInfo(name);
-    if (!routingInfo) {
-        return;
-    }
-
-    if (sizeof(T) <= routingInfo->size) {
-        uint32_t binding = routingInfo->binding;
-
-        std::memcpy(m_buffers[binding].data() + routingInfo->offset, &value, sizeof(T));
-        m_dirtyFlags[binding] = true;
-    }
 }
 
 void MaterialInstance::setParameter(std::string_view name, Texture* texture,
@@ -42,7 +29,17 @@ void MaterialInstance::setParameter(std::string_view name, Texture* texture,
 {
 }
 
-template void MaterialInstance::setParameter<math::mat4>(std::string_view, const math::mat4&);
+template void MaterialInstance::setParameter<bool>(std::string_view, const bool&);
+template void MaterialInstance::setParameter<short>(std::string_view, const short&);
+template void MaterialInstance::setParameter<int>(std::string_view, const int&);
+template void MaterialInstance::setParameter<math::ivec2>(std::string_view, const math::ivec2&);
+template void MaterialInstance::setParameter<math::ivec3>(std::string_view, const math::ivec3&);
+template void MaterialInstance::setParameter<math::ivec4>(std::string_view, const math::ivec4&);
+template void MaterialInstance::setParameter<float>(std::string_view, const float&);
+template void MaterialInstance::setParameter<math::vec2>(std::string_view, const math::vec2&);
+template void MaterialInstance::setParameter<math::vec3>(std::string_view, const math::vec3&);
 template void MaterialInstance::setParameter<math::vec4>(std::string_view, const math::vec4&);
+template void MaterialInstance::setParameter<math::mat3>(std::string_view, const math::mat3&);
+template void MaterialInstance::setParameter<math::mat4>(std::string_view, const math::mat4&);
 
 } // namespace ocf

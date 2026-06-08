@@ -53,7 +53,7 @@ Material::Material(Engine& engine, const Builder& builder)
 {
     Engine::Device& device = engine.getDevice();
 
-    m_descriptorSetLayout = std::move(builder->descriptorSetLayout);
+    m_descriptorSetLayout = builder->descriptorSetLayout;
     m_descriptorSetLayout.create(engine);
 }
 

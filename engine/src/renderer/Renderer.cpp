@@ -206,7 +206,7 @@ bool Renderer::init()
     pipeline.vertexShader = vs;
     pipeline.fragmentShader = fs;
     pipeline.vertexBufferInfo = m_vertexBuffer->getVertexBufferInfoHandle();
-    pipeline.layout = m_material->getDescriptorSetLayout();
+    pipeline.layout = m_material->getDescriptorSetLayout().getHandle();
 
     m_pipelineHandle = m_device->createPipeline(pipeline);
 

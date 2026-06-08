@@ -4,6 +4,8 @@
 #include "ocf/rhi/Handle.h"
 
 #include <array>
+#include <unordered_map>
+#include <vector>
 
 namespace ocf {
 

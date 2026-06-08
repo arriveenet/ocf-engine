@@ -179,9 +179,6 @@ constexpr bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
 
 enum class UniformType : uint8_t {
     Bool,
-    Bool2,
-    Bool3,
-    Bool4,
     Int,
     Int2,
     Int3,
