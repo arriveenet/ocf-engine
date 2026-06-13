@@ -96,6 +96,9 @@ bool VulkanDevice::initialize()
     m_resourceUploader = std::make_unique<ResourceUploader>();
     m_resourceUploader->initialize(*this);
 
+    // Create sampler cache
+    m_samplerCache = std::make_unique<SamplerCache>(m_device);
+
     // Get memory properties and device properties
     VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
@@ -119,6 +122,10 @@ void VulkanDevice::terminate()
     if (m_resourceUploader) {
         m_resourceUploader->cleanup();
         m_resourceUploader.reset();
+    }
+
+    if (m_samplerCache) {
+        m_samplerCache.reset();
     }
 
     destroyFrameContexts();

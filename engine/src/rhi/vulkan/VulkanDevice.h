@@ -5,6 +5,7 @@
 #include "rhi/HandleAllocator.h"
 #include "VulkanUtility.h"
 #include "VulkanHandles.h"
+#include "resource/SamplerCache.h"
 
 #include "ocf/rhi/Device.h"
 
@@ -200,6 +201,7 @@ private:
 
     std::unique_ptr<ResourceUploader> m_resourceUploader;
     std::shared_ptr<DepthBuffer> m_depthBuffer;
+    std::unique_ptr<SamplerCache> m_samplerCache;
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};

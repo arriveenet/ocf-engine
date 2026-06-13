@@ -144,6 +144,65 @@ constexpr VkCullModeFlags getCullMode(CullingMode mode)
     }
 }
 
+constexpr VkFilter getMagFilter(SamplerMagFilter filter)
+{
+    switch (filter) {
+    case SamplerMagFilter::Nearest: return VK_FILTER_NEAREST;
+    case SamplerMagFilter::Linear:  return VK_FILTER_LINEAR;
+    }
+
+    assert(false && "Unkown MagFilter");
+    return VK_FILTER_MAX_ENUM;
+}
+
+constexpr VkFilter getMinFilter(SamplerMinFilter filter)
+{
+    switch (filter) {
+    case SamplerMinFilter::Nearest:
+    case SamplerMinFilter::NearestMipmapNearest:
+    case SamplerMinFilter::NearestMipmapLinear:
+        return VK_FILTER_NEAREST;
+
+    case SamplerMinFilter::Linear:
+    case SamplerMinFilter::LinearMipmapNearest:
+    case SamplerMinFilter::LinearMipmapLinear:
+        return VK_FILTER_LINEAR;
+    }
+
+    assert(false && "Unkown MinFilter");
+    return VK_FILTER_MAX_ENUM;
+}
+
+constexpr VkSamplerMipmapMode getMipmapMode(SamplerMinFilter filter)
+{
+    switch (filter) {
+    case SamplerMinFilter::Nearest:
+    case SamplerMinFilter::Linear:
+    case SamplerMinFilter::NearestMipmapNearest:
+    case SamplerMinFilter::LinearMipmapNearest:
+        return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+    case SamplerMinFilter::NearestMipmapLinear:
+    case SamplerMinFilter::LinearMipmapLinear:
+        return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    }
+
+    assert(false && "Unkown MipmapMode");
+    return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
+}
+
+constexpr VkSamplerAddressMode getWrapMode(SamplerWrapMode mode)
+{
+    switch (mode) {
+    case SamplerWrapMode::ClampToEdge:      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    case SamplerWrapMode::Rpeat:            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case SamplerWrapMode::MirroredRepeat:   return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    }
+
+    assert(false && "Unkown WrapMode");
+    return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+}
+
 constexpr const char* getPhysicalDeviceTypeString(VkPhysicalDeviceType type)
 {
     switch (type) {
