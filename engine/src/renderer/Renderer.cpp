@@ -196,8 +196,8 @@ bool Renderer::init()
                     .uniformMember("SceneContents", "matWorld",    UniformType::Mat4, 0, 64)
                     .uniformMember("SceneContents", "matView",     UniformType::Mat4, 64, 64)
                     .uniformMember("SceneContents", "matProj",     UniformType::Mat4, 128, 64)
-                    .uniformMember("SceneContents", "lightDir",    UniformType::Float4, 144, 16)
-                    .uniformMember("SceneContents", "eyePosition", UniformType::Float4, 128, 16)
+                    .uniformMember("SceneContents", "lightDir",    UniformType::Float4, 192, 16)
+                    .uniformMember("SceneContents", "eyePosition", UniformType::Float4, 208, 16)
                     .build(m_engine);
 
     m_materialInstance = m_material->createInstance();
@@ -230,7 +230,7 @@ void Renderer::render()
 
     math::vec3 eyePos = math::vec3(2, 1, 4);
     static float angle = 0.0f;
-    angle += 20.0f * 0.016666f;
+    angle += 3.0f * 0.016666f;
 
     math::mat4 matWorld = math::rotateY(math::radians(angle));
     math::mat4 matView = math::lookAt(eyePos, math::vec3(0, 0, 0), math::vec3(0, 1, 0));
@@ -243,6 +243,8 @@ void Renderer::render()
     m_materialInstance->setParameter("matProj", matProj);
     m_materialInstance->setParameter("lightDir", lightDir);
     m_materialInstance->setParameter("eyePosition", eyePosition);
+
+    m_materialInstance->commit(m_engine);
 
     auto commandBuffer = m_device->getCommandBuffer();
     commandBuffer->begin();
@@ -270,3 +272,4 @@ void Renderer::render()
 }
 
 } // namespace ocf
+

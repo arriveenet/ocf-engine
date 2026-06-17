@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/renderer/MaterialInstance.h"
 
+#include "ocf/core/Engine.h"
 #include "ocf/renderer/Material.h"
+#include "ocf/renderer/Texture.h"
+#include "renderer/DescriptorSet.h"
+#include "renderer/DescriptorSetLayout.h"
 
 namespace ocf {
 
@@ -14,19 +18,63 @@ MaterialInstance::~MaterialInstance()
 {
 }
 
-void MaterialInstance::commit()
+void MaterialInstance::create(Engine& engine)
 {
+    m_engine = &engine;
     
+    if (!m_material) {
+        return;
+    }
+
+    // Create descriptor set using the material's layout
+    m_descriptorSet.create(engine, m_material->getDescriptorSetLayout());
+}
+
+void MaterialInstance::commit(Engine& engine)
+{
+    m_descriptorSet.commit(engine, m_frameIndex);
 }
 
 template <MaterialParameterType T>
 void MaterialInstance::setParameter(std::string_view name, const T& value)
 {
+    if (!m_material) {
+        return;
+    }
+
+    const auto& layout = m_material->getDescriptorSetLayout();
+    const auto& blocks = layout.getBlocks();
+
+    // Search for the parameter in all uniform blocks
+    for (const auto& [blockName, blockInfo] : blocks) {
+        auto it = blockInfo.members.find(std::string(name));
+        if (it != blockInfo.members.end()) {
+            const UniformMember& member = it->second;
+            
+            // Upload the value to the descriptor set's buffer
+            m_descriptorSet.uploadUniformBuffer(
+                blockInfo.binding,
+                member.offset,
+                &value,
+                member.size
+            );
+            return;
+        }
+    }
 }
 
 void MaterialInstance::setParameter(std::string_view name, Texture* texture,
                                     const TextureSampler& sampler)
 {
+    if (!m_material || !m_engine) {
+        return;
+    }
+
+    // TODO: Determine binding from layout for texture parameters
+    // For now, assume texture binding is 1 (placeholder)
+    uint32_t binding = 1;
+    
+    m_descriptorSet.updateTextureDescriptor(*m_engine, binding, texture, sampler);
 }
 
 template void MaterialInstance::setParameter<bool>(std::string_view, const bool&);

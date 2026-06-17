@@ -50,6 +50,7 @@ Material* Material::Builder::build(Engine& engine)
 }
 
 Material::Material(Engine& engine, const Builder& builder)
+    : m_engine(&engine)
 {
     Engine::Device& device = engine.getDevice();
 
@@ -68,7 +69,9 @@ void Material::terminate(Engine& engine)
 
 std::shared_ptr<MaterialInstance> Material::createInstance()
 {
-    return std::make_shared<MaterialInstance>(this);
+    auto instance = std::make_shared<MaterialInstance>(this);
+    instance->create(*m_engine);
+    return instance;
 }
 
 } // namespace ocf

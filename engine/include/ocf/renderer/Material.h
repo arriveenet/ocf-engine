@@ -50,7 +50,10 @@ public:
 
     const ocf::DescriptorSetLayout& getDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
+    Engine& getEngine() const { return *m_engine; }
+
 private:
+    Engine* m_engine = nullptr;
     ocf::DescriptorSetLayout m_descriptorSetLayout;
 };
 

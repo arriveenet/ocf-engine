@@ -16,6 +16,7 @@
 
 namespace ocf {
 
+class Engine;
 class Texture;
 class Material;
 
@@ -39,7 +40,9 @@ public:
     MaterialInstance(Material* material);
     virtual ~MaterialInstance();
 
-    void commit();
+    void create(Engine& engine);
+
+    void commit(Engine& engine);
 
     void setFrameIndex(uint32_t index) { m_frameIndex = index; }
 
@@ -55,6 +58,7 @@ public:
 
 protected:
     Material* m_material = nullptr;
+    Engine* m_engine = nullptr;
     DescriptorSet m_descriptorSet;
     uint32_t m_frameIndex = 0;
 };
