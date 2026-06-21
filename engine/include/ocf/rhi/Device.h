@@ -161,10 +161,15 @@ public:
     virtual void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
                                      size_t offset) = 0;
 
+    virtual void updateDescriptorSetTexture(DescriptorSetHandle handle, TextureHandle texture,
+                                            const SamplerParameters& sampler, uint32_t binding) = 0;
+
     virtual void updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset,
                                     uint32_t yoffset, uint32_t zoffset, uint32_t width,
                                     uint32_t height, uint32_t depth,
                                     PixelBufferDescriptor&& data) = 0;
+
+    virtual void generateMipmaps(TextureHandle handle) = 0;
 
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
 

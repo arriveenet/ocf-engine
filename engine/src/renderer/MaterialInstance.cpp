@@ -70,11 +70,13 @@ void MaterialInstance::setParameter(std::string_view name, Texture* texture,
         return;
     }
 
-    // TODO: Determine binding from layout for texture parameters
-    // For now, assume texture binding is 1 (placeholder)
-    uint32_t binding = 1;
-    
-    m_descriptorSet.updateTextureDescriptor(*m_engine, binding, texture, sampler);
+    const auto& layout = m_material->getDescriptorSetLayout();
+    const TextureInfo* texInfo = layout.getTextureInfo(std::string(name));
+    if (!texInfo) {
+        return;
+    }
+
+    m_descriptorSet.updateTextureDescriptor(*m_engine, texInfo->binding, texture, sampler);
 }
 
 template void MaterialInstance::setParameter<bool>(std::string_view, const bool&);

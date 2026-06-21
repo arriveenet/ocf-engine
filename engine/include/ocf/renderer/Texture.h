@@ -53,6 +53,8 @@ public:
 
     void terminate(Engine& engine);
 
+    void generateMipmaps(Engine& engine);
+
     TextureHandle getHandle() const noexcept { return m_handle; }
 
     size_t getWidth(size_t level = BASE_LEVEL) const;

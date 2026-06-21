@@ -580,6 +580,37 @@ void VulkanDevice::updateDescriptorSet(DescriptorSetHandle handle, BufferObjectH
     vkUpdateDescriptorSets(m_device, uint32_t(writes.size()), writes.data(), 0, nullptr);
 }
 
+void VulkanDevice::updateDescriptorSetTexture(DescriptorSetHandle handle, TextureHandle texture,
+                                              const SamplerParameters& sampler, uint32_t binding)
+{
+    if (!handle || !texture) {
+        return;
+    }
+
+    VulkanDescriptorSet* descriptorSet = handle_cast<VulkanDescriptorSet*>(handle);
+    VulkanTexture* vkTexture = handle_cast<VulkanTexture*>(texture);
+
+    VkDescriptorImageInfo imageInfo{
+        .sampler = m_samplerCache->getSampler(sampler),
+        .imageView = vkTexture->texture->getImageView(),
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+
+    std::vector<VkWriteDescriptorSet> writes{
+        {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = descriptorSet->vk.id,
+            .dstBinding = binding,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &imageInfo
+        },
+    };
+
+    vkUpdateDescriptorSets(m_device, uint32_t(writes.size()), writes.data(), 0, nullptr);
+}
+
 void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset,
                                       uint32_t yoffset, uint32_t zoffset, uint32_t width,
                                       uint32_t height, uint32_t depth, PixelBufferDescriptor&& data)
@@ -590,9 +621,10 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
 
     VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
 
-    VkExtent2D extent{
+    VkExtent3D extent{
         .width = width,
         .height = height,
+        .depth = depth,
     };
 
     // Create staging buffer
@@ -613,7 +645,8 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
                 .layerCount = 1,
             },
         .imageOffset = {0, 0, 0},
-        .imageExtent = {.width = extent.width, .height = extent.height, .depth = 1}};
+        .imageExtent = extent
+    };
 
     TextureUploadRequest request{.staging = staging,
                                  .copyRegions = {region},
@@ -624,6 +657,14 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
     m_resourceUploader->uploadImage(tex->texture, request);
 }
 
+void VulkanDevice::generateMipmaps(TextureHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+
+}
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
 {

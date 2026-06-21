@@ -21,6 +21,7 @@ class Material {
 
 public:
     using UniformType = rhi::UniformType;
+    using SamplerType = rhi::SamplerType;
 
     class Builder {
     public:
@@ -34,6 +35,10 @@ public:
 
         Builder& uniformMember(std::string_view blockName, std::string_view memberName,
                                UniformType type, size_t offset, size_t size);
+
+        Builder& texture(uint32_t binding, std::string_view name,
+                         SamplerType samplerType = SamplerType::Sampler2D,
+                         rhi::ShaderStageFlags stage = rhi::ShaderStageFlags::Fragment);
 
         Material* build(Engine& engine);
 

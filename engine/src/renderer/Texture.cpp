@@ -77,6 +77,10 @@ void Texture::terminate(Engine& engine)
 {
 }
 
+void Texture::generateMipmaps(Engine& engine)
+{
+}
+
 size_t Texture::getWidth(size_t level) const
 {
     return valueForLevel(static_cast<uint8_t>(level), m_width);

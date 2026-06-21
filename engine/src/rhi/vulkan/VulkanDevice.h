@@ -92,9 +92,14 @@ public:
     void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
                              size_t offset) override;
 
+    void updateDescriptorSetTexture(DescriptorSetHandle handle, TextureHandle texture,
+                                    const SamplerParameters& sampler, uint32_t binding) override;
+
     void updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset, uint32_t yoffset,
                             uint32_t zoffset, uint32_t width, uint32_t height, uint32_t depth,
                             PixelBufferDescriptor&& data) override;
+
+     void generateMipmaps(TextureHandle handle) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 

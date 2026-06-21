@@ -25,6 +25,18 @@ void DescriptorSetLayout::create(Engine& engine)
         descriptorSetLayout.descriptors.push_back(binding);
     }
 
+    for (auto& tex : m_textures) {
+        auto& texInfo = tex.second;
+
+        rhi::DescriptorLayoutBinding binding{
+            .binding = texInfo.binding,
+            .type = rhi::DescriptorType::CombinedImageSampler,
+            .shaderStageFlags = texInfo.shaderStageFlags,
+        };
+
+        descriptorSetLayout.descriptors.push_back(binding);
+    }
+
     m_handle = device.createDescriptorLayoutSet(descriptorSetLayout);
 }
 

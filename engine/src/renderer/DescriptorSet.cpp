@@ -72,19 +72,14 @@ void DescriptorSet::uploadUniformBuffer(uint32_t binding, size_t offset, const v
 }
 
 void DescriptorSet::updateTextureDescriptor(Engine& engine, uint32_t binding, Texture* texture, const TextureSampler& sampler)
-{
-    // TODO: Requires Device API extension for texture descriptor updates
-    // Currently Device::updateDescriptorSet only supports UniformBuffer
-    // Will need to add overload: updateDescriptorSet(DescriptorSetHandle, TextureHandle, SamplerParams, binding)
-    
+{ 
     if (!texture) {
         return;
     }
 
-    // Placeholder for future implementation when Device API is extended
-    // Engine::Device& device = engine.getDevice();
-    // device.updateDescriptorSetTexture(m_descriptorSets[0], texture->getHandle(), sampler.getParams(), binding);
-    // device.updateDescriptorSetTexture(m_descriptorSets[1], texture->getHandle(), sampler.getParams(), binding);
+    Engine::Device& device = engine.getDevice();
+    device.updateDescriptorSetTexture(m_descriptorSets[0], texture->getHandle(), sampler.getParams(), binding);
+    device.updateDescriptorSetTexture(m_descriptorSets[1], texture->getHandle(), sampler.getParams(), binding);
 }
 
 void DescriptorSet::commit(Engine& engine, uint32_t frameIndex)

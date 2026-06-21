@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Material.h"
+#include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
 #include <memory>
 #include <ocf/rhi/Handle.h>
@@ -24,6 +25,11 @@ struct Vertex {
     math::vec3 position;
     math::vec3 normal;
     math::vec3 color;
+};
+
+struct Vertex2 {
+    math::vec3 position;
+    math::vec2 texCoord;
 };
 
 class Renderer {

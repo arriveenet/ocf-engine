@@ -43,6 +43,14 @@ Material::Builder& Material::Builder::uniformMember(std::string_view blockName,
     return *this;
 }
 
+Material::Builder& Material::Builder::texture(uint32_t binding, std::string_view name,
+                                              SamplerType samplerType,
+                                              rhi::ShaderStageFlags stage)
+{
+    m_impl->descriptorSetLayout.addTexture(binding, name.data(), samplerType, stage);
+    return *this;
+}
+
 Material* Material::Builder::build(Engine& engine)
 {
     Material* material = new Material(engine, *this);
