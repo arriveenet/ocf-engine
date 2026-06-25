@@ -43,5 +43,47 @@ QueueFamilyIndices VulkanUtility::findQueueFamilies(VkPhysicalDevice device)
     return indices;
 }
 
+void VulkanUtility::transitionImageLayout(VkCommandBuffer       cmd,
+                                             VkImage               image,
+                                             VkImageLayout         oldLayout,
+                                             VkImageLayout         newLayout,
+                                             VkPipelineStageFlags2 srcStage,
+                                             VkAccessFlags2        srcAccess,
+                                             VkPipelineStageFlags2 dstStage,
+                                             VkAccessFlags2        dstAccess,
+                                             uint32_t              baseMipLevel,
+                                             uint32_t              levelCount)
+{
+    VkImageSubresourceRange range{
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel = baseMipLevel,
+        .levelCount = levelCount,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+    };
+
+    VkImageMemoryBarrier2 barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask = srcStage,
+        .srcAccessMask = srcAccess,
+        .dstStageMask = dstStage,
+        .dstAccessMask = dstAccess,
+        .oldLayout = oldLayout,
+        .newLayout = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange = range,
+    };
+
+    VkDependencyInfo dependencyInfo{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &barrier,
+    };
+
+    vkCmdPipelineBarrier2(cmd, &dependencyInfo);
+}
+
 } // namespace rhi
 } // namespace ocf

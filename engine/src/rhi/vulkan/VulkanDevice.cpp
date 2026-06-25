@@ -213,7 +213,7 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
 
     // TODO
     const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    const uint32_t mipLevels = 1;
+    const uint32_t mipLevels = levels;
 
     // Set the destination texture
     tex->texture = Texture2D::create(m_device, extent, vkFormat, mipLevels);
@@ -465,6 +465,18 @@ void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
     destruct(handle, bo);
 }
 
+void VulkanDevice::destroyTexture(TextureHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
+    tex->texture.reset();
+
+    destruct(handle, tex);
+}
+
 void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
 {
     if (!handle) {
@@ -627,10 +639,22 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
         .depth = depth,
     };
 
+    VkOffset3D offset{
+        .x = static_cast<int32_t>(xoffset),
+        .y = static_cast<int32_t>(yoffset),
+        .z = static_cast<int32_t>(zoffset),
+    };
+
     // Create staging buffer
     auto staging = StagingBuffer::create(m_device, data.size);
     memcpy(staging->map(), data.getBuffer(), data.size);
     staging->unmap();
+
+    // Call PixelBuffer callback
+    if (data.hasCallback()) {
+        auto callback = data.getCallback();
+        callback(data.buffer, data.size, data.getUser());
+    }
 
     // Set transfer region
     VkBufferImageCopy region{
@@ -644,7 +668,7 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
                 .baseArrayLayer = 0,
                 .layerCount = 1,
             },
-        .imageOffset = {0, 0, 0},
+        .imageOffset = offset,
         .imageExtent = extent
     };
 
@@ -663,7 +687,135 @@ void VulkanDevice::generateMipmaps(TextureHandle handle)
         return;
     }
 
+    VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
+    if (!tex || !tex->texture) {
+        return;
+    }
 
+    const uint32_t mipLevels = tex->texture->getMipmapCount();
+    if (mipLevels <= 1) {
+        return;
+    }
+
+    m_resourceUploader->submitAndWait();
+
+    auto commandBuffer = createCommandBuffer();
+    commandBuffer->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    VkImage image = tex->texture->getImage();
+    VkExtent2D extent = tex->texture->getExtent();
+
+    VulkanUtility::transitionImageLayout(
+        *commandBuffer,
+        image,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_2_SHADER_READ_BIT,
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        VK_ACCESS_2_TRANSFER_READ_BIT,
+        0,
+        1);
+
+    uint32_t mipWidth = extent.width;
+    uint32_t mipHeight = extent.height;
+
+    for (uint32_t i = 1; i < mipLevels; i++) {
+        VulkanUtility::transitionImageLayout(
+            *commandBuffer,
+            image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            VK_ACCESS_2_NONE,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            i,
+            1);
+
+        VkImageBlit blit{
+            .srcSubresource = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = i - 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .srcOffsets = {
+                {0, 0, 0},
+                {static_cast<int32_t>(mipWidth), static_cast<int32_t>(mipHeight), 1}
+            },
+            .dstSubresource = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel = i,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+            .dstOffsets = {
+                {0, 0, 0},
+                {static_cast<int32_t>(mipWidth > 1 ? mipWidth / 2 : 1),
+                 static_cast<int32_t>(mipHeight > 1 ? mipHeight / 2 : 1), 1}
+            },
+        };
+
+        vkCmdBlitImage(*commandBuffer,
+                       image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       1, &blit,
+                       VK_FILTER_LINEAR);
+
+        VulkanUtility::transitionImageLayout(
+            *commandBuffer,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_READ_BIT,
+            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+            VK_ACCESS_2_SHADER_READ_BIT,
+            i - 1,
+            1);
+
+        VulkanUtility::transitionImageLayout(
+            *commandBuffer,
+            image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_READ_BIT,
+            i,
+            1);
+
+        if (mipWidth > 1) mipWidth /= 2;
+        if (mipHeight > 1) mipHeight /= 2;
+    }
+
+    VulkanUtility::transitionImageLayout(
+        *commandBuffer,
+        image,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        VK_ACCESS_2_TRANSFER_READ_BIT,
+        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_2_SHADER_READ_BIT,
+        mipLevels - 1,
+        1);
+
+    commandBuffer->end();
+
+    VkCommandBuffer cmd = commandBuffer->getHandle();
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd,
+    };
+
+    vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    tex->texture->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()

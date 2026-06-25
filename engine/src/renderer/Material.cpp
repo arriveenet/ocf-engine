@@ -60,8 +60,6 @@ Material* Material::Builder::build(Engine& engine)
 Material::Material(Engine& engine, const Builder& builder)
     : m_engine(&engine)
 {
-    Engine::Device& device = engine.getDevice();
-
     m_descriptorSetLayout = builder->descriptorSetLayout;
     m_descriptorSetLayout.create(engine);
 }

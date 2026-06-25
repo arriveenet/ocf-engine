@@ -51,6 +51,17 @@ void logError(const VulkanError& error);
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 
+void transitionImageLayout(VkCommandBuffer       cmd,
+                              VkImage               image,
+                              VkImageLayout         oldLayout,
+                              VkImageLayout         newLayout,
+                              VkPipelineStageFlags2 srcStage,
+                              VkAccessFlags2        srcAccess,
+                              VkPipelineStageFlags2 dstStage,
+                              VkAccessFlags2        dstAccess,
+                              uint32_t              baseMipLevel,
+                              uint32_t              levelCount);
+
 constexpr VulkanResourceStateInfo getResourceState(ResourceState state)
 {
     switch (state) {

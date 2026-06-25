@@ -76,6 +76,8 @@ public:
 
     void destroyBufferObject(BufferObjectHandle handle) override;
 
+    void destroyTexture(TextureHandle handle) override;
+
     void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) override;
 
     void destroyDescriptorSet(DescriptorSetHandle handle) override;

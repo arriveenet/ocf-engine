@@ -44,13 +44,10 @@ private:
         std::shared_ptr<StagingBuffer> stagingBuffer;
         std::shared_ptr<IImageResource> destinationTexture;
         std::vector<VkBufferImageCopy> copyRegions;
-        bool genMipmaps = false;
         VkAccessFlags dstAccessMask;
         VkImageLayout dstImageLayout;
         VkPipelineStageFlags dstStageFlags;
     };
-
-    void createMipmap(std::shared_ptr<CommandBuffer> commandBuffer, PendingImageTransfer& entry);
 
     VulkanDevice* m_vulkanDevice = nullptr;
     VkFence m_transferFence = VK_NULL_HANDLE;

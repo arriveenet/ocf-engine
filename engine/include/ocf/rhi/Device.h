@@ -143,6 +143,8 @@ public:
 
     virtual void destroyBufferObject(BufferObjectHandle handle) = 0;
 
+    virtual void destroyTexture(TextureHandle handle) = 0;
+
     virtual void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) = 0;
 
     virtual void destroyDescriptorSet(DescriptorSetHandle handle) = 0;

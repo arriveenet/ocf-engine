@@ -6,6 +6,7 @@
 #include "ocf/rhi/RHIEnums.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 namespace ocf {
@@ -35,6 +36,7 @@ public:
         Builder& width(uint32_t width);
         Builder& height(uint32_t height);
         Builder& depth(uint32_t depth);
+        Builder& levels(uint8_t levels);
         Builder& format(InternalFormat format);
         Builder& sampler(Sampler sampler);
 
@@ -44,9 +46,20 @@ public:
         BuilderDetails* m_impl = nullptr;
     };
 
-    static inline size_t valueForLevel(uint8_t const level, size_t const baseLevelValue)
+    static size_t valueForLevel(uint8_t const level, size_t const baseLevelValue) noexcept
     {
         return (std::max)(size_t(1), baseLevelValue >> level);
+    }
+
+    static uint8_t calculateMipLevels(uint32_t maxDimension) noexcept
+    {
+        return static_cast<uint8_t>(std::max(std::ilogbf(static_cast<float>(maxDimension)) + 1, 1));
+    }
+
+    static uint8_t calculateMipLevels(uint32_t width, uint32_t height) noexcept
+    {
+        const uint32_t maxDimension = std::max(width, height);
+        return calculateMipLevels(maxDimension);
     }
 
     Texture(Engine& engine, const Builder& builder);
@@ -83,8 +96,8 @@ private:
     TextureHandle m_handle;
     uint32_t m_width = 1;
     uint32_t m_height = 1;
-    uint8_t m_levelCount = 1;
     uint32_t m_depth = 1;
+    uint8_t m_levelCount = 1;
     InternalFormat m_format = InternalFormat::RGBA8;
     Sampler m_sampler = Sampler::Sampler2D;
 };

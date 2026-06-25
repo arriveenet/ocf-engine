@@ -4,12 +4,15 @@
 #include "ocf/core/Engine.h"
 #include "ocf/rhi/Device.h"
 
+#include <algorithm>
+
 namespace  ocf {
 
 struct Texture::BuilderDetails {
     uint32_t width = 1;
     uint32_t height = 1;
     uint32_t depth = 1;
+    uint8_t levels = 1;
     InternalFormat format = InternalFormat::RGBA8;
     Sampler sampler = Sampler::Sampler2D;
 };
@@ -43,6 +46,12 @@ Texture::Builder& Texture::Builder::depth(uint32_t depth)
     return *this;
 }
 
+Texture::Builder& Texture::Builder::levels(uint8_t levels)
+{
+    m_impl->levels = std::max(levels, uint8_t(1));
+    return *this;
+}
+
 Texture::Builder& Texture::Builder::format(InternalFormat format)
 {
     m_impl->format = format;
@@ -57,6 +66,9 @@ Texture::Builder& Texture::Builder::sampler(Sampler sampler)
 
 Texture* Texture::Builder::build(Engine& engine)
 {
+    uint8_t mipLevels = Texture::calculateMipLevels(m_impl->width, m_impl->height);
+    m_impl->levels = std::min(m_impl->levels, mipLevels);
+
     Texture* texture = new Texture(engine, *this);
     return texture;
 }
@@ -66,6 +78,7 @@ Texture::Texture(Engine& engine, const Builder& builder)
     : m_width(builder->width)
     , m_height(builder->height)
     , m_depth(builder->depth)
+    , m_levelCount(builder->levels)
     , m_format(builder->format)
     , m_sampler(builder->sampler)
 {
@@ -75,10 +88,12 @@ Texture::Texture(Engine& engine, const Builder& builder)
 
 void Texture::terminate(Engine& engine)
 {
+    engine.getDevice().destroyTexture(m_handle);
 }
 
 void Texture::generateMipmaps(Engine& engine)
 {
+    engine.getDevice().generateMipmaps(m_handle);
 }
 
 size_t Texture::getWidth(size_t level) const

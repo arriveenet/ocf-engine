@@ -57,7 +57,6 @@ bool ResourceUploader::uploadImage(std::shared_ptr<IImageResource> target,
     entry.destinationTexture = target;
     entry.stagingBuffer = request.staging;
     entry.copyRegions = request.copyRegions;
-    entry.genMipmaps = target->getMipmapCount() != request.copyRegions.size();
     entry.dstAccessMask = request.nextAccessFlags;
     entry.dstImageLayout = request.nextLayout;
     entry.dstStageFlags = request.nextStageFlags;
@@ -158,29 +157,24 @@ void ResourceUploader::submitAndWait()
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                uint32_t(entry.copyRegions.size()), entry.copyRegions.data());
 
-        if (entry.genMipmaps) {
-            createMipmap(commandBuffer, entry);
-        }
-        else {
-            barrier = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstStageMask = entry.dstStageFlags,
-                .dstAccessMask = entry.dstAccessMask,
-                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout = entry.dstImageLayout,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = dst->getImage(),
-                .subresourceRange = range,
-            };
-            dependencyInfo.pImageMemoryBarriers = &barrier;
-            vkCmdPipelineBarrier2(*commandBuffer, &dependencyInfo);
+        barrier = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstStageMask = entry.dstStageFlags,
+            .dstAccessMask = entry.dstAccessMask,
+            .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .newLayout = entry.dstImageLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = dst->getImage(),
+            .subresourceRange = range,
+        };
+        dependencyInfo.pImageMemoryBarriers = &barrier;
+        vkCmdPipelineBarrier2(*commandBuffer, &dependencyInfo);
 
-            dst->setLayout(entry.dstImageLayout);
-            dst->setAccessFlag(entry.dstAccessMask);
-        }
+        dst->setLayout(entry.dstImageLayout);
+        dst->setAccessFlag(entry.dstAccessMask);
     }
 
     commandBuffer->end();
@@ -198,11 +192,6 @@ void ResourceUploader::submitAndWait()
     m_transferEntries.clear();
     m_transferImageEntries.clear();
     commandBuffer.reset();
-}
-
-void ResourceUploader::createMipmap(std::shared_ptr<CommandBuffer> commandBuffer,
-                                    PendingImageTransfer& entry)
-{
 }
 
 } // namespace ocf::rhi

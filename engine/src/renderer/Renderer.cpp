@@ -185,12 +185,13 @@ bool Renderer::init()
     assert(data != nullptr);
 
     Texture::PixelBufferDescriptor buffer(
-    data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::Ubyte,
-    (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+        data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::Ubyte,
+        [](void* buffer, size_t, void*) { stbi_image_free(buffer); });
 
     m_texture = Texture::Builder()
                     .width(uint32_t(w))
                     .height(uint32_t(h))
+                    .levels(0xff)
                     .sampler(Texture::Sampler::Sampler2D)
                     .format(Texture::InternalFormat::RGBA8)
                     .build(m_engine);
