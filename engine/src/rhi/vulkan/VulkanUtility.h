@@ -65,19 +65,19 @@ void transitionImageLayout(VkCommandBuffer       cmd,
 constexpr VulkanResourceStateInfo getResourceState(ResourceState state)
 {
     switch (state) {
-    case ocf::rhi::ResourceState::Undefined:
+    case ResourceState::Undefined:
         return {
             .layout = VK_IMAGE_LAYOUT_UNDEFINED,
             .accessMask = 0,
             .stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
         };
-    case ocf::rhi::ResourceState::ColorAttachment:
+    case ResourceState::ColorAttachment:
         return {
             .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .accessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             .stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         };
-    case ocf::rhi::ResourceState::Present:
+    case ResourceState::Present:
         return {
             .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             .accessMask = 0,
@@ -89,6 +89,41 @@ constexpr VulkanResourceStateInfo getResourceState(ResourceState state)
             .accessMask = 0,
             .stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
         };
+    }
+}
+
+constexpr VkFormat getElementType(ElementType type)
+{
+    switch (type) {
+    case ElementType::Byte:     return VK_FORMAT_R8_UINT;
+    case ElementType::Byte2:    return VK_FORMAT_R8G8_UINT;
+    case ElementType::Byte3:    return VK_FORMAT_R8G8B8_UINT;
+    case ElementType::Byte4:    return VK_FORMAT_R8G8B8A8_UINT;
+    case ElementType::Ubyte:    return VK_FORMAT_R8_UINT;
+    case ElementType::Ubyte2:   return VK_FORMAT_R8G8_UINT;
+    case ElementType::Ubyte3:   return VK_FORMAT_R8G8B8_UINT;
+    case ElementType::Ubyte4:   return VK_FORMAT_R8G8B8A8_UINT;
+    case ElementType::Short:    return VK_FORMAT_R16_SINT;
+    case ElementType::Short2:   return VK_FORMAT_R16G16_SINT;
+    case ElementType::Short3:   return VK_FORMAT_R16G16B16_SINT;
+    case ElementType::Short4:   return VK_FORMAT_R16G16B16A16_SINT;
+    case ElementType::Ushort:   return VK_FORMAT_R16_UINT;
+    case ElementType::Ushort2:  return VK_FORMAT_R16G16_UINT;
+    case ElementType::Ushort3:  return VK_FORMAT_R16G16B16_UINT;
+    case ElementType::Ushort4:  return VK_FORMAT_R16G16B16A16_UINT;
+    case ElementType::Int:      return VK_FORMAT_R32_SINT;
+    case ElementType::Uint:     return VK_FORMAT_R32_UINT;
+    case ElementType::Float:    return VK_FORMAT_R32_SFLOAT;
+    case ElementType::Float2:   return VK_FORMAT_R32G32_SFLOAT;
+    case ElementType::Float3:   return VK_FORMAT_R32G32B32_SFLOAT;
+    case ElementType::Float4:   return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case ElementType::Double:   return VK_FORMAT_R64_SFLOAT;
+    case ElementType::Double2:  return VK_FORMAT_R64G64_SFLOAT;
+    case ElementType::Double3:  return VK_FORMAT_R64G64B64_SFLOAT;
+    case ElementType::Double4:  return VK_FORMAT_R64G64B64A64_SFLOAT;
+    default:
+        assert(false && "Unknown ElementType");
+        return VK_FORMAT_UNDEFINED;
     }
 }
 
@@ -162,7 +197,7 @@ constexpr VkFilter getMagFilter(SamplerMagFilter filter)
     case SamplerMagFilter::Linear:  return VK_FILTER_LINEAR;
     }
 
-    assert(false && "Unkown MagFilter");
+    assert(false && "Unknown MagFilter");
     return VK_FILTER_MAX_ENUM;
 }
 
@@ -180,7 +215,7 @@ constexpr VkFilter getMinFilter(SamplerMinFilter filter)
         return VK_FILTER_LINEAR;
     }
 
-    assert(false && "Unkown MinFilter");
+    assert(false && "Unknown MinFilter");
     return VK_FILTER_MAX_ENUM;
 }
 
@@ -198,7 +233,7 @@ constexpr VkSamplerMipmapMode getMipmapMode(SamplerMinFilter filter)
         return VK_SAMPLER_MIPMAP_MODE_LINEAR;
     }
 
-    assert(false && "Unkown MipmapMode");
+    assert(false && "Unknown MipmapMode");
     return VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
 }
 

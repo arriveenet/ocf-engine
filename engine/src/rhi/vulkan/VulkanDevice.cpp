@@ -332,7 +332,7 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
             VkVertexInputAttributeDescription attributeDescription{
                 .location = uint32_t(i),
                 .binding = 0,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .format = VulkanUtility::getElementType(attribute.type),
                 .offset = attribute.offset
             };
             attributeDescriptions.push_back(attributeDescription);
