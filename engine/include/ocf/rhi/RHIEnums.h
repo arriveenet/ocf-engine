@@ -105,7 +105,7 @@ enum class PixelDataType : uint8_t {
  */
 enum class SamplerWrapMode : uint8_t {
     ClampToEdge,
-    Rpeat,
+    Repeat,
     MirroredRepeat,
 };
 
@@ -138,8 +138,8 @@ struct SamplerParameters {
     SamplerWrapMode wrapS : 2;
     SamplerWrapMode wrapT : 2;
     SamplerWrapMode wrapR : 2;
-
-    uint8_t padding : 6;
+    uint8_t anisotropyLog2 : 3;
+    uint8_t padding : 3;
 };
 
 static_assert(sizeof(SamplerParameters) == 2, "SamplerParameters size must be 2 bytes");

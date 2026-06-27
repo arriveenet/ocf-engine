@@ -241,11 +241,11 @@ constexpr VkSamplerAddressMode getWrapMode(SamplerWrapMode mode)
 {
     switch (mode) {
     case SamplerWrapMode::ClampToEdge:      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    case SamplerWrapMode::Rpeat:            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case SamplerWrapMode::Repeat:            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
     case SamplerWrapMode::MirroredRepeat:   return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
     }
 
-    assert(false && "Unkown WrapMode");
+    assert(false && "Unknown WrapMode");
     return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 }
 

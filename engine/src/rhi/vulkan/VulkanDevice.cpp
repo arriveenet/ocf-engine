@@ -92,17 +92,18 @@ bool VulkanDevice::initialize()
         return false;
     }
 
+    // Get memory properties and device properties
+    VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
+    vkGetPhysicalDeviceProperties(physicalDevice, &m_deviceProperties);
+
     // Initialize Resource Uploader
     m_resourceUploader = std::make_unique<ResourceUploader>();
     m_resourceUploader->initialize(*this);
 
     // Create sampler cache
-    m_samplerCache = std::make_unique<SamplerCache>(m_device);
-
-    // Get memory properties and device properties
-    VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &s_memoryProperties);
-    vkGetPhysicalDeviceProperties(physicalDevice, &m_deviceProperties);
+    m_samplerCache =
+        std::make_unique<SamplerCache>(m_device, m_deviceProperties.limits.maxSamplerAnisotropy);
 
     OCF_LOG_INFO("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
                  VulkanUtility::getPhysicalDeviceTypeString(m_deviceProperties.deviceType));

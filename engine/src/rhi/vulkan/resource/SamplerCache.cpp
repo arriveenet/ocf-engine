@@ -3,10 +3,13 @@
 
 #include "vulkan/VulkanUtility.h"
 
+#include <algorithm>
+
 namespace ocf::rhi {
 
-ocf::rhi::SamplerCache::SamplerCache(VkDevice device)
+SamplerCache::SamplerCache(VkDevice device, float maxAnisotropy)
     : m_device(device)
+    , m_maxAnisotropy(maxAnisotropy)
 {
 }
 
@@ -52,7 +55,8 @@ VkSampler SamplerCache::createSampler(const SamplerParameters& params, float min
         .addressModeU = VulkanUtility::getWrapMode(params.wrapS),
         .addressModeV = VulkanUtility::getWrapMode(params.wrapT),
         .addressModeW = VulkanUtility::getWrapMode(params.wrapR),
-        .maxAnisotropy = 1.0f,
+        .anisotropyEnable = params.anisotropyLog2 > 0 ? VK_TRUE : VK_FALSE,
+        .maxAnisotropy = std::min(m_maxAnisotropy, static_cast<float>(1u << params.anisotropyLog2)),
         .minLod = minLod,
         .maxLod = maxLod,
     };

@@ -197,7 +197,8 @@ bool Renderer::init()
                     .build(m_engine);
     m_texture->setImage(m_engine, 0, std::move(buffer));
     m_texture->generateMipmaps(m_engine);
-    TextureSampler sampler(MinFilter::Linear, MagFilter::Linear, SamplerWrapMode::Rpeat);
+    TextureSampler sampler(MinFilter::Linear, MagFilter::Linear, SamplerWrapMode::Repeat);
+    sampler.setAnisotropy(16.0f);
 
     auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/texture.vert.spv");
     auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/texture.frag.spv");
@@ -245,7 +246,7 @@ void Renderer::render()
 
     constexpr float aspect = 800.0f / 600.0f;
     math::mat4 matProj = math::perspective(math::radians(60.0f),aspect, 0.01f, 100.0f);
-    math::mat4 matView = math::lookAt(math::vec3(0,0.6f,0.6f), math::vec3(0,0,-1.8f), math::vec3(0, 1, 0));
+    math::mat4 matView = math::lookAt(math::vec3(0,0.68f,0.6f), math::vec3(0,0,-1.3f), math::vec3(0, 1, 0));
     math::mat4 matWorld = math::rotateX(-(math::pi<float>() / 2.0f));
 
     m_materialInstance->setParameter("matWorld", matWorld);

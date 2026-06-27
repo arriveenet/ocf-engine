@@ -3,6 +3,9 @@
 
 #include "ocf/rhi/RHIEnums.h"
 
+#include <algorithm>
+#include <cmath>
+
 namespace ocf {
 
 class TextureSampler {
@@ -36,6 +39,18 @@ public:
 
     void setWrapModeR(WrapMode v) { m_samplerParams.wrapR = v; }
 
+    void setAnisotropy(float maxAnisotropy)
+    {
+        if (maxAnisotropy <= 1.0f) {
+            m_samplerParams.anisotropyLog2 = 0;
+        }
+        else {
+            // Clamp the anisotropy level to the maximum supported value
+            uint8_t level = static_cast<uint8_t>(std::floor(std::log2(maxAnisotropy)));
+            m_samplerParams.anisotropyLog2 = std::min(level, static_cast<uint8_t>(4));
+        }
+    }
+
     MinFilter getMinFilter() const { return m_samplerParams.filterMin; }
 
     MagFilter getMagFilter() const { return m_samplerParams.filterMag; }
@@ -45,6 +60,12 @@ public:
     WrapMode getWrapModeT() const { return m_samplerParams.wrapT; }
 
     WrapMode getWrapModeR() const { return m_samplerParams.wrapR; }
+
+    float getAnisotropy() const
+    {
+        return (m_samplerParams.anisotropyLog2 > 0) ? float(1 << m_samplerParams.anisotropyLog2)
+                                                     : 1.0f;
+    }
 
     const rhi::SamplerParameters& getParams() const { return m_samplerParams; }
 

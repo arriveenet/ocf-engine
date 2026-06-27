@@ -20,10 +20,11 @@ public:
                (uint16_t(params.filterMin) << 1) |
                (uint16_t(params.wrapS) << 4) |
                (uint16_t(params.wrapT) << 6) |
-               (uint16_t(params.wrapR) << 8);
+               (uint16_t(params.wrapR) << 8) |
+               (uint16_t(params.anisotropyLog2) << 10);
     }
 
-    SamplerCache(VkDevice device);
+    SamplerCache(VkDevice device, float maxAnisotropy);
     ~SamplerCache();
 
     VkSampler getSampler(const SamplerParameters& params);
@@ -36,6 +37,7 @@ private:
 
 private:
     VkDevice m_device;
+    float m_maxAnisotropy;
     std::unordered_map<SamplerKey, VkSampler> m_cache;
 };
 
