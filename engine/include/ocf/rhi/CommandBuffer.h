@@ -37,6 +37,9 @@ public:
                            uint32_t vertexOffset, uint32_t firstInstance) = 0;
 
     virtual void transitionLayout(ResourceState oldState, ResourceState newState) = 0;
+
+    virtual void transitionLayout(TextureHandle texture, ResourceState oldState,
+                                  ResourceState newState) = 0;
 };
 
 } // namespace ocf::rhi

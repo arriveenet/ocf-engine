@@ -17,11 +17,14 @@ public:
     virtual uint32_t getMipmapCount() const = 0;
 
     virtual VkImage getImage() const = 0;
+    virtual VkImageView getImageView() const = 0;
     virtual void setAccessFlag(const VkAccessFlags flags) = 0;
     virtual VkAccessFlags getAccessFlags() const = 0;
 
     virtual void setLayout(VkImageLayout layout) = 0;
     virtual VkImageLayout getLayout() const = 0;
+
+    virtual VkImageSubresourceRange getSubresourceRange() const = 0;
 };
 
 template<typename T>
@@ -39,18 +42,22 @@ public:
     VkExtent2D getExtent() const override { return m_extent; }
     uint32_t getMipmapCount() const override { return m_mipLevels; }
 
-    VkImage getImage() const { return m_image; }
+    VkImage getImage() const override { return m_image; }
+    VkImageView getImageView() const override { return m_imageView; }
     void setAccessFlag(const VkAccessFlags flags) override { m_accessFlags = flags; }
     VkAccessFlags getAccessFlags() const override { return m_accessFlags; }
 
     void setLayout(VkImageLayout layout) override { m_layout = layout; }
     VkImageLayout getLayout() const override { return m_layout; }
 
+    VkImageSubresourceRange getSubresourceRange() const override { return m_subresourceRange; }
+
 protected:
     ImageResource() = default;
 
-    VkDevice m_device;
+    VkDevice m_device = VK_NULL_HANDLE;
     VkImage m_image = VK_NULL_HANDLE;
+    VkImageView m_imageView = VK_NULL_HANDLE;
     VkDeviceMemory m_memory = VK_NULL_HANDLE;
     VkImageSubresourceRange m_subresourceRange{};
     VkAccessFlags m_accessFlags = VK_ACCESS_NONE;
@@ -58,7 +65,7 @@ protected:
 
     VkFormat m_format = VK_FORMAT_UNDEFINED;
     VkExtent2D m_extent{};
-    uint32_t m_mipLevels;
+    uint32_t m_mipLevels = 0;
 };
 
 class DepthBuffer : public ImageResource<DepthBuffer> {
@@ -79,10 +86,7 @@ public:
 
     bool initalize(VkDevice device, VkExtent2D extent, VkFormat depthFormat);
 
-    VkImageView getImageView() const noexcept { return m_imageView; }
-
 private:
-    VkImageView m_imageView{};
 };
 
 class Texture2D : public ImageResource<Texture2D> {
@@ -104,14 +108,7 @@ public:
 
     bool initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels);
 
-    VkImageView getImageView() const noexcept { return m_imageView; }
-    VkImageSubresourceRange getSubresourceRange() const noexcept { return m_subresourceRange; }
-
     VkDescriptorImageInfo getDescriptorInfo(VkSampler sampler) const;
-
-private:
-    VkImageView m_imageView;
-    VkImageSubresourceRange m_subresourceRange;
 };
 
 } // namespace ocf::rhi

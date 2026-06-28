@@ -178,4 +178,44 @@ void VulkanCommandBuffer::transitionLayout(ResourceState oldState, ResourceState
     vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
 }
 
+void VulkanCommandBuffer::transitionLayout(TextureHandle texture, ResourceState oldState,
+                                           ResourceState newState)
+{
+    if (!texture) {
+        return;
+    }
+
+    VulkanTexture* tex = m_device.handle_cast<VulkanTexture*>(texture);
+
+    const auto src = VulkanUtility::getResourceState(oldState);
+    const auto dest = VulkanUtility::getResourceState(newState);
+
+    VkImageSubresourceRange range{
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+    };
+
+    VkImageMemoryBarrier2 imageBarrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask = src.stageFlags,
+        .srcAccessMask = src.accessMask,
+        .dstStageMask = dest.stageFlags,
+        .dstAccessMask = dest.accessMask,
+        .oldLayout = src.layout,
+        .newLayout = dest.layout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = tex->image->getImage(),
+        .subresourceRange = tex->image->getSubresourceRange(),
+    };
+
+    VkDependencyInfo dependencyInfo{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                    .imageMemoryBarrierCount = 1,
+                                    .pImageMemoryBarriers = &imageBarrier};
+    vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
+}
+
 } // namespace ocf::rhi

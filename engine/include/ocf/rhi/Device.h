@@ -133,7 +133,7 @@ public:
 
     virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
 
-    virtual void createDepthBuffer(uint32_t width, uint32_t height) = 0;
+    virtual TextureHandle createDepthBuffer(uint32_t width, uint32_t height) = 0;
 
     virtual void destroyVertexBufferInfo(VertexBufferInfoHandle handle) = 0;
 

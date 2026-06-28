@@ -44,6 +44,9 @@ public:
 
     void transitionLayout(ResourceState oldState, ResourceState newState) override;
 
+    void transitionLayout(TextureHandle texture, ResourceState oldState,
+                          ResourceState newState) override;
+
     VkCommandBuffer getHandle() const noexcept { return m_commandBuffer; }
 
     operator VkCommandBuffer() noexcept  { return m_commandBuffer; }

@@ -5,8 +5,9 @@
 #include "Material.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
+#include "ocf/rhi/Handle.h"
+
 #include <memory>
-#include <ocf/rhi/Handle.h>
 
 namespace ocf {
 
@@ -48,6 +49,7 @@ public:
 private:
     Engine& m_engine;
     rhi::Device* m_device = nullptr;
+    rhi::TextureHandle m_depthTexture;
     VertexBuffer* m_vertexBuffer = nullptr;
     IndexBuffer* m_indexBuffer = nullptr;
     Texture* m_texture = nullptr;

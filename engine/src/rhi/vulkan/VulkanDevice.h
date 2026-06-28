@@ -64,7 +64,7 @@ public:
 
     SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
 
-    void createDepthBuffer(uint32_t width, uint32_t height) override;
+    TextureHandle createDepthBuffer(uint32_t width, uint32_t height) override;
 
     void destroyVertexBufferInfo(VertexBufferInfoHandle handle) override;
 

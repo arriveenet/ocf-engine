@@ -41,7 +41,7 @@ struct VulkanDescriptorSet : public RHIDescriptorSet {
 };
 
 struct VulkanTexture : public RHITexture {
-    std::shared_ptr<Texture2D> texture;
+    std::shared_ptr<IImageResource> image;
 };
 
 struct VulkanShaderModule : public RHIShaderModule {

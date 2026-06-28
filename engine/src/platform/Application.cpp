@@ -39,7 +39,6 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     rhi::Device& device = m_engine->getDevice();
     device.createSwapchain(m_window.get(), width, height);
-    device.createDepthBuffer(width, height);
 
     m_engine->getRenderer().init();
 

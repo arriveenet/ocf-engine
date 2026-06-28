@@ -77,6 +77,12 @@ constexpr VulkanResourceStateInfo getResourceState(ResourceState state)
             .accessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             .stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         };
+    case ResourceState::DepthStencilAttachment:
+        return {
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .accessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        };
     case ResourceState::Present:
         return {
             .layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,

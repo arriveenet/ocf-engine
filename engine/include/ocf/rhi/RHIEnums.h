@@ -202,6 +202,7 @@ enum class DescriptorType : uint8_t {
 enum class ResourceState : uint8_t {
     Undefined,
     ColorAttachment,
+    DepthStencilAttachment,
     Present,
 };
 

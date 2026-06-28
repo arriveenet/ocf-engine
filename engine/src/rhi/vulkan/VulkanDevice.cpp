@@ -217,7 +217,7 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
     const uint32_t mipLevels = levels;
 
     // Set the destination texture
-    tex->texture = Texture2D::create(m_device, extent, vkFormat, mipLevels);
+    tex->image = Texture2D::create(m_device, extent, vkFormat, mipLevels);
 
     return Handle<TextureHandle>{handle.getId()};
 }
@@ -422,14 +422,20 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
     return Handle<RHISwapchain>{handle.getId()};
 }
 
-void VulkanDevice::createDepthBuffer(uint32_t width, uint32_t height)
+TextureHandle VulkanDevice::createDepthBuffer(uint32_t width, uint32_t height)
 {
-    VkExtent2D extent {
+    Handle<VulkanTexture> handle = initHandle<VulkanTexture>();
+    VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
+
+    VkExtent2D extent{
         .width = width,
         .height = height,
     };
 
     m_depthBuffer = DepthBuffer::create(m_device, extent, VK_FORMAT_D32_SFLOAT);
+    tex->image = m_depthBuffer;
+
+    return Handle<RHITexture>{handle.getId()};
 }
 
 void VulkanDevice::destroyVertexBufferInfo(VertexBufferInfoHandle handle)
@@ -473,7 +479,7 @@ void VulkanDevice::destroyTexture(TextureHandle handle)
     }
 
     VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
-    tex->texture.reset();
+    tex->image.reset();
 
     destruct(handle, tex);
 }
@@ -605,7 +611,7 @@ void VulkanDevice::updateDescriptorSetTexture(DescriptorSetHandle handle, Textur
 
     VkDescriptorImageInfo imageInfo{
         .sampler = m_samplerCache->getSampler(sampler),
-        .imageView = vkTexture->texture->getImageView(),
+        .imageView = vkTexture->image->getImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 
@@ -679,7 +685,7 @@ void VulkanDevice::updateTextureImage(TextureHandle handle, uint8_t level, uint3
                                  .nextLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                  .nextStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
 
-    m_resourceUploader->uploadImage(tex->texture, request);
+    m_resourceUploader->uploadImage(tex->image, request);
 }
 
 void VulkanDevice::generateMipmaps(TextureHandle handle)
@@ -689,11 +695,11 @@ void VulkanDevice::generateMipmaps(TextureHandle handle)
     }
 
     VulkanTexture* tex = handle_cast<VulkanTexture*>(handle);
-    if (!tex || !tex->texture) {
+    if (!tex || !tex->image) {
         return;
     }
 
-    const uint32_t mipLevels = tex->texture->getMipmapCount();
+    const uint32_t mipLevels = tex->image->getMipmapCount();
     if (mipLevels <= 1) {
         return;
     }
@@ -703,8 +709,8 @@ void VulkanDevice::generateMipmaps(TextureHandle handle)
     auto commandBuffer = createCommandBuffer();
     commandBuffer->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-    VkImage image = tex->texture->getImage();
-    VkExtent2D extent = tex->texture->getExtent();
+    VkImage image = tex->image->getImage();
+    VkExtent2D extent = tex->image->getExtent();
 
     VulkanUtility::transitionImageLayout(
         *commandBuffer,
@@ -816,7 +822,7 @@ void VulkanDevice::generateMipmaps(TextureHandle handle)
     vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(m_graphicsQueue);
 
-    tex->texture->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    tex->image->setLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
 std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()

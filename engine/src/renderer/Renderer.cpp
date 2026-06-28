@@ -159,6 +159,7 @@ Renderer::~Renderer()
 
 bool Renderer::init()
 {
+    m_depthTexture = m_device->createDepthBuffer(800, 600);
     //createCubeGeometry();
     //createSphareGeometry();
     createPlaneGeometry();
@@ -262,6 +263,8 @@ void Renderer::render()
     // Change to color layout
     commandBuffer->transitionLayout(rhi::ResourceState::Undefined,
                                     rhi::ResourceState::ColorAttachment);
+    commandBuffer->transitionLayout(m_depthTexture, rhi::ResourceState::Undefined,
+                                    rhi::ResourceState::DepthStencilAttachment);
 
     rhi::RenderingInfo info;
     info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
