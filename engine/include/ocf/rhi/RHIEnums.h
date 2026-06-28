@@ -62,6 +62,88 @@ enum class BufferUsage : uint8_t {
     Dynamic,
 };
 
+enum class SamplerType : uint8_t {
+    Sampler2D,
+    Sampler2DArray,
+    SamplerCubemap,
+    SamplerCubemapArray,
+    Sampler3D,
+};
+
+enum class TextureFormat : uint16_t {
+    R8,
+    RG8,
+    RGB8,
+    RGBA8,
+};
+
+enum class PixelDataFormat : uint8_t {
+    R,
+    R_INTEGER,
+    RG,
+    RG_INTEGER,
+    RGB,
+    RGB_INTEGER,
+    RGBA,
+    RGBA_INTEGER,
+    DEPTH_COMPONENT,
+    DEPTH_STENCIL
+};
+
+enum class PixelDataType : uint8_t {
+    Ubyte,
+    Byte,
+    Ushort,
+    Short,
+    Uint,
+    Int,
+    Float,
+};
+
+/**
+ * @brief Sampler wrap mode
+ */
+enum class SamplerWrapMode : uint8_t {
+    ClampToEdge,
+    Repeat,
+    MirroredRepeat,
+};
+
+/**
+ * @brief Sampler minification filter
+ */
+enum class SamplerMinFilter : uint8_t {
+    Nearest = 0,
+    Linear = 1,
+    NearestMipmapNearest = 2,
+    LinearMipmapNearest = 3,
+    NearestMipmapLinear = 4,
+    LinearMipmapLinear = 5,
+};
+
+/**
+ * @brief Sampler magnification filter
+ */
+enum class SamplerMagFilter : uint8_t {
+    Nearest = 0,  //!< No filtering. Nearest neighor is used.
+    Linear  = 1   //!< Box filtering. Weighted average of the 4 nearest texels is used.
+};
+
+/**
+ * @brief Sampler parameters
+ */
+struct SamplerParameters {
+    SamplerMagFilter filterMag : 1;
+    SamplerMinFilter filterMin : 3;
+    SamplerWrapMode wrapS : 2;
+    SamplerWrapMode wrapT : 2;
+    SamplerWrapMode wrapR : 2;
+    uint8_t anisotropyLog2 : 3;
+    uint8_t padding : 3;
+};
+
+static_assert(sizeof(SamplerParameters) == 2, "SamplerParameters size must be 2 bytes");
+
 struct Attribute {
     static constexpr uint8_t BUFFER_UNUSED = 0xFF;
 
@@ -75,10 +157,10 @@ struct Attribute {
 using AttributeArray = std::array<Attribute, VERTEX_ATTRIBUTE_COUNT_MAX>;
 
 enum class ShaderStage : uint32_t {
-    Vertex = 1 << 0,
-    Fragment = 1 << 1,
-    Compute = 1 << 2,
-    AllStage = 0x7FFFFFFF,
+    Vertex      = 1 << 0,
+    Fragment    = 1 << 1,
+    Compute     = 1 << 2,
+    AllStage    = 0x7FFFFFFF,
 };
 using ShaderStageFlags = ShaderStage;
 
@@ -94,6 +176,20 @@ constexpr bool operator&(ShaderStageFlags lhs, ShaderStage rhs)
     return static_cast<std::underlying_type_t<ShaderStageFlags>>(lhs) &
            static_cast<std::underlying_type_t<ShaderStageFlags>>(rhs);
 }
+
+enum class UniformType : uint8_t {
+    Bool,
+    Int,
+    Int2,
+    Int3,
+    Int4,
+    Float,
+    Float2,
+    Float3,
+    Float4,
+    Mat3,
+    Mat4,
+};
 
 enum class DescriptorType : uint8_t {
     Sampler,

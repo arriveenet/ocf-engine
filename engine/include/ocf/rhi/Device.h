@@ -5,6 +5,7 @@
 #include "Handle.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/PipelineState.h"
+#include "ocf/rhi/PixelBufferDescriptor.h"
 #include "ocf/rhi/RHIEnums.h"
 
 #include <cstdint>
@@ -118,7 +119,8 @@ public:
 
     virtual BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) = 0;
 
-    virtual TextureHandle createTexture() = 0;
+    virtual TextureHandle createTexture(SamplerType target, uint8_t levels, TextureFormat format,
+                                        uint32_t width, uint32_t height, uint32_t depth) = 0;
 
     virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                                   const char* entryPoint = "main") = 0;
@@ -141,6 +143,8 @@ public:
 
     virtual void destroyBufferObject(BufferObjectHandle handle) = 0;
 
+    virtual void destroyTexture(TextureHandle handle) = 0;
+
     virtual void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) = 0;
 
     virtual void destroyDescriptorSet(DescriptorSetHandle handle) = 0;
@@ -158,6 +162,16 @@ public:
 
     virtual void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
                                      size_t offset) = 0;
+
+    virtual void updateDescriptorSetTexture(DescriptorSetHandle handle, TextureHandle texture,
+                                            const SamplerParameters& sampler, uint32_t binding) = 0;
+
+    virtual void updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset,
+                                    uint32_t yoffset, uint32_t zoffset, uint32_t width,
+                                    uint32_t height, uint32_t depth,
+                                    PixelBufferDescriptor&& data) = 0;
+
+    virtual void generateMipmaps(TextureHandle handle) = 0;
 
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
 

@@ -50,6 +50,20 @@ bool ResourceUploader::uploadBuffer(IBufferResource* target, const void* pData, 
     return true;
 }
 
+bool ResourceUploader::uploadImage(std::shared_ptr<IImageResource> target,
+                                   TextureUploadRequest& request)
+{
+    auto& entry = m_transferImageEntries.emplace_back();
+    entry.destinationTexture = target;
+    entry.stagingBuffer = request.staging;
+    entry.copyRegions = request.copyRegions;
+    entry.dstAccessMask = request.nextAccessFlags;
+    entry.dstImageLayout = request.nextLayout;
+    entry.dstStageFlags = request.nextStageFlags;
+
+    return true;
+}
+
 void ResourceUploader::submitAndWait()
 {
     VkDevice device = m_vulkanDevice->getDevice();
@@ -100,6 +114,69 @@ void ResourceUploader::submitAndWait()
         vkCmdPipelineBarrier2(*commandBuffer, &depInfo);
     }
 
+    // Save the final resource state
+    for (auto& entry : m_transferEntries) {
+        entry.destinationBuffer->setAccessFlags(entry.dstAccessMask);
+    }
+
+    // Process image
+    for (auto& entry : m_transferImageEntries) {
+        auto& dst = entry.destinationTexture;
+        auto& src = entry.stagingBuffer;
+
+        VkImageSubresourceRange range{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        };
+
+        VkImageMemoryBarrier2 barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = dst->getImage(),
+            .subresourceRange = range,
+        };
+        VkDependencyInfo dependencyInfo{
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers = &barrier,
+        };
+        vkCmdPipelineBarrier2(*commandBuffer, &dependencyInfo);
+
+        // Transfer and write the image
+        vkCmdCopyBufferToImage(*commandBuffer, src->getBuffer(), dst->getImage(),
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               uint32_t(entry.copyRegions.size()), entry.copyRegions.data());
+
+        barrier = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstStageMask = entry.dstStageFlags,
+            .dstAccessMask = entry.dstAccessMask,
+            .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .newLayout = entry.dstImageLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = dst->getImage(),
+            .subresourceRange = range,
+        };
+        dependencyInfo.pImageMemoryBarriers = &barrier;
+        vkCmdPipelineBarrier2(*commandBuffer, &dependencyInfo);
+
+        dst->setLayout(entry.dstImageLayout);
+        dst->setAccessFlag(entry.dstAccessMask);
+    }
+
     commandBuffer->end();
     auto cmd = commandBuffer->getHandle();
     VkSubmitInfo submitInfo{
@@ -113,6 +190,7 @@ void ResourceUploader::submitAndWait()
     vkWaitForFences(device, 1, &m_transferFence, VK_TRUE, UINT64_MAX);
 
     m_transferEntries.clear();
+    m_transferImageEntries.clear();
     commandBuffer.reset();
 }
 

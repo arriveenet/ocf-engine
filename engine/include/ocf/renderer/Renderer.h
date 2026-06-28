@@ -2,14 +2,19 @@
 
 #pragma once
 
+#include "Material.h"
+#include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
+#include <memory>
 #include <ocf/rhi/Handle.h>
 
 namespace ocf {
 
 class VertexBuffer;
 class IndexBuffer;
+class Texture;
 class Material;
+class MaterialInstance;
 class Engine;
 
 namespace rhi {
@@ -20,6 +25,11 @@ struct Vertex {
     math::vec3 position;
     math::vec3 normal;
     math::vec3 color;
+};
+
+struct Vertex2 {
+    math::vec3 position;
+    math::vec2 texCoord;
 };
 
 class Renderer {
@@ -40,7 +50,9 @@ private:
     rhi::Device* m_device = nullptr;
     VertexBuffer* m_vertexBuffer = nullptr;
     IndexBuffer* m_indexBuffer = nullptr;
+    Texture* m_texture = nullptr;
     Material* m_material = nullptr;
+    std::shared_ptr<MaterialInstance> m_materialInstance;
     rhi::PipelineHandle m_pipelineHandle;
 };
 

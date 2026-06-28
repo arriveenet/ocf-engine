@@ -1,32 +1,27 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "ocf/rhi/Handle.h"
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec4.h"
+#include "ocf/rhi/Handle.h"
+#include "renderer/DescriptorSetLayout.h"
 
 #include <array>
+#include <memory>
+#include <ocf/rhi/RHIEnums.h>
+#include <string_view>
 
 namespace ocf {
 
 class Engine;
-
-struct SceneConstants
-{
-    math::mat4 mtxWorld;
-    math::mat4 mtxView;
-    math::mat4 mtxProj;
-    math::vec4 lightDir;
-    math::vec4 eyePosition;
-};
+class MaterialInstance;
 
 class Material {
     struct BuilderDetails;
 
 public:
-    using DescriptorSetLayoutHandle = rhi::DescriptorSetLayoutHandle;
-    using DescriptorSetHandle = rhi::DescriptorSetHandle;
-    using BufferObjectHandle = rhi::BufferObjectHandle;
+    using UniformType = rhi::UniformType;
+    using SamplerType = rhi::SamplerType;
 
     class Builder {
     public:
@@ -35,6 +30,15 @@ public:
 
         BuilderDetails* operator->() noexcept { return m_impl; }
         const BuilderDetails* operator->() const noexcept { return m_impl; }
+
+        Builder& uniformBlock(uint32_t binding, std::string_view blockName, size_t totalSize);
+
+        Builder& uniformMember(std::string_view blockName, std::string_view memberName,
+                               UniformType type, size_t offset, size_t size);
+
+        Builder& texture(uint32_t binding, std::string_view name,
+                         SamplerType samplerType = SamplerType::Sampler2D,
+                         rhi::ShaderStageFlags stage = rhi::ShaderStageFlags::Fragment);
 
         Material* build(Engine& engine);
 
@@ -47,16 +51,15 @@ public:
 
     void terminate(Engine& engine);
 
-    DescriptorSetLayoutHandle getDescriptorSetLayout() const { return m_descriptorSetLayoutHandle;}
+    std::shared_ptr<MaterialInstance> createInstance();
 
-    DescriptorSetHandle getDescriptorSet(uint32_t index) const { return m_descriptorSets[index]; }
+    const ocf::DescriptorSetLayout& getDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
-    BufferObjectHandle getUniformBuffer(uint32_t index) const { return m_uniformBuffers[index]; }
+    Engine& getEngine() const { return *m_engine; }
 
 private:
-    DescriptorSetLayoutHandle m_descriptorSetLayoutHandle;
-    std::array<DescriptorSetHandle, 2> m_descriptorSets;
-    std::array<BufferObjectHandle, 2> m_uniformBuffers;
+    Engine* m_engine = nullptr;
+    ocf::DescriptorSetLayout m_descriptorSetLayout;
 };
 
 } // namespace ocf

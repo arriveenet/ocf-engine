@@ -12,6 +12,7 @@ add_executable(test_${TARGET}
     test_rect.cpp
     test_result.cpp
     test_vec.cpp
+    test_texture_sampler.cpp
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
 

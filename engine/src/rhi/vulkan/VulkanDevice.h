@@ -5,6 +5,7 @@
 #include "rhi/HandleAllocator.h"
 #include "VulkanUtility.h"
 #include "VulkanHandles.h"
+#include "resource/SamplerCache.h"
 
 #include "ocf/rhi/Device.h"
 
@@ -49,7 +50,8 @@ public:
 
     BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) override;
 
-    TextureHandle createTexture() override;
+    TextureHandle createTexture(SamplerType target, uint8_t levels, TextureFormat format,
+                                uint32_t width, uint32_t height, uint32_t depth) override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                           const char* entryPoint = "main") override;
@@ -74,6 +76,8 @@ public:
 
     void destroyBufferObject(BufferObjectHandle handle) override;
 
+    void destroyTexture(TextureHandle handle) override;
+
     void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) override;
 
     void destroyDescriptorSet(DescriptorSetHandle handle) override;
@@ -89,6 +93,15 @@ public:
 
     void updateDescriptorSet(DescriptorSetHandle handle, BufferObjectHandle buffer,
                              size_t offset) override;
+
+    void updateDescriptorSetTexture(DescriptorSetHandle handle, TextureHandle texture,
+                                    const SamplerParameters& sampler, uint32_t binding) override;
+
+    void updateTextureImage(TextureHandle handle, uint8_t level, uint32_t xoffset, uint32_t yoffset,
+                            uint32_t zoffset, uint32_t width, uint32_t height, uint32_t depth,
+                            PixelBufferDescriptor&& data) override;
+
+     void generateMipmaps(TextureHandle handle) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 
@@ -195,6 +208,7 @@ private:
 
     std::unique_ptr<ResourceUploader> m_resourceUploader;
     std::shared_ptr<DepthBuffer> m_depthBuffer;
+    std::unique_ptr<SamplerCache> m_samplerCache;
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
