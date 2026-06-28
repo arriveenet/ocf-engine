@@ -42,6 +42,8 @@ public:
 
     void create(Engine& engine);
 
+    void terminate(Engine& engine);
+
     void commit(Engine& engine);
 
     void setFrameIndex(uint32_t index) { m_frameIndex = index; }

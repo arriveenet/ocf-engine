@@ -24,6 +24,8 @@ public:
 
     void create(Engine& engine, const DescriptorSetLayout& layout);
 
+    void terminate(Engine& engine);
+
     void uploadUniformBuffer(uint32_t binding, size_t offset, const void* data, size_t size);
 
     void updateTextureDescriptor(Engine& engine, uint32_t binding, Texture* texture, const TextureSampler& sampler);

@@ -53,6 +53,23 @@ void DescriptorSet::create(Engine& engine, const DescriptorSetLayout& layout)
     }
 }
 
+void DescriptorSet::terminate(Engine& engine)
+{
+    Engine::Device& device = engine.getDevice();
+
+    // Destroy uniform buffers
+    for (auto& [binding, buffers] : m_uniformBuffers) {
+        for (auto& buffer : buffers) {
+            device.destroyBufferObject(buffer);
+        }
+    }
+
+    // Destroy descriptor sets
+    for (auto& descriptorSet : m_descriptorSets) {
+        device.destroyDescriptorSet(descriptorSet);
+    }
+}
+
 void DescriptorSet::uploadUniformBuffer(uint32_t binding, size_t offset, const void* data, size_t size)
 {
     auto it = m_buffers.find(binding);

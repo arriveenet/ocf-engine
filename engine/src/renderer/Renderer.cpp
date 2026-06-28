@@ -148,6 +148,8 @@ Renderer::~Renderer()
     m_vertexBuffer->terminate(m_engine);
     m_indexBuffer->terminate(m_engine);
     m_material->terminate(m_engine);
+    m_materialInstance->terminate(m_engine);
+    m_texture->terminate(m_engine);
 
     delete m_vertexBuffer;
     delete m_indexBuffer;

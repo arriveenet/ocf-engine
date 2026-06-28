@@ -30,6 +30,11 @@ void MaterialInstance::create(Engine& engine)
     m_descriptorSet.create(engine, m_material->getDescriptorSetLayout());
 }
 
+void MaterialInstance::terminate(Engine& engine)
+{
+    m_descriptorSet.terminate(engine);
+}
+
 void MaterialInstance::commit(Engine& engine)
 {
     m_descriptorSet.commit(engine, m_frameIndex);
