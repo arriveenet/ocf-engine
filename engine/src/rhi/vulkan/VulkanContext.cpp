@@ -13,6 +13,7 @@
 #include <vulkan/vulkan.h>
 
 #include <vector>
+#include <set>
 
 namespace {
 
@@ -249,8 +250,50 @@ VulkanResult VulkanContext::pickPhysicalDevice()
 
 bool VulkanContext::isDeviceSuitable(VkPhysicalDevice device)
 {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    // Check if the device supports Vulkan 1.3
+    const bool supportsVulkan13 = deviceProperties.apiVersion >= VK_API_VERSION_1_3;
+    if (!supportsVulkan13) {
+        OCF_LOG_INFO("Device {} does not support Vulkan 1.3", deviceProperties.deviceName);
+        return false;
+    }
+
+    // Check queue family support
     QueueFamilyIndices indices = VulkanUtility::findQueueFamilies(device);
-    return indices.graphicsFamily.has_value();
+    const bool supportsGraphics = indices.graphicsFamily.has_value();
+    if (!supportsGraphics) {
+        OCF_LOG_INFO("Device {} does not support required queue families",
+                     deviceProperties.deviceName);
+        return false;
+    }
+
+    // Check device extension support
+    const bool supportsExtensions = checkDeviceExtensionSupport(device);
+    if (!supportsExtensions) {
+        OCF_LOG_INFO("Device {} does not support required extensions", deviceProperties.deviceName);
+        return false;
+    }
+
+    return true;
+}
+
+bool VulkanContext::checkDeviceExtensionSupport(VkPhysicalDevice device)
+{
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(m_requiredDeviceExtensions.begin(),
+                                             m_requiredDeviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
 }
 
 } // namespace rhi

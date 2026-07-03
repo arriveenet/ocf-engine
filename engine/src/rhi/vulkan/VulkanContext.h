@@ -9,6 +9,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 namespace ocf {
 class Window;
 
@@ -53,12 +55,17 @@ private:
 
     bool isDeviceSuitable(VkPhysicalDevice device);
 
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+
 private:
     VkInstance m_instance = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
     PFN_vkSetDebugUtilsObjectNameEXT m_pfnSetDebugUtilsObjectNameEXT = nullptr;
+    std::vector<const char*> m_requiredDeviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
 };
 
 } // namespace rhi
