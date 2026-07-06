@@ -159,7 +159,7 @@ Renderer::~Renderer()
 
 bool Renderer::init()
 {
-    m_depthTexture = m_device->createDepthBuffer(800, 600);
+    m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
     //createCubeGeometry();
     //createSphareGeometry();
     createPlaneGeometry();
@@ -247,7 +247,8 @@ void Renderer::render()
     const uint32_t frameIndex = m_device->getCurrentFrameIndex();
     m_materialInstance->setFrameIndex(frameIndex);
 
-    constexpr float aspect = 800.0f / 600.0f;
+    const math::ivec2 windowSize = m_engine.getWindowSize();
+    const float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
     math::mat4 matProj = math::perspective(math::radians(60.0f),aspect, 0.01f, 100.0f);
     math::mat4 matView = math::lookAt(math::vec3(0,0.68f,0.6f), math::vec3(0,0,-1.3f), math::vec3(0, 1, 0));
     math::mat4 matWorld = math::rotateX(-(math::pi<float>() / 2.0f));

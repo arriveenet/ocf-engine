@@ -3,10 +3,7 @@
 #include "platform/GLFWWindow.h"
 
 #include "ocf/core/Engine.h"
-#include "ocf/core/Logger.h"
 #include "ocf/platform/Application.h"
-#include "ocf/rhi/Device.h"
-#include "ocf/renderer/Renderer.h"
 
 namespace ocf {
 
@@ -29,20 +26,15 @@ Application::~Application()
 void Application::run(const Config& config, SetupCallback setupCallback,
                       CleanupCallback cleanupCallback, int width, int height)
 {
-    m_window = std::make_unique<GLFWWindow>();
+    m_window = std::make_shared<GLFWWindow>();
     if (!m_window->create(config, config.title, width, height)) {
         // Handle window creation failure
         return;
     }
 
-    m_engine = Engine::create();
-
-    rhi::Device& device = m_engine->getDevice();
-    device.createSwapchain(m_window.get(), width, height);
-
-    m_engine->getRenderer().init();
-
-    OCF_LOG_INFO("Window platform: {}", Window::platformToString(m_window->getPlatform()));
+    Engine::Config engineConfig;
+    engineConfig.window = m_window;
+    m_engine = Engine::create(engineConfig);
 
     Scene* scene = m_engine->createScene();
     if (setupCallback) {

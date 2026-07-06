@@ -208,6 +208,7 @@ private:
 
     std::unique_ptr<ResourceUploader> m_resourceUploader;
     std::shared_ptr<DepthBuffer> m_depthBuffer;
+    TextureHandle m_depthBufferHandle;
     std::unique_ptr<SamplerCache> m_samplerCache;
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{

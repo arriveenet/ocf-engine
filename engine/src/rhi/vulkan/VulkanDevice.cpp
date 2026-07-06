@@ -120,6 +120,10 @@ void VulkanDevice::terminate()
         m_depthBuffer.reset();
     }
 
+    if (m_depthBufferHandle) {
+        destroyTexture(m_depthBufferHandle);
+    }
+
     if (m_resourceUploader) {
         m_resourceUploader->cleanup();
         m_resourceUploader.reset();
@@ -133,6 +137,7 @@ void VulkanDevice::terminate()
 
     if (m_swapchain != nullptr) {
         m_swapchain->destroy();
+        m_swapchain->~VulkanSwapchain();
         m_swapchain = nullptr;
     }
 
@@ -435,6 +440,8 @@ TextureHandle VulkanDevice::createDepthBuffer(uint32_t width, uint32_t height)
     m_depthBuffer = DepthBuffer::create(m_device, extent, VK_FORMAT_D32_SFLOAT);
     tex->image = m_depthBuffer;
 
+    m_depthBufferHandle = Handle<RHITexture>{handle.getId()};
+
     return Handle<RHITexture>{handle.getId()};
 }
 
@@ -530,6 +537,7 @@ void VulkanDevice::destroyPipeline(PipelineHandle handle)
         pipeline->vk.layout = VK_NULL_HANDLE;
     }
 
+    destruct(handle, pipeline);
 }
 
 void VulkanDevice::updateBufferData(VertexBufferHandle handle, const void* data, size_t size,

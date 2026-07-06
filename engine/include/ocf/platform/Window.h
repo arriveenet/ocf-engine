@@ -48,6 +48,10 @@ public:
 
     std::string getTitle() const;
 
+    int getWidth() const { return m_width; }
+
+    int getHeight() const { return m_height; }
+
     virtual Platform getPlatform() const;
 
     virtual bool create(const Application::Config& config, std::string_view title, int width, int height) = 0;

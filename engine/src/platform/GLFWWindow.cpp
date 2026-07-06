@@ -35,6 +35,10 @@ GLFWWindow::~GLFWWindow()
 bool GLFWWindow::create(const Application::Config& config, std::string_view title,
                         int width, int height)
 {
+    m_width = width;
+    m_height = height;
+    m_title = title;
+
     glfwSetErrorCallback([](int error, const char* description) {
         OCF_LOG_ERROR("GLFW Error ({}): {}", error, description);
     });

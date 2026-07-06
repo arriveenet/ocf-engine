@@ -38,7 +38,7 @@ private:
 
 private:
     Engine* m_engine = nullptr;
-    std::unique_ptr<Window> m_window;
+    std::shared_ptr<Window> m_window;
 };
 
 } // namespace ocf
