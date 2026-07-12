@@ -17,9 +17,7 @@ using namespace logger;
 using namespace rhi;
 
 Engine::Engine(const Config& config)
-    : m_deltaTime(0.0f)
-    , m_lastUpdate(std::chrono::steady_clock::now())
-    , m_window(config.window)
+    : m_window(config.window)
 {
 }
 
@@ -68,7 +66,7 @@ void Engine::destroy(Engine* engine)
 
 void Engine::update()
 {
-    calculateDeltaTime();
+    m_frameCounter.update();
 }
 
 void Engine::draw()
@@ -103,15 +101,6 @@ Renderer& Engine::getRenderer() const
 math::ivec2 Engine::getWindowSize() const
 {
     return math::ivec2(m_window->getWidth(), m_window->getHeight());
-}
-
-void Engine::calculateDeltaTime()
-{
-    auto now = std::chrono::steady_clock::now();
-    m_deltaTime =
-        std::chrono::duration_cast<std::chrono::microseconds>(now - m_lastUpdate).count() /
-        1000000.0f;
-    m_lastUpdate = now;
 }
 
 } // namespace ocf

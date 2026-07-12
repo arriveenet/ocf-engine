@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+#include "ocf/core/compiler.h"
 #include "ocf/platform/Application.h"
-#include "ocf/platform/platform.h"
 #include <string>
 
 namespace ocf {

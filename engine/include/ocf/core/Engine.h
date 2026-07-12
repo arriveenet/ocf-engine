@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+#include "ocf/core/FrameCounter.h"
 #include "ocf/math/vec2.h"
 
 #include <chrono>
@@ -24,7 +26,7 @@ class Renderer;
  * The Engine is the central component responsible for initializing the rendering device,
  * managing the render loop, updating scenes, and coordinating drawing operations.
  */
-class Engine {
+class OCF_API Engine {
 public:
     using Device = rhi::Device;
 
@@ -105,6 +107,13 @@ public:
      */
     math::ivec2 getWindowSize() const;
 
+    /**
+     * @brief Retrieves the frame counter instance.
+     *
+     * @return Reference to the FrameCounter instance
+     */
+    const FrameCounter& getFrameCounter() const noexcept { return m_frameCounter; }
+
 private:
     /**
      * @brief Private constructor for Engine initialization.
@@ -129,20 +138,12 @@ private:
      */
     bool init();
 
-    /**
-     * @brief Calculates the time elapsed since the last frame update.
-     *
-     * Updates m_deltaTime with the elapsed time for frame-rate independent updates.
-     */
-    void calculateDeltaTime();
-
 private:
-    float m_deltaTime; //!< Time elapsed since last frame in seconds
-    std::chrono::steady_clock::time_point m_lastUpdate; ///< Timestamp of the last update
     std::shared_ptr<Window> m_window;      ///< Shared pointer to the application window
     std::unique_ptr<Scene> m_currentScene; ///< Unique pointer to the active scene
     std::unique_ptr<Renderer> m_renderer;  ///< Unique pointer to the renderer instance
     std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
+    FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
 };
 
 } // namespace ocf

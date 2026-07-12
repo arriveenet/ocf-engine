@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-#include "ocf/platform/platform.h"
+
+#include "ocf/core/compiler.h"
+
 #include <functional>
 #include <memory>
 #include <string>
