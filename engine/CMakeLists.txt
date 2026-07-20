@@ -58,6 +58,8 @@ endfunction( add_filtered_std )
 # ==================================================================================================
 #  Sources and headers
 # ==================================================================================================
+add_filtered_std("audio")
+add_filtered_std("audio/apu")
 add_filtered_std("core")
 add_filtered_std("core/job")
 add_filtered_std("math")
@@ -120,6 +122,7 @@ set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 # Dependencies
 # ==================================================================================================
 target_link_libraries(${TARGET} PRIVATE glfw)
+target_link_libraries(${TARGET} PRIVATE miniaudio)
 target_link_libraries(${TARGET} PRIVATE stb)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 

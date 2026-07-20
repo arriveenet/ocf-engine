@@ -1,4 +1,5 @@
 #include <ocf/platform/Application.h>
+#include "ocf/audio/AudioSystem.h"
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
@@ -18,9 +19,14 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+    audio::AudioSystem audioSystem;
+    audioSystem.initialize();
+
     Application::Config config;
     config.title = "SandBox Test";
 
     Application& app = Application::getInstance();
     app.run(config, setup, cleanup);
+
+    audioSystem.shutdown();
 }
