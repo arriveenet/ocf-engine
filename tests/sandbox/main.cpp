@@ -1,5 +1,6 @@
 #include <ocf/platform/Application.h>
-#include "ocf/audio/AudioSystem.h"
+#include <ocf/core/Engine.h>
+#include <ocf/audio/AudioSystem.h>
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
@@ -9,7 +10,11 @@
 
 using namespace ocf;
 
-void setup(Engine& engine, Scene *scene) {}
+void setup(Engine& engine, Scene *scene) {
+    auto& audioSystem = engine.getAudioSystem();
+    auto handle = audioSystem.load("audio/Canon in D Major.mp3");
+    audioSystem.play(handle);
+}
 
 void cleanup(Engine& engine, Scene *scene) {}
 
@@ -19,14 +24,10 @@ int main()
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-    audio::AudioSystem audioSystem;
-    audioSystem.initialize();
-
     Application::Config config;
     config.title = "SandBox Test";
 
     Application& app = Application::getInstance();
     app.run(config, setup, cleanup);
 
-    audioSystem.shutdown();
 }

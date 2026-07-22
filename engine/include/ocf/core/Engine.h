@@ -11,6 +11,10 @@
 
 namespace ocf {
 
+namespace audio {
+class AudioSystem;
+}
+
 namespace rhi {
 class Device;
 }
@@ -101,6 +105,13 @@ public:
     Renderer& getRenderer() const;
 
     /**
+     * @brief Retrieves the audio system instance.
+     *
+     * @return Reference to the AudioSystem instance
+     */
+    audio::AudioSystem& getAudioSystem() const;
+
+    /**
      * @brief Gets the current window size.
      *
      * @return 2D integer vector containing width and height of the window
@@ -143,6 +154,7 @@ private:
     std::unique_ptr<Scene> m_currentScene; ///< Unique pointer to the active scene
     std::unique_ptr<Renderer> m_renderer;  ///< Unique pointer to the renderer instance
     std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
+    std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
     FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
 };
 

@@ -1,24 +1,30 @@
 #pragma once
 
-#include "audio/apu/Apu.h"
+#include "ocf/audio/AudioEnums.h"
+
+#include <cstdint>
+#include <vector>
 
 namespace ocf {
 namespace audio {
 
-static constexpr float SAMPLE_RATE = 44100.0f;
-static constexpr double CPU_FREQUENCY = 1789773.0;
+class AudioSource;
+
+constexpr uint32_t InternalSampleRate = 48000;
+constexpr uint32_t InternalChannels = 2;
+constexpr AudioFormat InternalFormat = AudioFormat::F32;
 
 class AudioMixer {
 public:
-    void render(float* output, unsigned int frameCount, unsigned int channels);
+    void render(float* output, uint32_t frameCount, uint32_t channels);
 
-    void writeRegister(uint16_t address, uint8_t value) { m_apu.writeRegister(address, value); }
-
-    void writeStatusRegister(uint8_t value) { m_apu.writeStatusRegister(value); }
+    void addSource(AudioSource* source)
+    {
+        m_sources.push_back(source);
+    }
 
 private:
-    Apu m_apu;
-    double m_cpuRemainder = 0.0;
+    std::vector<AudioSource*> m_sources;
 };
 
 } // namespace audio

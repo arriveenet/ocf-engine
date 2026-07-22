@@ -1,5 +1,7 @@
-#include "MiniaudioDevice.h"
-#include "AudioMixer.h"
+#include "audio/MiniaudioDevice.h"
+
+#include "audio/AudioMixer.h"
+#include "audio/AudioUtility.h"
 
 namespace ocf {
 namespace audio {
@@ -19,9 +21,9 @@ bool MiniaudioDevice::initialize(AudioMixer* mixer)
 
     ma_device_config config = ma_device_config_init(ma_device_type_playback);
 
-    config.playback.format = ma_format_f32;
-    config.playback.channels = 2;
-    config.sampleRate = 44100;
+    config.playback.format = AudioUtility::getMiniaudioFormat(InternalFormat);
+    config.playback.channels = InternalChannels;
+    config.sampleRate = InternalSampleRate;
     config.dataCallback = &MiniaudioDevice::dataCallback;
     config.pUserData = this;
 
@@ -52,7 +54,11 @@ void MiniaudioDevice::dataCallback(ma_device* device, void* output, const void* 
     float* out = static_cast<float*>(output);
 
     if (self->m_mixer != nullptr) {
-        self->m_mixer->render(out, frameCount, self->m_device.playback.channels);
+        self->m_mixer->render(out, frameCount, device->playback.channels);
+    }
+    else {
+        ma_silence_pcm_frames(out, frameCount, AudioUtility::getMiniaudioFormat(InternalFormat),
+                              device->playback.channels);
     }
 }
 

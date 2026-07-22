@@ -1,21 +1,16 @@
 #include "AudioMixer.h"
 
-#include <algorithm>
+#include "audio/AudioSource.h"
 
 namespace ocf {
 namespace audio {
 
-void AudioMixer::render(float* output, unsigned int frameCount, unsigned int channels) {
-
-	for (unsigned int i = 0; i < frameCount * channels; ++i) {
-        m_cpuRemainder += CPU_FREQUENCY / static_cast<double>(SAMPLE_RATE);
-        while (m_cpuRemainder >= 1.0) {
-            m_apu.clock();
-            m_cpuRemainder -= 1.0;
+void AudioMixer::render(float* output, uint32_t frameCount, uint32_t channels)
+{
+    for (auto& source : m_sources) {
+        if (source->getState() == AudioSource::State::Playing) {
+            source->render(output, frameCount, channels);
         }
-        const float pcm = std::clamp(m_apu.getOutput(), -1.0f, 1.0f);
-
-        output[i] = pcm * 0.25f;
     }
 }
 

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "AudioDevice.h"
 
 #include <miniaudio.h>
