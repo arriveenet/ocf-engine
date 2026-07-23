@@ -59,6 +59,8 @@ endfunction( add_filtered_std )
 #  Sources and headers
 # ==================================================================================================
 add_filtered_std("core")
+add_filtered_std("core/event")
+add_filtered_std("core/input")
 add_filtered_std("core/job")
 add_filtered_std("math")
 add_filtered_std("platform")

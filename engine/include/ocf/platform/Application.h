@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ocf/core/compiler.h"
+#include "ocf/core/event/EventDispatcher.h"
 
 #include <functional>
 #include <memory>
@@ -41,6 +42,7 @@ private:
 private:
     Engine* m_engine = nullptr;
     std::shared_ptr<Window> m_window;
+    EventDispatcher m_eventDispatcher;
 };
 
 } // namespace ocf
