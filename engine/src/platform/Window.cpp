@@ -15,10 +15,11 @@ const char* Window::platformToString(Window::Platform platform)
     }
 }
 
-Window::Window()
+Window::Window(EventDispatcher& eventDispatcher)
     : m_title("")
     , m_width(0)
     , m_height(0)
+    , m_eventDispatcher(eventDispatcher)
 {
 }
 

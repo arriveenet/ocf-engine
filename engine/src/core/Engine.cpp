@@ -18,6 +18,7 @@ using namespace rhi;
 
 Engine::Engine(const Config& config)
     : m_window(config.window)
+    , m_eventDispatcher(config.eventDispatcher)
 {
 }
 
