@@ -1,7 +1,6 @@
 #include "audio/AudioConverter.h"
 
 #include "audio/AudioUtility.h"
-#include "audio/MiniaudioDevice.h"
 
 namespace ocf::audio {
 

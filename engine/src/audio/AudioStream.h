@@ -7,6 +7,7 @@
 #include <miniaudio.h>
 
 #include <atomic>
+#include <memory>
 
 namespace ocf {
 namespace audio {
@@ -18,19 +19,21 @@ public:
     static constexpr size_t BytesPerFrame = sizeof(float) * InternalChannels;
     static constexpr size_t RingBufferSize = InternalSampleRate * BytesPerFrame / 10; // 100ms
 
-    explicit AudioStream(AudioDecoder* decoder);
+    explicit AudioStream(std::unique_ptr<AudioDecoder> decoder);
     ~AudioStream() override;
 
     void render(float* output, uint32_t frameCount, uint32_t channels) override;
 
     void update() override;
 
+    void stop() override;
+
     bool needsMoreData();
 
     void decodeTask();
 
 private:
-    AudioDecoder* m_decoder = nullptr;
+    std::unique_ptr<AudioDecoder> m_decoder;
     AudioConverter m_converter;
     ma_rb m_ringBuffer;
     size_t m_lowWatermark = RingBufferSize / 2; // 50ms

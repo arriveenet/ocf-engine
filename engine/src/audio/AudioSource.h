@@ -19,15 +19,21 @@ public:
 
     virtual void render(float* output, uint32_t frameCount, uint32_t channels) = 0;
 
-    virtual void update() {};
+    virtual void update() {}
 
-    void play() { m_state = State::Playing; }
+    virtual void play() { m_state = State::Playing; }
 
-    void pause() { m_state = State::Paused; }
+    virtual void pause() { m_state = State::Paused; }
 
-    void stop() { m_state = State::Stopped; }
+    virtual void stop() { m_state = State::Stopped; }
 
     State getState() const noexcept { return m_state; }
+
+    bool isPlaying() const noexcept { return m_state == State::Playing; }
+
+    bool isPaused() const noexcept { return m_state == State::Paused; }
+
+    bool isStopped() const noexcept { return m_state == State::Stopped; }
 
     float getVolume() const noexcept { return m_volume; }
 

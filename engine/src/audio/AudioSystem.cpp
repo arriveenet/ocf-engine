@@ -1,12 +1,12 @@
 #include "ocf/audio/AudioSystem.h"
 
+#include "audio/AudioDecoderMiniaudio.h"
 #include "audio/AudioDecoderWav.h"
-#include "audio/AudioDecoderMp3.h"
 #include "audio/AudioDevice.h"
+#include "audio/AudioDeviceMiniaudio.h"
 #include "audio/AudioMixer.h"
 #include "audio/AudioSource.h"
 #include "audio/AudioStream.h"
-#include "audio/MiniaudioDevice.h"
 #include "audio/AudioUtility.h"
 
 #include "ocf/core/job/JobSystem.h"
@@ -31,7 +31,7 @@ AudioSystem::AudioSystem()
     m_imple = std::make_unique<Imple>();
 
     m_imple->m_audioMixer = std::make_unique<AudioMixer>();
-    m_imple->m_audioDevice = std::make_unique<MiniaudioDevice>();
+    m_imple->m_audioDevice = std::make_unique<AudioDeviceMiniaudio>();
 }
 
 AudioSystem::~AudioSystem()
@@ -88,33 +88,69 @@ void AudioSystem::update()
 AudioHandle AudioSystem::load(std::string_view filename)
 {
     auto fullPath = FileSystem::getInstance()->getAssetFullPath(filename);
-    AudioDecoderMp3* decoder = new AudioDecoderMp3();
+    std::unique_ptr<AudioDecoder> decoder = std::make_unique<AudioDecoderMiniaudio>();
     if (decoder->open(fullPath)) {
-        AudioStream* stream = new AudioStream(decoder);
+        AudioStream* stream = new AudioStream(std::move(decoder));
         m_imple->m_audioMixer->addSource(stream);
-        m_imple->m_audioSources[0] = stream; // temporary, should generate a unique handle
+        AudioHandle handle = AudioHandle(m_HandleCounter++);
+        m_imple->m_audioSources[handle] = stream;
         m_imple->m_audioStreams.push_back(stream);
 
-        OCF_LOG_DEBUG("[Audio] Loaded file: {}", fullPath);
-        OCF_LOG_DEBUG("[Audio] format: {}, Sample rate: {}, Channels: {}, Total frames: {}",
-                          AudioUtility::getAudioFormatString(decoder->getFormat()),
-                          decoder->getSampleRate(),
-                          decoder->getChannelCount(),
-                          decoder->getTotalFrames());
+        OCF_LOG_DEBUG("[Audio] Loaded file: {}", filename);
+        return handle;
     }
     else {
-        OCF_LOG_ERROR("[Audio] Failed to load file: {}", fullPath);
-        delete decoder;
+        OCF_LOG_ERROR("[Audio] Failed to load file: {}", filename);
     }
 
-    return AudioHandle(0);
+    return INVALID_AUDIO_HANDLE;
 }
 
 void AudioSystem::play(AudioHandle handle)
 {
+    if (handle == INVALID_AUDIO_HANDLE) {
+        return;
+    }
+
     auto it = m_imple->m_audioSources.find(handle);
     if (it != m_imple->m_audioSources.end()) {
         it->second->play();
+    }
+}
+
+void AudioSystem::stop(AudioHandle handle)
+{
+    if (handle == INVALID_AUDIO_HANDLE) {
+        return;
+    }
+
+    auto it = m_imple->m_audioSources.find(handle);
+    if (it != m_imple->m_audioSources.end()) {
+        it->second->stop();
+    }
+}
+
+void AudioSystem::pause(AudioHandle handle)
+{
+    if (handle == INVALID_AUDIO_HANDLE) {
+        return;
+    }
+
+    auto it = m_imple->m_audioSources.find(handle);
+    if (it != m_imple->m_audioSources.end()) {
+        it->second->pause();
+    }
+}
+
+void AudioSystem::setVolume(AudioHandle handle, float volume)
+{
+    if (handle == INVALID_AUDIO_HANDLE) {
+        return;
+    }
+
+    auto it = m_imple->m_audioSources.find(handle);
+    if (it != m_imple->m_audioSources.end()) {
+        it->second->setVolume(volume);
     }
 }
 

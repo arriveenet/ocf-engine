@@ -1,20 +1,23 @@
-#include "audio/AudioDecoderMp3.h"
+#include "audio/AudioDecoderMiniaudio.h"
 
 #include "audio/AudioUtility.h"
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 namespace ocf::audio {
 
-AudioDecoderMp3::AudioDecoderMp3()
+AudioDecoderMiniaudio::AudioDecoderMiniaudio()
     : m_decoder{}
 {
 }
 
-AudioDecoderMp3::~AudioDecoderMp3()
+AudioDecoderMiniaudio::~AudioDecoderMiniaudio()
 {
     close();
 }
 
-bool AudioDecoderMp3::open(std::string_view filename)
+bool AudioDecoderMiniaudio::open(std::string_view filename)
 {
     ma_decoder_config config = ma_decoder_config_init_default();
     if (ma_decoder_init_file(filename.data(), &config, &m_decoder) != MA_SUCCESS) {
@@ -35,13 +38,15 @@ bool AudioDecoderMp3::open(std::string_view filename)
     return true;
 }
 
-void AudioDecoderMp3::close()
+void AudioDecoderMiniaudio::close()
 {
-    ma_decoder_uninit(&m_decoder);
-    m_isOpened = false;
+    if (m_isOpened) {
+        ma_decoder_uninit(&m_decoder);
+        m_isOpened = false;
+    }
 }
 
-uint32_t AudioDecoderMp3::read(void* buffer, uint32_t frameCount)
+uint32_t AudioDecoderMiniaudio::read(void* buffer, uint32_t frameCount)
 {
     ma_uint64 totalFrameRead = 0;
 
@@ -65,7 +70,7 @@ uint32_t AudioDecoderMp3::read(void* buffer, uint32_t frameCount)
     return static_cast<uint32_t>(totalFrameRead);
 }
 
-bool AudioDecoderMp3::seek(uint32_t frameOffset)
+bool AudioDecoderMiniaudio::seek(uint32_t frameOffset)
 {
     return ma_decoder_seek_to_pcm_frame(&m_decoder, frameOffset) == MA_SUCCESS;
 }

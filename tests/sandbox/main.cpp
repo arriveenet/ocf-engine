@@ -14,6 +14,7 @@ void setup(Engine& engine, Scene *scene) {
     auto& audioSystem = engine.getAudioSystem();
     auto handle = audioSystem.load("audio/Canon in D Major.mp3");
     audioSystem.play(handle);
+    audioSystem.setVolume(handle, 0.5f);
 }
 
 void cleanup(Engine& engine, Scene *scene) {}

@@ -7,10 +7,10 @@
 namespace ocf {
 namespace audio {
 
-class MiniaudioDevice : public AudioDevice {
+class AudioDeviceMiniaudio : public AudioDevice {
 public:
-    MiniaudioDevice();
-    ~MiniaudioDevice() override;
+    AudioDeviceMiniaudio();
+    ~AudioDeviceMiniaudio() override;
 
     bool initialize(AudioMixer* mixer) override;
 

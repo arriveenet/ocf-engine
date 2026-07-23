@@ -11,8 +11,6 @@ namespace audio {
 class AudioDevice;
 class AudioMixer;
 
-
-
 class AudioSystem {
 public:
     AudioSystem();
@@ -28,12 +26,19 @@ public:
 
     void play(AudioHandle handle);
 
+    void stop(AudioHandle handle);
+
+    void pause(AudioHandle handle);
+
+    void setVolume(AudioHandle handle, float volume);
+
     bool isInitialized() const noexcept { return m_initialized; }
 
 private:
     struct Imple;
-    std::unique_ptr<Imple> m_imple = nullptr;
+    std::unique_ptr<Imple> m_imple;
     bool m_initialized = false;
+    uint32_t m_HandleCounter = 0;
 };
 
 } // namespace audio

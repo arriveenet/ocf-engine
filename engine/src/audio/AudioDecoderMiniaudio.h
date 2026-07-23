@@ -6,10 +6,10 @@
 
 namespace ocf::audio {
 
-class AudioDecoderMp3 :public AudioDecoder {
+class AudioDecoderMiniaudio :public AudioDecoder {
 public:
-    AudioDecoderMp3();
-    ~AudioDecoderMp3();
+    AudioDecoderMiniaudio();
+    ~AudioDecoderMiniaudio();
 
     bool open(std::string_view filename) override;
 

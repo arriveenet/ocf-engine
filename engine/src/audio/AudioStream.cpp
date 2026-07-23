@@ -5,30 +5,35 @@
 #include "audio/AudioUtility.h"
 
 #include "ocf/core/job/JobSystem.h"
+#include "ocf/core/Logger.h"
 
 #include <cstring>
 
 namespace ocf::audio {
 
-AudioStream::AudioStream(AudioDecoder* decoder)
-    : m_decoder(decoder)
+AudioStream::AudioStream(std::unique_ptr<AudioDecoder> decoder)
+    : m_decoder(std::move(decoder))
     , m_converter()
     , m_ringBuffer()
 {
-    AudioSpec inputSpec = {.format = decoder->getFormat(),
-                           .sampleRate = decoder->getSampleRate(),
-                           .channelCount = decoder->getChannelCount()};
+    AudioSpec inputSpec = {.format = m_decoder->getFormat(),
+                           .sampleRate = m_decoder->getSampleRate(),
+                           .channelCount = m_decoder->getChannelCount()};
     AudioSpec outputSpec = {.format = InternalFormat,
                             .sampleRate = InternalSampleRate,
                             .channelCount = InternalChannels};
     m_converter.initialize(inputSpec, outputSpec);
 
     ma_rb_init(RingBufferSize, nullptr, nullptr, &m_ringBuffer);
+
+    OCF_LOG_DEBUG("[Audio] format: {}, Sample rate: {}, Channels: {}, Total frames: {}",
+                  AudioUtility::getAudioFormatString(m_decoder->getFormat()),
+                  m_decoder->getSampleRate(), m_decoder->getChannelCount(),
+                  m_decoder->getTotalFrames());
 }
 
 AudioStream::~AudioStream()
 {
-    delete m_decoder;
     ma_rb_uninit(&m_ringBuffer);
 }
 
@@ -39,7 +44,7 @@ void AudioStream::render(float* output, uint32_t frameCount, uint32_t channels)
 
     std::memset(output, 0, bytesToRead);
 
-    if (m_state != AudioSource::State::Playing) {
+    if (!isPlaying()) {
         return;
     }
 
@@ -61,7 +66,7 @@ void AudioStream::render(float* output, uint32_t frameCount, uint32_t channels)
 
 void AudioStream::update()
 {
-    if (m_state != AudioSource::State::Playing) {
+    if (!isPlaying()) {
         return;
     }
 
@@ -70,14 +75,21 @@ void AudioStream::update()
     if (m_needsMoreData.load(std::memory_order_acquire)) {
         bool expected = false;
         if (m_isDecoding.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
-            auto job = jobSystem.createJob([this](void*) {
-                decodeTask();
-            });
-            jobSystem.run(job);
-
+            //auto job = jobSystem.createJob([this](void*) {
+            //    decodeTask();
+            //});
+            //jobSystem.run(job);
+            decodeTask();
             m_needsMoreData.store(false, std::memory_order_release);
         }
     }
+}
+
+void AudioStream::stop()
+{
+    AudioSource::stop();
+
+    m_decoder->seek(0);
 }
 
 bool AudioStream::needsMoreData()
