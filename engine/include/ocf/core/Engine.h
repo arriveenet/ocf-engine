@@ -22,6 +22,7 @@ class Device;
 class Window;
 class Scene;
 class Renderer;
+class EventDispatcher;
 
 /**
  * @class Engine
@@ -40,6 +41,7 @@ public:
      */
     struct Config {
         std::shared_ptr<Window> window; ///< Shared pointer to the application window
+        EventDispatcher& eventDispatcher; ///< Reference to the event dispatcher
     };
 
     /**
@@ -125,6 +127,8 @@ public:
      */
     const FrameCounter& getFrameCounter() const noexcept { return m_frameCounter; }
 
+    EventDispatcher& getEventDispatcher() const noexcept { return m_eventDispatcher; }
+
 private:
     /**
      * @brief Private constructor for Engine initialization.
@@ -156,6 +160,7 @@ private:
     std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
     std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
     FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
+    EventDispatcher& m_eventDispatcher;    ///< Reference to the event dispatcher
 };
 
 } // namespace ocf

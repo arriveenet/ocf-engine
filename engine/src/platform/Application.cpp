@@ -26,14 +26,17 @@ Application::~Application()
 void Application::run(const Config& config, SetupCallback setupCallback,
                       CleanupCallback cleanupCallback, int width, int height)
 {
-    m_window = std::make_shared<GLFWWindow>();
+    m_window = std::make_shared<GLFWWindow>(m_eventDispatcher);
     if (!m_window->create(config, config.title, width, height)) {
         // Handle window creation failure
         return;
     }
 
-    Engine::Config engineConfig;
-    engineConfig.window = m_window;
+    Engine::Config engineConfig{
+        .window = m_window,
+        .eventDispatcher = m_eventDispatcher
+    };
+
     m_engine = Engine::create(engineConfig);
 
     Scene* scene = m_engine->createScene();

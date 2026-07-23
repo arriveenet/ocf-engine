@@ -22,6 +22,7 @@ using namespace job;
 
 Engine::Engine(const Config& config)
     : m_window(config.window)
+    , m_eventDispatcher(config.eventDispatcher)
 {
 }
 

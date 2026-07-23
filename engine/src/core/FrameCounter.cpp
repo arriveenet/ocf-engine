@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/core/FrameCounter.h"
 #include "ocf/core/Logger.h"
 

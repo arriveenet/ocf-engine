@@ -7,6 +7,8 @@
 
 namespace ocf {
 
+class EventDispatcher;
+
 class OCF_API Window {
 public:
     enum class Platform {
@@ -41,7 +43,7 @@ public:
 
     static const char* platformToString(Platform platform);
 
-    Window();
+    explicit Window(EventDispatcher& eventDispatcher);
     virtual ~Window() = default;
 
     void setTitle(std::string_view title);
@@ -69,6 +71,7 @@ protected:
     std::string m_title;
     int m_width;
     int m_height;
+    EventDispatcher& m_eventDispatcher;
 };
 
 } // namespace ocf
