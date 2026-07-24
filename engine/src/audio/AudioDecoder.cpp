@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "audio/AudioDecoder.h"
 #include <string.h>
 

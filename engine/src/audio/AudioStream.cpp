@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "AudioStream.h"
 
 #include "audio/AudioDecoder.h"
@@ -90,6 +91,8 @@ void AudioStream::stop()
     AudioSource::stop();
 
     m_decoder->seek(0);
+
+    ma_rb_reset(&m_ringBuffer);
 }
 
 bool AudioStream::needsMoreData()

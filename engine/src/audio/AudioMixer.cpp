@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "AudioMixer.h"
 
 #include "audio/AudioSource.h"

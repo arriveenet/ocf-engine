@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "audio/AudioDecoderMiniaudio.h"
 
 #include "audio/AudioUtility.h"
