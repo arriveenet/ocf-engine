@@ -92,7 +92,6 @@ AudioHandle AudioSystem::load(std::string_view filename)
     std::unique_ptr<AudioDecoder> decoder = std::make_unique<AudioDecoderMiniaudio>();
     if (decoder->open(fullPath)) {
         AudioStream* stream = new AudioStream(std::move(decoder));
-        m_imple->m_audioMixer->addSource(stream);
         AudioHandle handle = AudioHandle(m_HandleCounter++);
         m_imple->m_audioSources[handle] = stream;
         m_imple->m_audioStreams.push_back(stream);
@@ -107,15 +106,19 @@ AudioHandle AudioSystem::load(std::string_view filename)
     return INVALID_AUDIO_HANDLE;
 }
 
-void AudioSystem::play(AudioHandle handle)
+void AudioSystem::play(AudioHandle handle, bool loop, float volume)
 {
     if (handle == INVALID_AUDIO_HANDLE) {
         return;
     }
 
-    auto it = m_imple->m_audioSources.find(handle);
-    if (it != m_imple->m_audioSources.end()) {
-        it->second->play();
+    auto iter = m_imple->m_audioSources.find(handle);
+    if (iter != m_imple->m_audioSources.end()) {
+        m_imple->m_audioMixer->addSource(iter->second);
+
+        iter->second->play();
+        iter->second->setLooping(loop);
+        iter->second->setVolume(volume);
     }
 }
 
@@ -125,9 +128,10 @@ void AudioSystem::stop(AudioHandle handle)
         return;
     }
 
-    auto it = m_imple->m_audioSources.find(handle);
-    if (it != m_imple->m_audioSources.end()) {
-        it->second->stop();
+    auto iter = m_imple->m_audioSources.find(handle);
+    if (iter != m_imple->m_audioSources.end()) {
+        m_imple->m_audioMixer->removeSource(iter->second);
+        iter->second->stop();
     }
 }
 
@@ -137,9 +141,10 @@ void AudioSystem::pause(AudioHandle handle)
         return;
     }
 
-    auto it = m_imple->m_audioSources.find(handle);
-    if (it != m_imple->m_audioSources.end()) {
-        it->second->pause();
+    auto iter = m_imple->m_audioSources.find(handle);
+    if (iter != m_imple->m_audioSources.end()) {
+        m_imple->m_audioMixer->removeSource(iter->second);
+        iter->second->pause();
     }
 }
 
@@ -149,9 +154,21 @@ void AudioSystem::setVolume(AudioHandle handle, float volume)
         return;
     }
 
-    auto it = m_imple->m_audioSources.find(handle);
-    if (it != m_imple->m_audioSources.end()) {
-        it->second->setVolume(volume);
+    auto iter = m_imple->m_audioSources.find(handle);
+    if (iter != m_imple->m_audioSources.end()) {
+        iter->second->setVolume(volume);
+    }
+}
+
+void AudioSystem::setLoop(AudioHandle handle, bool loop)
+{
+    if (handle == INVALID_AUDIO_HANDLE) {
+        return;
+    }
+
+    auto iter = m_imple->m_audioSources.find(handle);
+    if (iter != m_imple->m_audioSources.end()) {
+        iter->second->setLooping(loop);
     }
 }
 

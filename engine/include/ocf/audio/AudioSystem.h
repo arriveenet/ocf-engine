@@ -25,13 +25,15 @@ public:
 
     AudioHandle load(std::string_view filename);
 
-    void play(AudioHandle handle);
+    void play(AudioHandle handle, bool loop = false, float volume = 1.0f);
 
     void stop(AudioHandle handle);
 
     void pause(AudioHandle handle);
 
     void setVolume(AudioHandle handle, float volume);
+
+    void setLoop(AudioHandle handle, bool loop);
 
     bool isInitialized() const noexcept { return m_initialized; }
 

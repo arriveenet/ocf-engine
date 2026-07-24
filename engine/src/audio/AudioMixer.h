@@ -19,10 +19,9 @@ class AudioMixer {
 public:
     void render(float* output, uint32_t frameCount, uint32_t channels);
 
-    void addSource(AudioSource* source)
-    {
-        m_sources.push_back(source);
-    }
+    void addSource(AudioSource* source);
+
+    void removeSource(AudioSource* source);
 
 private:
     std::vector<AudioSource*> m_sources;

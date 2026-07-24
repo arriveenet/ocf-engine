@@ -27,6 +27,8 @@ public:
 
     void update() override;
 
+    void play() override;
+
     void stop() override;
 
     bool needsMoreData();

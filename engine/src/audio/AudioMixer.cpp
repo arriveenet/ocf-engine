@@ -16,7 +16,8 @@ void AudioMixer::render(float* output, uint32_t frameCount, uint32_t channels)
     std::vector<float> sourceBuffer(frameCount * channels, 0.0f);
 
     for (auto& source : m_sources) {
-        if (!source->isPlaying()) {
+        if (source->isStopped()) {
+            removeSource(source);
             continue;
         }
 
@@ -31,6 +32,22 @@ void AudioMixer::render(float* output, uint32_t frameCount, uint32_t channels)
     // Soft clip the output to the range [-1.0, 1.0]
     for (uint32_t i = 0; i < frameCount * channels; i++) {
         output[i] = std::clamp(output[i], -1.0f, 1.0f);
+    }
+}
+
+void AudioMixer::addSource(AudioSource* source)
+{
+    auto iter = std::find(m_sources.begin(), m_sources.end(), source);
+    if (iter == m_sources.end()) {
+        m_sources.push_back(source);
+    }
+}
+
+void AudioMixer::removeSource(AudioSource* source)
+{
+    auto iter = std::find(m_sources.begin(), m_sources.end(), source);
+    if (iter != m_sources.end()) {
+        m_sources.erase(iter);
     }
 }
 

@@ -76,23 +76,33 @@ void AudioStream::update()
     if (m_needsMoreData.load(std::memory_order_acquire)) {
         bool expected = false;
         if (m_isDecoding.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
-            //auto job = jobSystem.createJob([this](void*) {
-            //    decodeTask();
-            //});
-            //jobSystem.run(job);
-            decodeTask();
-            m_needsMoreData.store(false, std::memory_order_release);
+            // TODO: Consider using a thread pool or a dedicated audio decoding thread for better
+            // performance.
+            auto job = jobSystem.createJob([this](void*) {
+                decodeTask();
+                m_isDecoding.store(false, std::memory_order_release);
+            });
+            jobSystem.run(job);
         }
     }
 }
 
+void AudioStream::play()
+{
+    if (getState() != AudioSource::State::Paused) {
+        m_decoder->seek(0);
+        ma_rb_reset(&m_ringBuffer);
+    }
+
+    AudioSource::play();
+}
+
 void AudioStream::stop()
 {
-    AudioSource::stop();
-
     m_decoder->seek(0);
-
     ma_rb_reset(&m_ringBuffer);
+     
+    AudioSource::stop();
 }
 
 bool AudioStream::needsMoreData()
@@ -131,7 +141,17 @@ void AudioStream::decodeTask()
         return;
     }
 
-    m_decoder->readFixedFrames(inputBuffer, static_cast<uint32_t>(inputFrameCount));
+    uint32_t framesRead = m_decoder->readFixedFrames(inputBuffer, static_cast<uint32_t>(inputFrameCount));
+
+    if (framesRead == 0 ) {
+        if (isLooping()) {
+            m_decoder->seek(0);
+            framesRead = m_decoder->readFixedFrames(inputBuffer, static_cast<uint32_t>(inputFrameCount));
+        }
+        else {
+            stop();
+        }
+    }
 
     size_t writtenFrameCount =
         m_converter.process(inputBuffer, inputFrameCount, outputBuffer, outputFrameCount);
@@ -140,7 +160,9 @@ void AudioStream::decodeTask()
 
     std::free(inputBuffer);
 
-    m_isDecoding.store(false, std::memory_order_release);
+    if (needsMoreData()) {
+        m_needsMoreData.store(false, std::memory_order_release);
+    }
 }
 
 } // namespace ocf::audio
