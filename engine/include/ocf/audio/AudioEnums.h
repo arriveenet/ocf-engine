@@ -10,7 +10,7 @@ namespace audio {
 using AudioHandle = uint32_t;
 
 // Invalid audio handle constant
-constexpr AudioHandle INVALID_AUDIO_HANDLE = UINT32_MAX;
+constexpr AudioHandle AUDIO_INVALID_HANDLE = UINT32_MAX;
 
 enum class AudioFormat : uint8_t {
     Unknown, // Unknown format

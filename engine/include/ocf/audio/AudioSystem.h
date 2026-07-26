@@ -11,6 +11,7 @@ namespace audio {
 
 class AudioDevice;
 class AudioMixer;
+class AudioSource;
 
 class AudioSystem {
 public:
@@ -23,7 +24,9 @@ public:
 
     void update();
 
-    AudioHandle load(std::string_view filename);
+    AudioHandle createStream(std::string_view filename);
+
+    AudioHandle createStream(AudioSource* source);
 
     void play(AudioHandle handle, bool loop = false, float volume = 1.0f);
 

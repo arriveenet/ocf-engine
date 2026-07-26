@@ -2,8 +2,9 @@
 #pragma once
 
 #include "audio/AudioConverter.h"
-#include "audio/AudioSource.h"
 #include "audio/AudioMixer.h"
+
+#include "ocf/audio/AudioSource.h"
 
 #include <miniaudio.h>
 

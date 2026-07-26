@@ -6,10 +6,10 @@
 #include "audio/AudioDevice.h"
 #include "audio/AudioDeviceMiniaudio.h"
 #include "audio/AudioMixer.h"
-#include "audio/AudioSource.h"
 #include "audio/AudioStream.h"
 #include "audio/AudioUtility.h"
 
+#include "ocf/audio/AudioSource.h"
 #include "ocf/core/job/JobSystem.h"
 #include "ocf/core/Logger.h"
 #include "ocf/platform/FileSystem.h"
@@ -23,7 +23,7 @@ struct AudioSystem::Imple {
     std::unique_ptr<AudioDevice> m_audioDevice = nullptr;
     std::unique_ptr<AudioMixer> m_audioMixer = nullptr;
     std::unordered_map<AudioHandle, AudioSource*> m_audioSources;
-    std::vector<AudioStream*> m_audioStreams;
+    std::vector<AudioSource*> m_audioStreams;
 };
 
 
@@ -86,7 +86,7 @@ void AudioSystem::update()
     }
 }
 
-AudioHandle AudioSystem::load(std::string_view filename)
+AudioHandle AudioSystem::createStream(std::string_view filename)
 {
     auto fullPath = FileSystem::getInstance()->getAssetFullPath(filename);
     std::unique_ptr<AudioDecoder> decoder = std::make_unique<AudioDecoderMiniaudio>();
@@ -103,12 +103,27 @@ AudioHandle AudioSystem::load(std::string_view filename)
         OCF_LOG_ERROR("[Audio] Failed to load file: {}", filename);
     }
 
-    return INVALID_AUDIO_HANDLE;
+    return AUDIO_INVALID_HANDLE;
+}
+
+AudioHandle AudioSystem::createStream(AudioSource* source)
+{
+    if (source != nullptr) {
+        AudioHandle handle = AudioHandle(m_HandleCounter++);
+        m_imple->m_audioSources[handle] = source;
+        m_imple->m_audioStreams.push_back(source);
+        OCF_LOG_DEBUG("[Audio] Created stream from AudioSource");
+        return handle;
+    }
+    else {
+        OCF_LOG_ERROR("[Audio] Failed to create stream from AudioSource: source is null");
+    }
+    return AUDIO_INVALID_HANDLE;
 }
 
 void AudioSystem::play(AudioHandle handle, bool loop, float volume)
 {
-    if (handle == INVALID_AUDIO_HANDLE) {
+    if (handle == AUDIO_INVALID_HANDLE) {
         return;
     }
 
@@ -124,7 +139,7 @@ void AudioSystem::play(AudioHandle handle, bool loop, float volume)
 
 void AudioSystem::stop(AudioHandle handle)
 {
-    if (handle == INVALID_AUDIO_HANDLE) {
+    if (handle == AUDIO_INVALID_HANDLE) {
         return;
     }
 
@@ -137,7 +152,7 @@ void AudioSystem::stop(AudioHandle handle)
 
 void AudioSystem::pause(AudioHandle handle)
 {
-    if (handle == INVALID_AUDIO_HANDLE) {
+    if (handle == AUDIO_INVALID_HANDLE) {
         return;
     }
 
@@ -150,7 +165,7 @@ void AudioSystem::pause(AudioHandle handle)
 
 void AudioSystem::setVolume(AudioHandle handle, float volume)
 {
-    if (handle == INVALID_AUDIO_HANDLE) {
+    if (handle == AUDIO_INVALID_HANDLE) {
         return;
     }
 
@@ -162,7 +177,7 @@ void AudioSystem::setVolume(AudioHandle handle, float volume)
 
 void AudioSystem::setLoop(AudioHandle handle, bool loop)
 {
-    if (handle == INVALID_AUDIO_HANDLE) {
+    if (handle == AUDIO_INVALID_HANDLE) {
         return;
     }
 
