@@ -16,8 +16,11 @@ Scene::~Scene()
     m_root = nullptr;
 }
 
-void Scene::update(float /*deltaTime*/)
+void Scene::update(float deltaTime)
 {
+    m_root->update(deltaTime);
+
+    m_root->updateTransform(math::mat4(1.0f), true);
 }
 
 } // namespace ocf

@@ -49,4 +49,13 @@ void Node::update(float deltaTime)
     }
 }
 
+void Node::updateTransform(const math::mat4& parentWorldMatrix, bool isParentDirty)
+{
+    const bool isDirty = m_transform.updateWorldMatrix(parentWorldMatrix, isParentDirty);
+
+    for (auto& child : m_children) {
+        child->updateTransform(m_transform.getWorldMatrix(), isDirty);
+    }
+}
+
 } // namespace ocf

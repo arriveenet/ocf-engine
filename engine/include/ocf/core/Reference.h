@@ -77,6 +77,15 @@ public:
         return m_reference != ptr;
     }
 
+    inline bool operator==(const Ref<T>& rhs)
+    {
+        return m_reference == rhs.m_reference;
+    }
+
+    inline bool operator!=(const Ref<T>& rhs)
+    {
+        return m_reference != rhs.m_reference;
+    }
 
     inline T* operator*() const {
         return m_reference;

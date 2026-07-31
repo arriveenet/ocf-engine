@@ -39,6 +39,26 @@ std::string FileSystem::getAssetFullPath(std::string_view fileName)
     return "";
 }
 
+std::string FileSystem::getParentFullPath(std::string_view filePath)
+{
+    fs::path path(filePath);
+    return path.parent_path().generic_string();
+}
+
+std::string FileSystem::getExtension(std::string_view fileName) const
+{
+    std::string ext = fs::path(fileName).extension().string();
+
+    if (!ext.empty() && ext[0] == '.') {
+        ext.erase(0, 1);
+    }
+
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+
+    return ext;
+}
+
 FileSystem::FileSystem()
 {
 }

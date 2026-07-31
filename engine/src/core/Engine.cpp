@@ -79,7 +79,10 @@ void Engine::draw()
 
 void Engine::mainLoop()
 {
+    // Update
     update();
+
+    // Draw
     draw();
 }
 
