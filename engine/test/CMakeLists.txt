@@ -2,7 +2,9 @@
 # Tests
 # ==================================================================================================
 add_executable(test_${TARGET}
+    test_allocator.cpp
     test_geometric.cpp
+    test_jobsystem.cpp
     test_main.cpp
     test_mat2.cpp
     test_mat3.cpp
@@ -10,6 +12,7 @@ add_executable(test_${TARGET}
     test_matrix_transform.cpp
     test_quat.cpp
     test_rect.cpp
+    test_reference.cpp
     test_result.cpp
     test_vec.cpp
     test_texture_sampler.cpp
