@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/resource/ObjLoader.h"
 
 #include "ocf/core/Engine.h"

@@ -14,6 +14,8 @@
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
+#include "ocf/scene/View.h"
+#include "ocf/scene/Camera.h"
 
 #include <stb_image.h>
 
@@ -242,22 +244,26 @@ void Renderer::endFrame()
     m_device->endFrame();
 }
 
-void Renderer::render()
+void Renderer::render(const View* view)
 {
+    if (view == nullptr || view->getScene() == nullptr || !view->hasCamera()) {
+        return;
+    }
+
+    Scene* scene = view->getScene();
+
+    m_renderQueue.clear();
+
+    // Collect renderable objects from the scene
+    RenderCommand renderCommand;
+    renderCommand.vertexBuffer = m_vertexBuffer;
+    renderCommand.indexBuffer = m_indexBuffer;
+    renderCommand.pipelineHandle = m_pipelineHandle;
+    renderCommand.materialInstance = m_materialInstance.get();
+    renderCommand.indexCount = uint32_t(indices.size());
+    m_renderQueue.addCommand(renderCommand);
+
     const uint32_t frameIndex = m_device->getCurrentFrameIndex();
-    m_materialInstance->setFrameIndex(frameIndex);
-
-    const math::ivec2 windowSize = m_engine.getWindowSize();
-    const float aspect = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
-    math::mat4 matProj = math::perspective(math::radians(60.0f),aspect, 0.01f, 100.0f);
-    math::mat4 matView = math::lookAt(math::vec3(0,0.68f,0.6f), math::vec3(0,0,-1.3f), math::vec3(0, 1, 0));
-    math::mat4 matWorld = math::rotateX(-(math::pi<float>() / 2.0f));
-
-    m_materialInstance->setParameter("matWorld", matWorld);
-    m_materialInstance->setParameter("matView", matView);
-    m_materialInstance->setParameter("matProj", matProj);
-
-    m_materialInstance->commit(m_engine);
 
     auto commandBuffer = m_device->getCommandBuffer();
     commandBuffer->begin();
@@ -271,15 +277,33 @@ void Renderer::render()
     info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     commandBuffer->beginRendering(info);
 
-    commandBuffer->bindPipeline(m_pipelineHandle);
-    commandBuffer->bindDescriptorSets(m_pipelineHandle,
-                                      m_materialInstance->getDescriptorSetHandle());
-    commandBuffer->bindVertexBuffers(0, 1, m_vertexBuffer->getHandle());
-    commandBuffer->bindIndexBuffer(m_indexBuffer->getHandle(), 0);
-    commandBuffer->drawIndexed(uint32_t(indices.size()), 1, 0, 0, 0);
+    for (auto& cmd : m_renderQueue.getRenderCommands()) {
+        cmd.materialInstance->setFrameIndex(frameIndex);
+
+        cmd.materialInstance->setParameter("matWorld", cmd.matWorld);
+        cmd.materialInstance->setParameter("matView", view->getCamera()->getView());
+        cmd.materialInstance->setParameter("matProj", view->getCamera()->getProjection());
+
+        cmd.materialInstance->commit(m_engine);
+
+        // Bind pipeline, descriptor sets, vertex/index buffers, and draw
+        commandBuffer->bindPipeline(cmd.pipelineHandle);
+        commandBuffer->bindDescriptorSets(cmd.pipelineHandle, cmd.materialInstance->getDescriptorSetHandle());
+
+        // Draw Indexed
+        if (cmd.indexBuffer != nullptr) {
+            commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
+            commandBuffer->bindIndexBuffer(cmd.indexBuffer->getHandle(), 0);
+            commandBuffer->drawIndexed(cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+        }
+        // Draw Arrays
+        else {
+            commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
+            commandBuffer->draw(cmd.vertexCount, 1, cmd.vertexOffset, 0);
+        }
+    }
 
     commandBuffer->endRendering();
-
     // Change to present layout
     commandBuffer->transitionLayout(rhi::ResourceState::ColorAttachment,
                                     rhi::ResourceState::Present);

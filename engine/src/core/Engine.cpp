@@ -10,6 +10,7 @@
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
 #include "ocf/scene/Scene.h"
+#include "ocf/scene/View.h"
 
 namespace ocf {
 
@@ -24,6 +25,10 @@ Engine::Engine(const Config& config)
 
 Engine::~Engine()
 {
+    for (auto& view : m_views) {
+        delete view;
+    }
+
     m_renderer.reset();
     m_device.reset();
 }
@@ -68,12 +73,18 @@ void Engine::destroy(Engine* engine)
 void Engine::update()
 {
     m_frameCounter.update();
+
+    m_currentScene->update(m_frameCounter.getDeltaTime());
 }
 
 void Engine::draw()
 {
     m_renderer->beginFrame();
-    m_renderer->render();
+
+    for (auto view : m_views) {
+        m_renderer->render(view);
+    }
+
     m_renderer->endFrame();
 }
 
@@ -90,6 +101,16 @@ Scene* Engine::createScene()
 {
     m_currentScene = std::make_unique<Scene>();
     return m_currentScene.get();
+}
+
+View* Engine::createView()
+{
+    return new View();
+}
+
+void Engine::addView(View* view)
+{
+    m_views.push_back(view);
 }
 
 Device& Engine::getDevice() const

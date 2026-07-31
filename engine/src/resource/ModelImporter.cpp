@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/resource/ModelImporter.h"
 
 #include "ocf/platform/FileSystem.h"

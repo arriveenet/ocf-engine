@@ -19,6 +19,7 @@ class Window;
 class Scene;
 class Renderer;
 class EventDispatcher;
+class View;
 
 /**
  * @class Engine
@@ -89,6 +90,18 @@ public:
     Scene* createScene();
 
     /**
+     * @brief Creates a new view and adds it to the engine's view list.
+     * @return Pointer to the newly created View instance
+     */
+    View* createView();
+
+    /**
+     * @brief 
+     * @param view 
+     */
+    void addView(View* view);
+
+    /**
      * @brief Retrieves the rendering device.
      *
      * @return Reference to the RHI Device instance
@@ -147,6 +160,7 @@ private:
     std::unique_ptr<Scene> m_currentScene; ///< Unique pointer to the active scene
     std::unique_ptr<Renderer> m_renderer;  ///< Unique pointer to the renderer instance
     std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
+    std::vector<View*> m_views;            ///< Vector of view pointers
     FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
     EventDispatcher& m_eventDispatcher;    ///< Reference to the event dispatcher
 };

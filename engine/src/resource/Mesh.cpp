@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "ocf/resource/Mesh.h"
 
 #include "ocf/core/Logger.h"
