@@ -298,7 +298,7 @@ void GLFWWindow::onGLFWMouseButtonCallback(GLFWwindow* window, int button, int a
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    MouseEvent::MouseEventType eventType = MouseEvent::MouseEventType::None;
+    MouseEvent::MouseEventType eventType = MouseEvent::MouseEventType::Unkown;
     switch (action) {
     case GLFW_PRESS:
         eventType = MouseEvent::MouseEventType::Down;
