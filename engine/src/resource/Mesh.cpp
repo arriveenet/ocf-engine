@@ -6,6 +6,8 @@
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/renderer/IndexBuffer.h"
 
+#include <cstring>
+
 namespace ocf {
 
 using namespace math;

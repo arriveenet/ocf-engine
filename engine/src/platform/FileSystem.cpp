@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/platform/FileSystem.h"
+
+#include <algorithm>
 #include <filesystem>
 
 namespace fs = std::filesystem;

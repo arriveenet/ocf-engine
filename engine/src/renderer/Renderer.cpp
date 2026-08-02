@@ -16,6 +16,8 @@
 #include "ocf/rhi/Device.h"
 #include "ocf/scene/View.h"
 #include "ocf/scene/Camera.h"
+#include "ocf/scene/Scene.h"
+#include "ocf/scene/Node.h"
 
 #include <stb_image.h>
 
@@ -255,13 +257,29 @@ void Renderer::render(const View* view)
     m_renderQueue.clear();
 
     // Collect renderable objects from the scene
-    RenderCommand renderCommand;
-    renderCommand.vertexBuffer = m_vertexBuffer;
-    renderCommand.indexBuffer = m_indexBuffer;
-    renderCommand.pipelineHandle = m_pipelineHandle;
-    renderCommand.materialInstance = m_materialInstance.get();
-    renderCommand.indexCount = uint32_t(indices.size());
-    m_renderQueue.addCommand(renderCommand);
+    scene->traverseNodes(scene->getRoot(), [this](Node* node) {
+        for (const auto& component : node->getComponents()) {
+            auto renderables = component->getRenderables();
+            for (const auto& renderable : renderables) {
+                RenderCommand cmd;
+                cmd.vertexBuffer = renderable->getVertexBuffer();
+                cmd.indexBuffer = renderable->getIndexBuffer();
+                cmd.materialInstance = renderable->getMaterialInstance();
+                cmd.pipelineHandle = renderable->getPipelineHandle();
+                cmd.matWorld = node->getTransform().getWorldMatrix();
+
+                if (cmd.indexBuffer != nullptr) {
+                    cmd.indexCount = cmd.indexBuffer->getIndexCount();
+                    cmd.indexOffset = 0;
+                } else {
+                    cmd.vertexCount = cmd.vertexBuffer->getVertexCount();
+                    cmd.vertexOffset = 0;
+                }
+
+                m_renderQueue.addCommand(cmd);
+            }
+        }
+    });
 
     const uint32_t frameIndex = m_device->getCurrentFrameIndex();
 

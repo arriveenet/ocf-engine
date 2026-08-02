@@ -24,6 +24,8 @@ public:
 
     void destroyChild(Node* child);
 
+    const std::vector<std::unique_ptr<Node>>& getChildren() const noexcept { return m_children; }
+
     size_t getChildCount() const { return m_children.size(); }
 
     void setParent(Node* parent) { m_parent = parent; }
@@ -38,6 +40,8 @@ public:
     }
 
     void removeComponent(Component* component);
+
+    const std::vector<std::unique_ptr<Component>>& getComponents() const noexcept { return m_components; }
 
     void update(float deltaTime);
 
