@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "ocf/math/mat4.h"
-#include "ocf/math/vec4.h"
 #include "ocf/rhi/Handle.h"
-#include "renderer/DescriptorSetLayout.h"
+#include "ocf/renderer/DescriptorSetLayout.h"
 
 #include <array>
 #include <memory>

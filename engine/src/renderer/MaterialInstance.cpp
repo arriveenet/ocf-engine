@@ -4,8 +4,8 @@
 #include "ocf/core/Engine.h"
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/Texture.h"
-#include "renderer/DescriptorSet.h"
-#include "renderer/DescriptorSetLayout.h"
+#include "ocf/renderer/DescriptorSet.h"
+#include "ocf/renderer/DescriptorSetLayout.h"
 
 namespace ocf {
 

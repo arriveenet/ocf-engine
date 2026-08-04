@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "ocf/rhi/Device.h"
+#include "ocf/rhi/Handle.h"
 #include "ocf/rhi/RHIEnums.h"
 
 namespace ocf::rhi {
+
+struct RHIShaderModule;
+struct RHIVertexBufferInfo;
+struct RHIDescriptorSetLayout;
 
 struct PipelineState {
     PrimitiveType primitiveType = PrimitiveType::Triangles;

@@ -20,16 +20,59 @@ Mesh::~Mesh()
 {
 }
 
+void Mesh::createSubMeshBuffers(Engine& engine)
+{
+    for (auto& subMeshLoad : m_subMeshLoads) {
+        // Create vertex buffer
+        VertexBuffer* vertexBuffer =
+            createVertexBuffer(engine, subMeshLoad.format, subMeshLoad.vertexCount,
+                               subMeshLoad.offsets, subMeshLoad.vertexStride,
+                               subMeshLoad.vertexArray.data(), subMeshLoad.vertexArray.size());
+        assert(vertexBuffer && "Failed to create vertex buffer");
+
+        // Create index buffer
+        IndexBuffer* indexBuffer =
+            createIndexBuffer(engine, subMeshLoad.indexCount, subMeshLoad.indexArray.data(),
+                              subMeshLoad.indexArray.size());
+        assert(indexBuffer && "Failed to create index buffer");
+
+        // Store buffers in the submesh
+        SubMesh subMesh{
+            .format = subMeshLoad.format,
+            .primitive = PrimitiveType::Triangles, // Assuming triangles for now; adjust as needed
+            .vertexBuffer = vertexBuffer,
+            .indexBuffer = indexBuffer,
+            .material = nullptr};
+        m_subMeshes.push_back(subMesh);
+    }
+
+    m_subMeshLoads.clear();
+}
+
+void Mesh::terminate(Engine& engine)
+{
+    for (auto& subMesh : m_subMeshes) {
+        if (subMesh.vertexBuffer) {
+            subMesh.vertexBuffer->terminate(engine);
+            delete subMesh.vertexBuffer;
+        }
+        if (subMesh.indexBuffer) {
+            subMesh.indexBuffer->terminate(engine);
+            delete subMesh.indexBuffer;
+        }
+    }
+    m_subMeshes.clear();
+}
+
 int Mesh::getSubMeshCount() const
 {
     return static_cast<int>(m_subMeshes.size());
 }
 
-
-Material* Mesh::getSubMeshMaterial(int index) const
+const Mesh::SubMesh& Mesh::getSubMesh(int index) const
 {
-    assert((index >= 0 && index < getSubMeshCount()) && "SubMesh index out of range");
-    return m_subMeshes[index].material;
+    assert(index >= 0 && index < static_cast<int>(m_subMeshes.size()) && "Index out of bounds");
+    return m_subMeshes[index];
 }
 
 void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
@@ -81,7 +124,9 @@ void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
                                        vertexCount, indexArray, indexCount);
     assert(result && "Failed to set surface data");
 
-    m_subMeshes.push_back({format, primitive, nullptr});
+    m_subMeshLoads.push_back({format, offsets, static_cast<uint8_t>(vertexElementSize),
+                              static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(indexCount),
+                              std::move(vertexArray), std::move(indexArray)});
 }
 
 void Mesh::makeOffsetsFromFormat(uint64_t format,
@@ -235,8 +280,9 @@ IndexBuffer* Mesh::createIndexBuffer(Engine& engine, uint32_t indexCount, const 
                                      size_t size)
 {
     IndexBuffer* ib = IndexBuffer::Builder()
-                        .indexCount(indexCount)
-                        .build(engine);
+                          .indexType(IndexBuffer::IndexType::Uint)
+                          .indexCount(indexCount)
+                          .build(engine);
     ib->setBufferData(engine, data, size, 0);
 
     return ib;

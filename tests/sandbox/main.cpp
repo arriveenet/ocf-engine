@@ -7,6 +7,12 @@
 #include <ocf/scene/View.h>
 #include <ocf/scene/Camera.h>
 #include <ocf/math/geometric.h>
+#include <ocf/platform/FileSystem.h>
+#include <ocf/renderer/Material.h>
+#include <ocf/renderer/MaterialInstance.h>
+#include <ocf/core/Engine.h>
+#include <ocf/rhi/Handle.h>
+#include <ocf/rhi/PipelineState.h>
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
@@ -16,8 +22,12 @@
 
 
 using namespace ocf;
+using namespace ocf::rhi;
 
-void setup(Engine& engine, View* view, Scene *scene) {
+Mesh* g_mesh = nullptr;
+
+void setup(Engine& engine, View* view, Scene *scene)
+{
     auto cameraNode = scene->getRoot()->createChild();
     auto camera = cameraNode->addComponent<Camera>();
     camera->perspective(math::radians(60.0f), 800.0f / 600.0f, 0.1f, 100.0f);
@@ -25,19 +35,31 @@ void setup(Engine& engine, View* view, Scene *scene) {
                    math::vec3(0.0f, 1.0f, 0.0f));
     view->setCamera(camera);
 
-    Mesh* mesh = new Mesh();
+    auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.vert.spv");
+    auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.frag.spv");
+
+    g_mesh = new Mesh();
     ModelImporter importer;
-    if(importer.import("models/utah_teapot.obj", *mesh)) {
+    if(importer.import("models/utah_teapot.obj", *g_mesh)) {
+        g_mesh->createSubMeshBuffers(engine);
         auto node = scene->getRoot()->createChild();
-        auto meshInstance = node->addComponent<MeshInstance>();
-        meshInstance->setMesh(mesh);
+        auto meshInstance = node->addComponent<MeshInstance>(engine, vsPath, fsPath);
+        meshInstance->setMesh(g_mesh);
     }
     else {
-        delete mesh;
+        delete g_mesh;
+        g_mesh = nullptr;
     }
 }
 
-void cleanup(Engine& engine, View* view, Scene *scene) {}
+void cleanup(Engine& engine, View* view, Scene *scene)
+{
+    if (g_mesh) {
+        g_mesh->terminate(engine);
+        delete g_mesh;
+        g_mesh = nullptr;
+    }
+}
 
 int main()
 {

@@ -13,25 +13,23 @@ class Engine;
 
 struct UniformMember {
     std::string name;
-    rhi::UniformType type;
-    size_t offset;
-    size_t size;
+    rhi::UniformType type = rhi::UniformType::Float;
+    size_t offset = 0;
+    size_t size = 0;
 };
 
-// 1つのバインディング(UBO)の情報
 struct UniformBlockInfo {
-    uint32_t binding;
+    uint32_t binding = 0;
     std::string name;
-    size_t totalSize;
+    size_t totalSize = 0;
     std::unordered_map<std::string, UniformMember> members;
 };
 
-// 1つのバインディング(テクスチャ)の情報
 struct TextureInfo {
-    uint32_t binding;
+    uint32_t binding = 0;
     std::string name;
-    rhi::SamplerType samplerType;
-    rhi::ShaderStageFlags shaderStageFlags;
+    rhi::SamplerType samplerType = rhi::SamplerType::Sampler2D;
+    rhi::ShaderStageFlags shaderStageFlags = rhi::ShaderStageFlags::Fragment;
 };
 
 class DescriptorSetLayout {

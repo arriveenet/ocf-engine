@@ -11,6 +11,15 @@ class MaterialInstance;
 
 class Renderable {
 public:
+    Renderable(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer,
+               MaterialInstance* materialInstance, rhi::PipelineHandle pipelineHandle)
+        : m_vertexBuffer(vertexBuffer)
+        , m_indexBuffer(indexBuffer)
+        , m_materialInstance(materialInstance)
+        , m_pipelineHandle(pipelineHandle)
+    {
+    }
+
     virtual ~Renderable() = default;
 
     VertexBuffer* getVertexBuffer() const noexcept { return m_vertexBuffer; }

@@ -39,12 +39,24 @@ public:
         ArrayFormatIndex        = 1 << ArrayIndex
     };
 
+    struct SubMesh {
+       uint64_t format;
+       PrimitiveType primitive;
+       VertexBuffer* vertexBuffer;
+       IndexBuffer* indexBuffer;
+       Material* material;
+   };
+
     Mesh();
     virtual ~Mesh();
 
+    void createSubMeshBuffers(Engine& engine);
+
+    void terminate(Engine& engine);
+
     int getSubMeshCount() const;
 
-    Material* getSubMeshMaterial(int index) const;
+    const SubMesh& getSubMesh(int index) const;
 
     void addSubMeshFromArrays(PrimitiveType primitive,
                               const std::array<Variant, ArrayType::ArrayMax>& arrays);
@@ -67,11 +79,17 @@ protected:
                                    size_t size);
 
 private:
-    struct SubMesh {
+    struct SubMeshLoad {
         uint64_t format;
-        PrimitiveType primitive;
-        Material* material;
+        std::array<uint32_t, ArrayType::ArrayMax> offsets;
+        uint8_t vertexStride;
+        uint32_t vertexCount;
+        uint32_t indexCount;
+        std::vector<uint8_t> vertexArray;
+        std::vector<uint8_t> indexArray;
     };
+    std::vector<SubMeshLoad> m_subMeshLoads;
+
     std::vector<SubMesh> m_subMeshes;
 };
 
