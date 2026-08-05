@@ -46,6 +46,40 @@ inline constexpr vec<3, T>::vec(X x, Y y, Z z)
 }
 
 template <typename T>
+T& vec<3, T>::operator[](length_t i)
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    case 2:
+        return z;
+    default:
+        return x;
+    }
+}
+
+template <typename T>
+const T& vec<3, T>::operator[](length_t i) const
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    case 2:
+        return z;
+    default:
+        return x;
+    }
+}
+
+template <typename T>
 template <typename U>
 inline constexpr vec<3, T>& vec<3, T>::operator+=(const vec<3, U>& v)
 {

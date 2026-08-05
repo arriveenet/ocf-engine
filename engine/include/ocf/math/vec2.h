@@ -28,6 +28,10 @@ struct vec<2, T> {
     template <typename A, typename B>
     vec(A x, B y);
 
+    // Array indexer
+    T& operator[](length_t i);
+    const T& operator[](length_t i) const;
+
     template <typename U>
     inline constexpr vec<2, T>& operator+=(const vec<2, U>& v);
 

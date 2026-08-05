@@ -25,6 +25,36 @@ inline vec<2, T>::vec(A x, B y)
 }
 
 template <typename T>
+T& vec<2, T>::operator[](length_t i)
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    default:
+        return x;
+    }
+}
+
+template <typename T>
+const T& vec<2, T>::operator[](length_t i) const
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    default:
+        return x;
+    }
+}
+
+template <typename T>
 template <typename U>
 inline constexpr vec<2, T>& vec<2, T>::operator+=(const vec<2, U>& v)
 {
