@@ -13,12 +13,13 @@ layout(location=0) out vec4 outColor;
 layout(set=0, binding=0) uniform UBO {
     mat4 projection;
     mat4 view;
+    mat4 model;
     vec4 lightDirection;
     vec3 eyePosition;
     float exposure;
 } ubo;
 
-layout(set=1, binding=0) uniform MeshMaterialParameters {
+layout(set=1, binding=0) uniform MaterialParameters {
     vec4 baseColorFactor;
     float metallicFactor;
     float roughnessFactor;

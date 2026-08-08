@@ -217,8 +217,7 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
         .height = uint32_t(height)
     };
 
-    // TODO
-    const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkFormat vkFormat = VulkanUtility::getTextureFormat(format);
     const uint32_t mipLevels = levels;
 
     // Set the destination texture
@@ -307,13 +306,21 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
 {
     Handle<VulkanPipeline> handle = initHandle<VulkanPipeline>();
     VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
-    VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(state.layout);
+
+    VkDescriptorSetLayout setLayouts[DESCRIPTOR_SET_COUNT_MAX] = {};
+    uint32_t setLayoutCount = 0;
+    for (auto& layout : state.pipelineLayout.setLayout) {
+        if (layout.getId() != HandleBase::nullid) {
+            VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(layout);
+            setLayouts[setLayoutCount++] = dsl->vk.id;
+        }
+    }
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo layoutInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 1,
-        .pSetLayouts = &dsl->vk.id,
+        .setLayoutCount = setLayoutCount,
+        .pSetLayouts = setLayouts,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr,
     };

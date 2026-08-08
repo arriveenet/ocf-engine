@@ -49,7 +49,7 @@ public:
 
     void terminate(Engine& engine);
 
-    std::shared_ptr<MaterialInstance> createInstance();
+    MaterialInstance* createInstance();
 
     const ocf::DescriptorSetLayout& getDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
@@ -58,6 +58,7 @@ public:
 private:
     Engine* m_engine = nullptr;
     ocf::DescriptorSetLayout m_descriptorSetLayout;
+    std::vector<MaterialInstance*> m_instances;
 };
 
 } // namespace ocf

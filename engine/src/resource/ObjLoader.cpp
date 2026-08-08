@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-#include "ocf/resource/ObjLoader.h"
+#include "ObjLoader.h"
 
-#include "ocf/core/Engine.h"
 #include "ocf/core/Logger.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
@@ -150,8 +149,11 @@ bool ObjLoader::load(std::string_view fileName, Mesh& mesh)
         arrays[Mesh::ArrayType::ArrayNormal]    = std::move(normals);
         arrays[Mesh::ArrayType::ArrayTexCoord0] = std::move(texCoords);
         arrays[Mesh::ArrayType::ArrayIndex]     = std::move(indices);
+
+        Mesh::MaterialParams materialParams;
+        std::unordered_map<std::string, Mesh::TextureData> textures;
         
-        mesh.addSubMeshFromArrays(Mesh::PrimitiveType::Triangles, arrays);
+        mesh.addSubMeshFromArrays(Mesh::PrimitiveType::Triangles, arrays, materialParams, textures);
     }
 
     return true;

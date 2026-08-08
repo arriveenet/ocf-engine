@@ -26,6 +26,8 @@ public:
 
     const math::mat4& getView() const noexcept { return m_view; }
 
+    const math::vec3& getPosition() const noexcept { return m_position; }
+
     void lookAt(const math::vec3&, const math::vec3& center,
                 const math::vec3& up = math::vec3(0.0f, 1.0f, 0.0f));
 
@@ -33,6 +35,7 @@ private:
     Type m_type;
     math::mat4 m_projection;
     math::mat4 m_view;
+    math::vec3 m_position;
 };
 
 } // namespace ocf

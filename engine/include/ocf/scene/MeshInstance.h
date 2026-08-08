@@ -24,7 +24,7 @@ public:
 
     Ref<Mesh> getMesh() const noexcept;
 
-    std::shared_ptr<MaterialInstance> getMaterialInstance() const noexcept
+    MaterialInstance* getMaterialInstance() const noexcept
     {
         return m_materialInstance;
     }
@@ -35,8 +35,8 @@ private:
     rhi::ShaderModuleHandle m_vertexShader;
     rhi::ShaderModuleHandle m_fragmentShader;
     rhi::PipelineHandle m_pipelineHandle;
-    Material* m_material;
-    std::shared_ptr<MaterialInstance> m_materialInstance;
+    Material* m_material = nullptr;
+    MaterialInstance* m_materialInstance = nullptr;
 };
 
 } // namespace ocf

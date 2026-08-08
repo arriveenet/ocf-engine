@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/resource/ModelImporter.h"
 
+#include "resource/GLTFLoader.h"
+#include "resource/ObjLoader.h"
+
 #include "ocf/platform/FileSystem.h"
 #include "ocf/resource/Mesh.h"
-#include "ocf/resource/ObjLoader.h"
 
 namespace ocf {
 
 ModelImporter::ModelImporter()
 {
+    registerLoader(std::make_unique<GLTFLoader>());
     registerLoader(std::make_unique<ObjLoader>());
 }
 

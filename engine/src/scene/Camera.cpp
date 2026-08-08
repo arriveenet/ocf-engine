@@ -30,6 +30,7 @@ void Camera::orthographic(float left, float right, float bottom, float top, floa
 
 void Camera::lookAt(const math::vec3& eye, const math::vec3& center, const math::vec3& up)
 {
+    m_position = eye;
     m_view = math::lookAt(eye, center, up);
 }
 

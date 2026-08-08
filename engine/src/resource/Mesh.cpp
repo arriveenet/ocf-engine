@@ -2,9 +2,11 @@
 #include "ocf/resource/Mesh.h"
 
 #include "ocf/core/Logger.h"
+#include "ocf/core/Engine.h"
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/renderer/IndexBuffer.h"
+#include "ocf/resource/TextureManager.h"
 
 #include <cstring>
 
@@ -22,6 +24,8 @@ Mesh::~Mesh()
 
 void Mesh::createSubMeshBuffers(Engine& engine)
 {
+    auto& textureManager = engine.getTextureManager();
+
     for (auto& subMeshLoad : m_subMeshLoads) {
         // Create vertex buffer
         VertexBuffer* vertexBuffer =
@@ -36,13 +40,41 @@ void Mesh::createSubMeshBuffers(Engine& engine)
                               subMeshLoad.indexArray.size());
         assert(indexBuffer && "Failed to create index buffer");
 
+        Texture* baseColorTexture = nullptr;
+        auto iter = subMeshLoad.textures.find("Base Color");
+        if (iter != subMeshLoad.textures.end()) {
+            baseColorTexture = textureManager.addImage(iter->second.uri);
+        }
+
+        Texture* metallicRoughnessTexture = nullptr;
+        iter = subMeshLoad.textures.find("Metallic-Roughness");
+        if (iter != subMeshLoad.textures.end()) {
+            metallicRoughnessTexture = textureManager.addImage(iter->second.uri);
+        }
+        else {
+            metallicRoughnessTexture = textureManager.getWhiteTexture();
+        }
+
+        Texture* normalMapTexture = nullptr;
+        iter = subMeshLoad.textures.find("Normal Map");
+        if (iter != subMeshLoad.textures.end()) {
+            normalMapTexture = textureManager.addImage(iter->second.uri);
+        }
+        else {
+            normalMapTexture = textureManager.getWhiteTexture();
+        }
+
         // Store buffers in the submesh
         SubMesh subMesh{
             .format = subMeshLoad.format,
             .primitive = PrimitiveType::Triangles, // Assuming triangles for now; adjust as needed
             .vertexBuffer = vertexBuffer,
             .indexBuffer = indexBuffer,
-            .material = nullptr};
+            .baseColorTexture = baseColorTexture,
+            .metallicRoughnessTexture = metallicRoughnessTexture,
+            .normalMapTexture = normalMapTexture,
+            .material = nullptr,
+        };
         m_subMeshes.push_back(subMesh);
     }
 
@@ -76,7 +108,9 @@ const Mesh::SubMesh& Mesh::getSubMesh(int index) const
 }
 
 void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
-                                const std::array<Variant, ArrayType::ArrayMax>& arrays)
+                                const std::array<Variant, ArrayType::ArrayMax>& arrays,
+                                const MaterialParams& materialParams,
+                                const std::unordered_map<std::string, TextureData>& textures)
 {
     uint64_t format = 0;
 
@@ -126,7 +160,7 @@ void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
 
     m_subMeshLoads.push_back({format, offsets, static_cast<uint8_t>(vertexElementSize),
                               static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(indexCount),
-                              std::move(vertexArray), std::move(indexArray)});
+                              std::move(vertexArray), std::move(indexArray), textures});
 }
 
 void Mesh::makeOffsetsFromFormat(uint64_t format,
@@ -151,6 +185,9 @@ void Mesh::makeOffsetsFromFormat(uint64_t format,
             break;
         case ArrayType::ArrayNormal:
             elementSize = sizeof(float) * 3;
+            break;
+        case ArrayType::ArrayTangent:
+            elementSize = sizeof(float) * 4;
             break;
         case ArrayType::ArrayColor:
             elementSize = sizeof(float) * 4;
@@ -202,6 +239,16 @@ bool Mesh::setSurfaceData(const std::array<Variant, ArrayType::ArrayMax>& arrays
             for (size_t i = 0; i < vertexArrayLength; i++) {
                 float vector[3] = {src[i].x, src[i].y, src[i].z};
                 memcpy(&basePtr[offsets[index] + i * vertexStride], vector, sizeof(float) * 3);
+            }
+            break;
+        }
+        case ArrayType::ArrayTangent: {
+            PackedVec4Array array = std::get<PackedVec4Array>(arrays[index]);
+            assert((array.size() == vertexArrayLength) && "Tangent array size mismatch");
+            const vec4* src = array.data();
+            for (size_t i = 0; i < vertexArrayLength; i++) {
+                float vector[4] = {src[i].x, src[i].y, src[i].z, src[i].w};
+                memcpy(&basePtr[offsets[index] + i * vertexStride], vector, sizeof(float) * 4);
             }
             break;
         }
@@ -262,6 +309,10 @@ VertexBuffer* Mesh::createVertexBuffer(Engine& engine, uint64_t format, uint32_t
     if ((format & ArrayFormat::ArrayFormatNormal) != 0) {
         builder.attribute(VertexAttribute::Normal, VertexBuffer::AttributeType::Float3, stride,
                           offsets[ArrayType::ArrayNormal]);
+    }
+    if ((format & ArrayFormat::ArrayFormatTangent) != 0) {
+        builder.attribute(VertexAttribute::Tangent, VertexBuffer::AttributeType::Float4, stride,
+                          offsets[ArrayType::ArrayTangent]);
     }
     if ((format & ArrayFormat::ArrayFormatTexCoord0) != 0) {
         builder.attribute(VertexAttribute::TexCoord0, VertexBuffer::AttributeType::Float2, stride,

@@ -7,20 +7,27 @@ namespace ocf {
 enum class VertexAttribute : uint8_t {
     Position = 0,
     Normal = 1,
-    Color = 2,
-    TexCoord0 = 3,
-    TexCoord1 = 4,
-    BoneIndices = 5,
-    BoneWeights = 6,
-    Custom0 = 7,
-    Custom1 = 8,
-    Custom2 = 9,
-    Custom3 = 10,
-    Custom4 = 11,
-    Custom5 = 12,
-    Custom6 = 13,
-    Custom7 = 14,
-    Custom8 = 15
+    Tangent = 2,
+    Color = 3,
+    TexCoord0 = 4,
+    TexCoord1 = 5,
+    BoneIndices = 6,
+    BoneWeights = 7,
+    Custom0 = 8,
+    Custom1 = 9,
+    Custom2 = 10,
+    Custom3 = 11,
+    Custom4 = 12,
+    Custom5 = 13,
+    Custom6 = 14,
+    Custom7 = 15,
+    Custom8 = 16
+};
+
+enum class AlphaMode : uint8_t {
+    Opaque = 0,
+    Mask   = 1,
+    Blend  = 2
 };
 
 } // namespace ocf

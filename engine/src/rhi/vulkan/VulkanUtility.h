@@ -133,6 +133,19 @@ constexpr VkFormat getElementType(ElementType type)
     }
 }
 
+constexpr VkFormat getTextureFormat(TextureFormat format)
+{
+    switch (format) {
+    case TextureFormat::R8:     return VK_FORMAT_R8_UNORM;
+    case TextureFormat::RG8:    return VK_FORMAT_R8G8_UNORM;
+    case TextureFormat::RGB8:   return VK_FORMAT_R8G8B8_UNORM;
+    case TextureFormat::RGBA8:  return VK_FORMAT_R8G8B8A8_UNORM;
+    default:
+        assert(false && "Unknown TextureFormat");
+        return VK_FORMAT_UNDEFINED;
+    }
+}
+
 constexpr VkDescriptorType getDescriptorType(DescriptorType type)
 {
     switch (type) {

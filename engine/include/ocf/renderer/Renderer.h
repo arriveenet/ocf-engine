@@ -48,6 +48,9 @@ public:
 
     void render(const View* view);
 
+    Material* getUBOMaterial() const { return m_material; }
+    MaterialInstance* getUBOMaterialInstance() const { return m_materialInstance; }
+
 protected:
 
 private:
@@ -58,7 +61,7 @@ private:
     IndexBuffer* m_indexBuffer = nullptr;
     Texture* m_texture = nullptr;
     Material* m_material = nullptr;
-    std::shared_ptr<MaterialInstance> m_materialInstance;
+    MaterialInstance* m_materialInstance = nullptr;
     rhi::PipelineHandle m_pipelineHandle;
     RenderQueue m_renderQueue;
 };

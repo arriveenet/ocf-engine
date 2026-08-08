@@ -20,6 +20,7 @@ class Scene;
 class Renderer;
 class EventDispatcher;
 class View;
+class TextureManager;
 
 /**
  * @class Engine
@@ -116,6 +117,13 @@ public:
     Renderer& getRenderer() const;
 
     /**
+     * @brief Retrieves the texture manager instance.
+     *
+     * @return Reference to the TextureManager instance
+     */
+    TextureManager& getTextureManager() const;
+
+    /**
      * @brief Gets the current window size.
      *
      * @return 2D integer vector containing width and height of the window
@@ -156,13 +164,14 @@ private:
     bool init();
 
 private:
-    std::shared_ptr<Window> m_window;      ///< Shared pointer to the application window
-    std::unique_ptr<Scene> m_currentScene; ///< Unique pointer to the active scene
-    std::unique_ptr<Renderer> m_renderer;  ///< Unique pointer to the renderer instance
-    std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
-    std::vector<View*> m_views;            ///< Vector of view pointers
-    FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
-    EventDispatcher& m_eventDispatcher;    ///< Reference to the event dispatcher
+    std::shared_ptr<Window> m_window;      //!< Shared pointer to the application window
+    std::unique_ptr<Scene> m_currentScene; //!< Unique pointer to the active scene
+    std::unique_ptr<Renderer> m_renderer;  //!< Unique pointer to the renderer instance
+    std::unique_ptr<rhi::Device> m_device; //!< Unique pointer to the rendering device
+    std::unique_ptr<TextureManager> m_textureManager; //!< Unique pointer to the texture manager
+    std::vector<View*> m_views;            //!< Vector of view pointers
+    FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
+    EventDispatcher& m_eventDispatcher;    //!< Reference to the event dispatcher
 };
 
 } // namespace ocf

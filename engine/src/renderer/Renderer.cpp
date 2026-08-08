@@ -148,90 +148,27 @@ Renderer::Renderer(Engine& engine, rhi::Device* device)
 
 Renderer::~Renderer()
 {
-    m_device->destroyPipeline(m_pipelineHandle);
-    m_vertexBuffer->terminate(m_engine);
-    m_indexBuffer->terminate(m_engine);
     m_material->terminate(m_engine);
     m_materialInstance->terminate(m_engine);
-    m_texture->terminate(m_engine);
 
-    delete m_vertexBuffer;
-    delete m_indexBuffer;
     delete m_material;
-    delete m_texture;
 }
 
 bool Renderer::init()
 {
     m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
-    //createCubeGeometry();
-    //createSphareGeometry();
-    createPlaneGeometry();
-
-    const size_t vertexBufferSize = sizeof(Vertex2) * vertices.size();
-    m_vertexBuffer = VertexBuffer::Builder()
-                         .attribute(VertexAttribute::Position, VertexBuffer::AttributeType::Float3,
-                                    sizeof(Vertex2), offsetof(Vertex2, position))
-                         .attribute(VertexAttribute::TexCoord0, VertexBuffer::AttributeType::Float2,
-                                    sizeof(Vertex2), offsetof(Vertex2, texCoord))
-                         .bufferCount(1)
-                         .vertexCount(uint32_t(vertices.size()))
-                         .build(m_engine);
-    m_vertexBuffer->setBufferData(m_engine, vertices.data(), vertexBufferSize, 0);
-
-    const size_t indexBufferSize = sizeof(uint32_t) * indices.size();
-    m_indexBuffer = IndexBuffer::Builder()
-                        .indexType(IndexBuffer::IndexType::Uint)
-                        .indexCount(uint32_t(indices.size()))
-                        .build(m_engine);
-    m_indexBuffer->setBufferData(m_engine, indices.data(), indexBufferSize, 0);
-
-    auto texPath = FileSystem::getInstance()->getAssetFullPath("textures/test-texture.png");
-    int w, h, n;
-    unsigned char* data = stbi_load(texPath.c_str(), &w, &h, &n, 4);
-    assert(data != nullptr);
-
-    Texture::PixelBufferDescriptor buffer(
-        data, size_t(w * h * 4), Texture::Format::RGBA, Texture::Type::Ubyte,
-        [](void* buffer, size_t, void*) { stbi_image_free(buffer); });
-
-    m_texture = Texture::Builder()
-                    .width(uint32_t(w))
-                    .height(uint32_t(h))
-                    .levels(0xff)
-                    .sampler(Texture::Sampler::Sampler2D)
-                    .format(Texture::InternalFormat::RGBA8)
-                    .build(m_engine);
-    m_texture->setImage(m_engine, 0, std::move(buffer));
-    m_texture->generateMipmaps(m_engine);
-    TextureSampler sampler(MinFilter::Linear, MagFilter::Linear, SamplerWrapMode::Repeat);
-    sampler.setAnisotropy(16.0f);
-
-    auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/texture.vert.spv");
-    auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/texture.frag.spv");
-
-    ShaderModuleHandle vs = m_device->createShaderModule(ShaderStage::Vertex, vsPath);
-    ShaderModuleHandle fs = m_device->createShaderModule(ShaderStage::Fragment, fsPath);
 
     m_material = Material::Builder()
-                    .uniformBlock(0, "SceneContents", 224)
-                    .uniformMember("SceneContents", "matWorld",    UniformType::Mat4, 0, 64)
-                    .uniformMember("SceneContents", "matView",     UniformType::Mat4, 64, 64)
-                    .uniformMember("SceneContents", "matProj",     UniformType::Mat4, 128, 64)
-                    .texture(1, "gTex")
+                    .uniformBlock(0, "UBO", 224)
+                    .uniformMember("UBO", "projection", rhi::UniformType::Mat4, 0, 64)
+                    .uniformMember("UBO", "view", rhi::UniformType::Mat4, 64, 64)
+                    .uniformMember("UBO", "model", rhi::UniformType::Mat4, 128, 64)
+                    .uniformMember("UBO", "lightDirection", rhi::UniformType::Float4, 192, 16)
+                    .uniformMember("UBO", "eyePosition", rhi::UniformType::Float3, 208, 12)
+                    .uniformMember("UBO", "exposure", rhi::UniformType::Float, 220, 4)
                     .build(m_engine);
 
     m_materialInstance = m_material->createInstance();
-
-    m_materialInstance->setParameter("gTex", m_texture, sampler);
-
-    PipelineState pipeline;
-    pipeline.vertexShader = vs;
-    pipeline.fragmentShader = fs;
-    pipeline.vertexBufferInfo = m_vertexBuffer->getVertexBufferInfoHandle();
-    pipeline.layout = m_material->getDescriptorSetLayout().getHandle();
-
-    m_pipelineHandle = m_device->createPipeline(pipeline);
 
     return true;
 }
@@ -296,17 +233,23 @@ void Renderer::render(const View* view)
     commandBuffer->beginRendering(info);
 
     for (auto& cmd : m_renderQueue.getRenderCommands()) {
-        cmd.materialInstance->setFrameIndex(frameIndex);
+        m_materialInstance->setFrameIndex(frameIndex);
 
-        cmd.materialInstance->setParameter("matWorld", cmd.matWorld);
-        cmd.materialInstance->setParameter("matView", view->getCamera()->getView());
-        cmd.materialInstance->setParameter("matProj", view->getCamera()->getProjection());
+        m_materialInstance->setParameter("model", cmd.matWorld);
+        m_materialInstance->setParameter("view", view->getCamera()->getView());
+        m_materialInstance->setParameter("projection", view->getCamera()->getProjection());
+        m_materialInstance->setParameter("eyePosition", view->getCamera()->getPosition());
+        m_materialInstance->setParameter("lightDirection", math::vec3(0.0f, -1.0f, 0.0f));
+        m_materialInstance->setParameter("exposure", 1.0f);
 
-        cmd.materialInstance->commit(m_engine);
+        m_materialInstance->commit(m_engine);
 
         // Bind pipeline, descriptor sets, vertex/index buffers, and draw
         commandBuffer->bindPipeline(cmd.pipelineHandle);
-        commandBuffer->bindDescriptorSets(cmd.pipelineHandle, cmd.materialInstance->getDescriptorSetHandle());
+        commandBuffer->bindDescriptorSets(cmd.pipelineHandle,
+                                          m_materialInstance->getDescriptorSetHandle(), 0, 1);
+        commandBuffer->bindDescriptorSets(cmd.pipelineHandle,
+                                          cmd.materialInstance->getDescriptorSetHandle(), 1, 1);
 
         // Draw Indexed
         if (cmd.indexBuffer != nullptr) {

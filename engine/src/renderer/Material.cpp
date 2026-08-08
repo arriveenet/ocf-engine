@@ -65,6 +65,10 @@ Material::Material(Engine& engine, const Builder& builder)
 
 Material::~Material()
 {
+    for (MaterialInstance* instance : m_instances) {
+        delete instance;
+    }
+    m_instances.clear();
 }
 
 void Material::terminate(Engine& engine)
@@ -72,9 +76,10 @@ void Material::terminate(Engine& engine)
     m_descriptorSetLayout.terminate(engine);
 }
 
-std::shared_ptr<MaterialInstance> Material::createInstance()
+MaterialInstance* Material::createInstance()
 {
-    auto instance = std::make_shared<MaterialInstance>(this);
+    MaterialInstance* instance = new MaterialInstance(this);
+    m_instances.push_back(instance);
     instance->create(*m_engine);
     return instance;
 }

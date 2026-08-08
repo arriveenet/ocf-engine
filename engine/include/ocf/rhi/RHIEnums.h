@@ -12,6 +12,7 @@ namespace ocf::rhi {
 
 static constexpr size_t VERTEX_ATTRIBUTE_COUNT_MAX = 16;
 static constexpr size_t SAMPLER_COUNT_MAX = 62;
+static constexpr size_t DESCRIPTOR_SET_COUNT_MAX = 4;
 
 enum class PrimitiveType : uint8_t {
 	Points,

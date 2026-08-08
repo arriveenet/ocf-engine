@@ -31,16 +31,16 @@ void setup(Engine& engine, View* view, Scene *scene)
     auto cameraNode = scene->getRoot()->createChild();
     auto camera = cameraNode->addComponent<Camera>();
     camera->perspective(math::radians(60.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-    camera->lookAt(math::vec3(0.0f, 0.0f, 5.0f), math::vec3(0.0f, 0.0f, 0.0f),
+    camera->lookAt(math::vec3(5.0f, 5.0f, 5.0f), math::vec3(0.0f, 0.0f, 0.0f),
                    math::vec3(0.0f, 1.0f, 0.0f));
     view->setCamera(camera);
 
-    auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.vert.spv");
-    auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/cube.frag.spv");
+    auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/basic_pbr.vert.spv");
+    auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/basic_pbr.frag.spv");
 
     g_mesh = new Mesh();
     ModelImporter importer;
-    if(importer.import("models/utah_teapot.obj", *g_mesh)) {
+    if(importer.import("models/BoxTextured/glTF/BoxTextured.gltf", *g_mesh)) {
         g_mesh->createSubMeshBuffers(engine);
         auto node = scene->getRoot()->createChild();
         auto meshInstance = node->addComponent<MeshInstance>(engine, vsPath, fsPath);

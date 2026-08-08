@@ -101,13 +101,14 @@ void VulkanCommandBuffer::bindPipeline(PipelineHandle ph)
 
 }
 
-void VulkanCommandBuffer::bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh)
+void VulkanCommandBuffer::bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh,
+                                             uint32_t firstSet, uint32_t descriptorSetCount)
 {
     VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
     VulkanDescriptorSet* descriptorSet = m_device.handle_cast<VulkanDescriptorSet*>(dsh);
 
     vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.layout,
-                            0, 1, &descriptorSet->vk.id, 0, nullptr);
+                            firstSet, descriptorSetCount, &descriptorSet->vk.id, 0, nullptr);
 }
 
 void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,

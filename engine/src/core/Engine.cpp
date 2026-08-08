@@ -7,6 +7,7 @@
 #include "ocf/platform/FileSystem.h"
 #include "ocf/platform/Window.h"
 #include "ocf/renderer/Renderer.h"
+#include "ocf/resource/TextureManager.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
 #include "ocf/scene/Scene.h"
@@ -29,6 +30,7 @@ Engine::~Engine()
         delete view;
     }
 
+    m_textureManager.reset();
     m_renderer.reset();
     m_device.reset();
 }
@@ -38,7 +40,7 @@ bool Engine::init()
     // Setup Logger
     auto consoleAppender = std::make_unique<ConsoleAppender>();
     Logger::getInstance().addAppender(std::move(consoleAppender));
-    Logger::getInstance().setLogLevel(LogLevel::Debug);
+    Logger::getInstance().setLogLevel(LogLevel::Trace);
 
     OCF_LOG_INFO("Window platform: {}", Window::platformToString(m_window->getPlatform()));
 
@@ -49,6 +51,9 @@ bool Engine::init()
     // Initialize Renderer
     m_renderer = std::make_unique<Renderer>(*this, m_device.get());
     m_renderer->init();
+
+    // Initialize Texture Manager
+    m_textureManager = std::make_unique<TextureManager>(*this);
 
     return true;
 }
@@ -121,6 +126,11 @@ Device& Engine::getDevice() const
 Renderer& Engine::getRenderer() const
 {
     return *m_renderer.get();
+}
+
+TextureManager& Engine::getTextureManager() const
+{
+    return *m_textureManager.get();
 }
 
 math::ivec2 Engine::getWindowSize() const
