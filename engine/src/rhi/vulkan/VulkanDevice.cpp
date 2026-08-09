@@ -1007,14 +1007,14 @@ void VulkanDevice::submitPresent()
     };
     // Get current frame semaphore
     VkSemaphore renderCompleteSemaphore = m_swapchain->getRenderCompleteSemaphore();
-    VkSemaphore presentComplateSemaphore = m_swapchain->getPresentCompleteSemaphore();
+    VkSemaphore presentCompleteSemaphore = m_swapchain->getPresentCompleteSemaphore();
 
     VkCommandBuffer commandBuffer = frame.commandBuffer->getHandle();
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
     submitInfo.pWaitDstStageMask = &waitStageMask;
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &presentComplateSemaphore;
+    submitInfo.pWaitSemaphores = &presentCompleteSemaphore;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
     auto result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.inFlightFence);
