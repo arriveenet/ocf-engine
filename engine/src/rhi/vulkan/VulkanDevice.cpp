@@ -404,9 +404,6 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     builder.useDynamicRendering(colorFormat, depthFormat);
     pipeline->vk.pipeline = builder.build(m_device);
 
-    vkDestroyShaderModule(m_device, vs->vk.id, nullptr);
-    vkDestroyShaderModule(m_device, fs->vk.id, nullptr);
-
     return Handle<RHIPipeline>{handle.getId()};
 }
 
@@ -496,6 +493,21 @@ void VulkanDevice::destroyTexture(TextureHandle handle)
     tex->image.reset();
 
     destruct(handle, tex);
+}
+
+void VulkanDevice::destroyShaderModule(ShaderModuleHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanShaderModule* shaderModule = handle_cast<VulkanShaderModule*>(handle);
+    if (shaderModule->vk.id != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(m_device, shaderModule->vk.id, nullptr);
+        shaderModule->vk.id = VK_NULL_HANDLE;
+    }
+
+    destruct(handle, shaderModule);
 }
 
 void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)

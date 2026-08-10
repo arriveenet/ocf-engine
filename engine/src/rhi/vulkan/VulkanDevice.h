@@ -78,6 +78,8 @@ public:
 
     void destroyTexture(TextureHandle handle) override;
 
+    void destroyShaderModule(ShaderModuleHandle handle) override;
+
     void destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle) override;
 
     void destroyDescriptorSet(DescriptorSetHandle handle) override;
