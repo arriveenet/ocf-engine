@@ -124,4 +124,32 @@ Texture* TextureManager::getWhiteTexture(std::string_view key, uint8_t luma)
     return texture;
 }
 
+Texture* TextureManager::getDefaultNormalTexture()
+{
+    const char* key = "/default-normal-texture";
+    Texture* texture = getTextureForKey(key);
+    if (texture != nullptr) {
+        return texture;
+    }
+
+    uint8_t texls[] = {0x80, 0x80, 0xff, 0xff, 0x80, 0x80, 0xff, 0xff,
+                       0x80, 0x80, 0xff, 0xff, 0x80, 0x80, 0xff, 0xff};
+
+    Texture::PixelBufferDescriptor buffer(texls, sizeof(texls), Texture::Format::RGBA,
+                                          Texture::Type::Ubyte, nullptr);
+    texture = Texture::Builder()
+                  .width(2)
+                  .height(2)
+                  .levels(0)
+                  .sampler(Texture::Sampler::Sampler2D)
+                  .format(Texture::InternalFormat::RGBA8)
+                  .build(m_engine);
+    texture->setImage(m_engine, 0, std::move(buffer));
+
+    m_textures.emplace(key, texture);
+
+    return texture;
+}
+
+
 } // namespace ocf

@@ -23,6 +23,8 @@ public:
 
     Texture* getWhiteTexture(std::string_view key, uint8_t luma);
 
+    Texture* getDefaultNormalTexture();
+
 private:
     Engine& m_engine;
     std::unordered_map<std::string, Texture*> m_textures;
