@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/rhi/Device.h"
 #include "ocf/rhi/Handle.h"
 
 namespace ocf {
