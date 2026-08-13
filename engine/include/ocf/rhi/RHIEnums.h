@@ -237,6 +237,14 @@ enum class BlendFunction : uint8_t {
     OneMinusDstAlpha,
 };
 
+enum class BlendEquation : uint8_t {
+    Add,
+    Subtract,
+    ReverseSubtract,
+    Min,
+    Max,
+};
+
 enum class SamplerCompareFunc : uint8_t {
     Never,
     Less,
@@ -255,17 +263,59 @@ struct RasterState {
     using CullingMode = rhi::CullingMode;
     using DepthFunc = rhi::SamplerCompareFunc;
     using BlendFunction = rhi::BlendFunction;
+    using BlendEquation = rhi::BlendEquation;
 
-    CullingMode culling = CullingMode::None;
-    BlendFunction blendSrc = BlendFunction::One;
-    BlendFunction blendDst = BlendFunction::Zero;
-    DepthFunc depthFunc = DepthFunc::Less;
+    struct RenderStateBits {
+        CullingMode culling : 2; // 2
+
+        BlendEquation blendEquationColor : 3; // 5
+        BlendEquation blendEquationAlpha : 3; // 8
+
+        BlendFunction blendFunctionSrcColor : 4; // 12
+        BlendFunction blendFunctionDstColor : 4; // 16
+        BlendFunction blendFunctionSrcAlpha : 4; // 20
+        BlendFunction blendFunctionDstAlpha : 4; // 24
+
+        bool depthWriteEnable : 1; // 25
+        DepthFunc depthFunc : 3; // 28
+
+        uint8_t padding : 4; // 32
+    };
+
+    union {
+        RenderStateBits bits;
+        uint32_t value = 0;
+    };
+
+    RasterState()
+    {
+        bits.culling = CullingMode::Back;
+        bits.blendFunctionSrcColor = BlendFunction::One;
+        bits.blendFunctionDstColor = BlendFunction::Zero;
+        bits.blendEquationColor = BlendEquation::Add;
+        bits.blendFunctionSrcAlpha = BlendFunction::One;
+        bits.blendFunctionDstAlpha = BlendFunction::Zero;
+        bits.blendEquationAlpha = BlendEquation::Add;
+        bits.depthWriteEnable = true;
+        bits.depthFunc = DepthFunc::Less;
+    }
+
+    bool operator==(const RasterState& other) const { return value == other.value; }
+
+    bool operator!=(const RasterState& other) const { return value != other.value; }
 
     bool hasBlending() const noexcept
     {
-        return !(blendSrc == BlendFunction::One && blendDst == BlendFunction::Zero);
+        return !(bits.blendFunctionSrcColor == BlendFunction::One &&
+                 bits.blendFunctionDstColor == BlendFunction::Zero &&
+                 bits.blendEquationColor == BlendEquation::Add &&
+                 bits.blendFunctionSrcAlpha == BlendFunction::One &&
+                 bits.blendFunctionDstAlpha == BlendFunction::Zero &&
+                 bits.blendEquationAlpha == BlendEquation::Add);
     }
 };
+
+static_assert(sizeof(RasterState) == sizeof(uint32_t), "RasterState size must be 4 bytes");
 
 struct DescriptorLayoutBinding {
     uint32_t binding;

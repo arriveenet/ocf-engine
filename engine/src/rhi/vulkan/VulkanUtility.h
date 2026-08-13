@@ -268,6 +268,39 @@ constexpr VkSamplerAddressMode getWrapMode(SamplerWrapMode mode)
     return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 }
 
+constexpr VkBlendFactor getBlendFunction(BlendFunction blend)
+{
+    switch (blend) {
+    case ocf::rhi::BlendFunction::Zero:                 return VK_BLEND_FACTOR_ZERO;
+    case ocf::rhi::BlendFunction::One:                  return VK_BLEND_FACTOR_ONE;
+    case ocf::rhi::BlendFunction::SrcColor:             return VK_BLEND_FACTOR_SRC_COLOR;
+    case ocf::rhi::BlendFunction::OneMinusSrcColor:     return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    case ocf::rhi::BlendFunction::DstColor:             return VK_BLEND_FACTOR_DST_COLOR;
+    case ocf::rhi::BlendFunction::OneMinusDstColor:     return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+    case ocf::rhi::BlendFunction::SrcAlpha:             return VK_BLEND_FACTOR_SRC_ALPHA;
+    case ocf::rhi::BlendFunction::OneMinusSrcAlpha:     return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    case ocf::rhi::BlendFunction::DstAlpha:             return VK_BLEND_FACTOR_DST_ALPHA;
+    case ocf::rhi::BlendFunction::OneMinusDstAlpha:     return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+    default:
+        assert(false && "Unknown BlendFunction");
+        return VK_BLEND_FACTOR_MAX_ENUM;
+    }
+}
+
+constexpr VkBlendOp getBlendEquation(BlendEquation equation)
+{
+    switch (equation) {
+    case ocf::rhi::BlendEquation::Add:              return VK_BLEND_OP_ADD;
+    case ocf::rhi::BlendEquation::Subtract:         return VK_BLEND_OP_SUBTRACT;
+    case ocf::rhi::BlendEquation::ReverseSubtract:  return VK_BLEND_OP_REVERSE_SUBTRACT;
+    case ocf::rhi::BlendEquation::Min:              return VK_BLEND_OP_MIN;
+    case ocf::rhi::BlendEquation::Max:              return VK_BLEND_OP_MAX;
+    default:
+        assert(false && "Unknown BlendEquation");
+        return VK_BLEND_OP_MAX_ENUM;
+    }
+}
+
 constexpr const char* getPhysicalDeviceTypeString(VkPhysicalDeviceType type)
 {
     switch (type) {

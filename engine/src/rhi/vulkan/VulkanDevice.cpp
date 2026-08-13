@@ -371,8 +371,8 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     VkPipelineDepthStencilStateCreateInfo depthStencilState{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = VulkanUtility::getDepthFunc(state.rasterState.depthFunc),
+        .depthWriteEnable = state.rasterState.bits.depthWriteEnable ? VK_TRUE : VK_FALSE,
+        .depthCompareOp = VulkanUtility::getDepthFunc(state.rasterState.bits.depthFunc),
     };
 
     // Culling settings
@@ -381,10 +381,23 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VulkanUtility::getCullMode(state.rasterState.culling),
+        .cullMode = VulkanUtility::getCullMode(state.rasterState.bits.culling),
         .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
         .depthBiasEnable = VK_FALSE,
         .lineWidth = 1.0f,
+    };
+
+    // Color blending settings
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{
+        .blendEnable = state.rasterState.hasBlending() ? VK_TRUE : VK_FALSE,
+        .srcColorBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionSrcColor),
+        .dstColorBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionDstColor),
+        .colorBlendOp = VulkanUtility::getBlendEquation(state.rasterState.bits.blendEquationColor),
+        .srcAlphaBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionSrcAlpha),
+        .dstAlphaBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionDstAlpha),
+        .alphaBlendOp = VulkanUtility::getBlendEquation(state.rasterState.bits.blendEquationAlpha),
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
     // Format
@@ -401,6 +414,7 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     builder.setPipelineLayout(pipelineLayout);
     builder.setDepthStencilState(depthStencilState);
     builder.setRasterizationState(rasterizerState);
+    builder.setColorBlendAttachmentState(colorBlendAttachment);
     builder.useDynamicRendering(colorFormat, depthFormat);
     pipeline->vk.pipeline = builder.build(m_device);
 
