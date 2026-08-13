@@ -30,6 +30,7 @@ Engine::~Engine()
         delete view;
     }
 
+    m_currentScene.reset();
     m_textureManager.reset();
     m_renderer.reset();
     m_device.reset();

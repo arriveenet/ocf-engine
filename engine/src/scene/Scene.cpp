@@ -18,6 +18,10 @@ Scene::~Scene()
 
 void Scene::update(float deltaTime)
 {
+    if (m_updateCallback) {
+        m_updateCallback(deltaTime);
+    }
+
     m_root->update(deltaTime);
 
     m_root->updateTransform(math::mat4(1.0f), true);

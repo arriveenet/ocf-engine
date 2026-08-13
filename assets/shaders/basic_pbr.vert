@@ -22,10 +22,10 @@ layout(set=0, binding=0) uniform UBO {
 
 void main()
 {
-	vec4 worldPosition = ubo.model * vec4(inPosition, 1.0);
-	gl_Position = ubo.projection * ubo.view * worldPosition;
-	outWorldPosition = worldPosition.xyz;
-	outTexCoord = inTexCoord;
+    vec4 worldPosition = ubo.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.projection * ubo.view * worldPosition;
+    outWorldPosition = worldPosition.xyz;
+    outTexCoord = inTexCoord;
 
     mat3 mat3World = mat3(ubo.model);
     vec3 N = normalize(mat3World * inNormal);

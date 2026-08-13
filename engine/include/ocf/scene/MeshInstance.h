@@ -20,6 +20,8 @@ public:
                  std::string_view fragmentShaderPath);
     ~MeshInstance() override;
 
+    void clear();
+
     void setMesh(const Ref<Mesh>& mesh);
 
     Ref<Mesh> getMesh() const noexcept;
@@ -34,7 +36,6 @@ private:
     Ref<Mesh> m_mesh;
     rhi::ShaderModuleHandle m_vertexShader;
     rhi::ShaderModuleHandle m_fragmentShader;
-    rhi::PipelineHandle m_pipelineHandle;
     Material* m_material = nullptr;
     MaterialInstance* m_materialInstance = nullptr;
 };

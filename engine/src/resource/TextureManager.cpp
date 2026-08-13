@@ -33,44 +33,43 @@ void TextureManager::clear()
 
 Texture* TextureManager::addImage(std::string_view filePath)
 {
-    Texture* texture = nullptr;
-
     std::string fullPath = FileSystem::getInstance()->getAssetFullPath(filePath.data());
     if (fullPath.empty()) {
         return nullptr;
     }
 
+    // Check if the texture is already loaded
     auto iter = m_textures.find(fullPath);
     if (iter != m_textures.end()) {
-        texture = iter->second;
+        return iter->second;
     }
 
-    if (!texture) {
-        int width = 0, height = 0, channels = 0;
-        unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-        if (data != nullptr) {
-            Texture::Format format = Texture::Format::RGBA;
-            Texture::InternalFormat internalFormat = Texture::InternalFormat::RGBA8;
+    Texture* texture = nullptr;
+    int width = 0, height = 0, channels = 0;
+    unsigned char* data = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    if (data != nullptr) {
+        Texture::Format format = Texture::Format::RGBA;
+        Texture::InternalFormat internalFormat = Texture::InternalFormat::RGBA8;
 
-            Texture::PixelBufferDescriptor buffer(
-                data, size_t(width * height * 4), format, Texture::Type::Ubyte,
-                (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
+        Texture::PixelBufferDescriptor buffer(
+            data, size_t(width * height * 4), format, Texture::Type::Ubyte,
+            (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
 
-            texture = Texture::Builder()
-                          .width(uint32_t(width))
-                          .height(uint32_t(height))
-                          .levels(0)
-                          .sampler(Texture::Sampler::Sampler2D)
-                          .format(internalFormat)
-                          .build(m_engine);
-            texture->setImage(m_engine, 0, std::move(buffer));
+        texture = Texture::Builder()
+                      .width(uint32_t(width))
+                      .height(uint32_t(height))
+                      .levels(0)
+                      .sampler(Texture::Sampler::Sampler2D)
+                      .format(internalFormat)
+                      .build(m_engine);
+        texture->setImage(m_engine, 0, std::move(buffer));
 
-            m_textures.emplace(fullPath, texture);
-        }
-        else {
+        m_textures.emplace(fullPath, texture);
+        OCF_LOG_DEBUG("Loaded texture: {}", fullPath.c_str());
+    }
+    else {
 
-            OCF_LOG_ERROR("Could not load texture file: %s", fullPath.c_str());
-        }
+        OCF_LOG_ERROR("Could not load texture file: {}", fullPath.c_str());
     }
 
     return texture;

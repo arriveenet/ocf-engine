@@ -65,14 +65,15 @@ Material::Material(Engine& engine, const Builder& builder)
 
 Material::~Material()
 {
-    for (MaterialInstance* instance : m_instances) {
-        delete instance;
-    }
-    m_instances.clear();
 }
 
 void Material::terminate(Engine& engine)
 {
+    for (MaterialInstance* instance : m_instances) {
+        instance->terminate(engine);
+        delete instance;
+    }
+    m_instances.clear();
     m_descriptorSetLayout.terminate(engine);
 }
 

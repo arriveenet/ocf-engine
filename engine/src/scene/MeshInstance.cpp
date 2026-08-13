@@ -6,6 +6,7 @@
 #include "ocf/renderer/MaterialInstance.h"
 #include "ocf/renderer/Renderer.h"
 #include "ocf/renderer/VertexBuffer.h"
+#include "ocf/renderer/IndexBuffer.h"
 #include "ocf/resource/Mesh.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -41,6 +42,23 @@ MeshInstance::MeshInstance(Engine& engine, std::string_view vertexShaderPath,
 
 MeshInstance::~MeshInstance()
 {
+    clear();
+}
+
+void MeshInstance::clear()
+{
+    auto& device = m_engine.getDevice();
+    for (auto renderable : m_renderables) {
+        device.destroyPipeline(renderable->getPipelineHandle());
+        delete renderable;
+    }
+    m_renderables.clear();
+
+    m_material->terminate(m_engine);
+    delete m_material;
+    m_material = nullptr;
+    m_materialInstance = nullptr;
+    m_mesh = nullptr;
 }
 
 void MeshInstance::setMesh(const Ref<Mesh>& mesh)
@@ -49,44 +67,35 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
         return;
     }
 
+    auto& device = m_engine.getDevice();
+    for (auto renderable : m_renderables) {
+        device.destroyPipeline(renderable->getPipelineHandle());
+        delete renderable;
+    }
+    m_renderables.clear();
+
     m_mesh = mesh;
 
     Material* uboMaterial = m_engine.getRenderer().getUBOMaterial();
-
-    TextureSampler sampler;
 
     int subMeshCount = mesh->getSubMeshCount();
     for (int i = 0; i < subMeshCount; i++) {
         const auto& subMesh = mesh->getSubMesh(i);
 
-        m_materialInstance->setFrameIndex(0);
+        MaterialInstance* materialInstance = m_material->createInstance();    
 
-        m_materialInstance->setParameter("baseColorFactor", subMesh.materialParams.baseColorFactor);
-        m_materialInstance->setParameter("metallicFactor", subMesh.materialParams.metallicFactor);
-        m_materialInstance->setParameter("roughnessFactor", subMesh.materialParams.roughnessFactor);
-        m_materialInstance->setParameter("alphaCutoff", subMesh.materialParams.alphaCutoff);
-        m_materialInstance->setParameter("alphaMode", 0);
-        m_materialInstance->setParameter("hasNormalMap", subMesh.materialParams.hasNormalMap);
-        m_materialInstance->setParameter("baseColorTexture", subMesh.baseColorTexture, sampler);
-        m_materialInstance->setParameter("metallicRoughnessTexture", subMesh.metallicRoughnessTexture, sampler);
-        m_materialInstance->setParameter("normalMapTexture", subMesh.normalMapTexture, sampler);
+        materialInstance->setParameter("baseColorFactor", subMesh.materialParams.baseColorFactor);
+        materialInstance->setParameter("metallicFactor", subMesh.materialParams.metallicFactor);
+        materialInstance->setParameter("roughnessFactor", subMesh.materialParams.roughnessFactor);
+        materialInstance->setParameter("alphaCutoff", subMesh.materialParams.alphaCutoff);
+        materialInstance->setParameter("alphaMode", 0);
+        materialInstance->setParameter("hasNormalMap", int(subMesh.materialParams.hasNormalMap));
+        materialInstance->setParameter("baseColorTexture", subMesh.baseColorTexture, subMesh.sampler);
+        materialInstance->setParameter("metallicRoughnessTexture",
+                                         subMesh.metallicRoughnessTexture, subMesh.sampler);
+        materialInstance->setParameter("normalMapTexture", subMesh.normalMapTexture, subMesh.sampler);
 
-        m_materialInstance->commit(m_engine);
-
-        m_materialInstance->setFrameIndex(1);
-
-        m_materialInstance->setParameter("baseColorFactor", subMesh.materialParams.baseColorFactor);
-        m_materialInstance->setParameter("metallicFactor", subMesh.materialParams.metallicFactor);
-        m_materialInstance->setParameter("roughnessFactor", subMesh.materialParams.roughnessFactor);
-        m_materialInstance->setParameter("alphaCutoff", subMesh.materialParams.alphaCutoff);
-        m_materialInstance->setParameter("alphaMode", 0);
-        m_materialInstance->setParameter("hasNormalMap", subMesh.materialParams.hasNormalMap);
-        m_materialInstance->setParameter("baseColorTexture", subMesh.baseColorTexture, sampler);
-        m_materialInstance->setParameter("metallicRoughnessTexture",
-                                         subMesh.metallicRoughnessTexture, sampler);
-        m_materialInstance->setParameter("normalMapTexture", subMesh.normalMapTexture, sampler);
-
-        m_materialInstance->commit(m_engine);
+        materialInstance->commit(m_engine);
 
         rhi::PipelineState pipeline;
         pipeline.vertexShader = m_vertexShader;
@@ -94,13 +103,17 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
         pipeline.vertexBufferInfo = subMesh.vertexBuffer->getVertexBufferInfoHandle();
         pipeline.pipelineLayout.setLayout[0] = uboMaterial->getDescriptorSetLayout().getHandle();
         pipeline.pipelineLayout.setLayout[1] = m_material->getDescriptorSetLayout().getHandle();
+        pipeline.rasterState = subMesh.materialParams.rasterState;
 
-        m_pipelineHandle = m_engine.getDevice().createPipeline(pipeline);
+        auto pipelineHandle = m_engine.getDevice().createPipeline(pipeline);
 
         Renderable* renderable = new Renderable(subMesh.vertexBuffer, subMesh.indexBuffer,
-                                                m_materialInstance, m_pipelineHandle);
+                                                materialInstance, pipelineHandle);
         m_renderables.push_back(renderable);
     }
+
+    device.destroyShaderModule(m_vertexShader);
+    device.destroyShaderModule(m_fragmentShader);
 }
 
 Ref<Mesh> MeshInstance::getMesh() const noexcept

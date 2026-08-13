@@ -9,6 +9,8 @@
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
 #include "ocf/platform/FileSystem.h"
+#include "ocf/renderer/TextureSampler.h"
+#include "ocf/rhi/RHIEnums.h"
 
 #define CGLTF_IMPLEMENTATION
 #include <cgltf.h>
@@ -16,9 +18,56 @@
 #include <cassert>
 #include <memory>
 
+
 namespace ocf {
 
 using namespace math;
+
+static constexpr TextureSampler::MagFilter getMagFilter(cgltf_filter_type filter)
+{
+    switch (filter) {
+    case cgltf_filter_type_nearest:
+        return TextureSampler::MagFilter::Nearest;
+    case cgltf_filter_type_linear:
+        return TextureSampler::MagFilter::Linear;
+    default:
+        return TextureSampler::MagFilter::Linear;
+    }
+}
+
+static constexpr TextureSampler::MinFilter getMinFilter(cgltf_filter_type filter)
+{
+    switch (filter) {
+    case cgltf_filter_type_nearest:
+        return TextureSampler::MinFilter::Nearest;
+    case cgltf_filter_type_linear:
+        return TextureSampler::MinFilter::Linear;
+    case cgltf_filter_type_nearest_mipmap_nearest:
+        return TextureSampler::MinFilter::NearestMipmapNearest;
+    case cgltf_filter_type_linear_mipmap_nearest:
+        return TextureSampler::MinFilter::LinearMipmapNearest;
+    case cgltf_filter_type_nearest_mipmap_linear:
+        return TextureSampler::MinFilter::NearestMipmapLinear;
+    case cgltf_filter_type_linear_mipmap_linear:
+        return TextureSampler::MinFilter::LinearMipmapLinear;
+    default:
+        return TextureSampler::MinFilter::Linear;
+    }
+}
+
+static constexpr TextureSampler::WrapMode getWrapMode(cgltf_wrap_mode wrap)
+{
+    switch (wrap) {
+    case cgltf_wrap_mode_repeat:
+        return TextureSampler::WrapMode::Repeat;
+    case cgltf_wrap_mode_clamp_to_edge:
+        return TextureSampler::WrapMode::ClampToEdge;
+    case cgltf_wrap_mode_mirrored_repeat:
+        return TextureSampler::WrapMode::MirroredRepeat;
+    default:
+        return TextureSampler::WrapMode::Repeat;
+    }
+}
 
 GLTFLoader::GLTFLoader()
 {
@@ -136,7 +185,9 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, Mesh& mesh)
             float texCoord[2];
             for (cgltf_size j = 0; j < accessor->count; ++j) {
                 cgltf_accessor_read_float(accessor, j, texCoord, 2);
-                texCoords.push_back(vec2{texCoord[0], texCoord[1]});
+                const float u =  texCoord[0];
+                const float v =  texCoord[1];
+                texCoords.push_back(vec2{u, v});
             }
         }
     }
@@ -220,10 +271,39 @@ void GLTFLoader::processMaterial(const cgltf_material& material, Mesh::MaterialP
     OCF_LOG_TRACE("      Emissive Factor: {}, {}, {}", material.emissive_factor[0],
                   material.emissive_factor[1], material.emissive_factor[2]);
 
-    const char* alphaModeStr = (material.alpha_mode == cgltf_alpha_mode_opaque)  ? "OPAQUE"
-                               : (material.alpha_mode == cgltf_alpha_mode_mask)  ? "MASK"
-                               : (material.alpha_mode == cgltf_alpha_mode_blend) ? "BLEND"
-                                                                                 : "UNKNOWN";
+    // Alpha Mode
+    Mesh::RasterState& rasterState = materialParams.rasterState;
+    switch (material.alpha_mode) {
+    case cgltf_alpha_mode_opaque:
+        break;
+    case cgltf_alpha_mode_mask:
+        rasterState.bits.blendFunctionSrcColor = Mesh::RasterState::BlendFunction::SrcAlpha;
+        rasterState.bits.blendFunctionDstColor = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
+        rasterState.bits.blendEquationColor = Mesh::RasterState::BlendEquation::Add;
+        rasterState.bits.blendFunctionSrcAlpha = Mesh::RasterState::BlendFunction::SrcAlpha;
+        rasterState.bits.blendFunctionDstAlpha = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
+        rasterState.bits.blendEquationAlpha = Mesh::RasterState::BlendEquation::Add;
+
+        rasterState.bits.depthWriteEnable = true;
+        break;
+    case cgltf_alpha_mode_blend:
+        rasterState.bits.blendFunctionSrcColor = Mesh::RasterState::BlendFunction::SrcAlpha;
+        rasterState.bits.blendFunctionDstColor = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
+        rasterState.bits.blendEquationColor = Mesh::RasterState::BlendEquation::Add;
+        rasterState.bits.blendFunctionSrcAlpha = Mesh::RasterState::BlendFunction::SrcAlpha;
+        rasterState.bits.blendFunctionDstAlpha = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
+        rasterState.bits.blendEquationAlpha = Mesh::RasterState::BlendEquation::Add;
+
+        rasterState.bits.depthWriteEnable = false;
+        break;
+    default:
+        break;
+    }
+
+    const char* alphaModeStr = (material.alpha_mode == cgltf_alpha_mode_opaque)  ? "Opaque"
+                               : (material.alpha_mode == cgltf_alpha_mode_mask)  ? "Mask"
+                               : (material.alpha_mode == cgltf_alpha_mode_blend) ? "Blend"
+                                                                                 : "Unknown";
 
     OCF_LOG_TRACE("      Alpha Mode: {}", alphaModeStr);
     OCF_LOG_TRACE("      Alpha Cutoff: {}", material.alpha_cutoff);
@@ -255,6 +335,10 @@ void GLTFLoader::processTexture(const char* name, const cgltf_texture_view& text
     const cgltf_sampler* sampler = textureView.texture->sampler;
     if (sampler) {
         OCF_LOG_TRACE("        Sampler: {}", sampler->name ? sampler->name : "Unnamed");
+        textureData.sampler.setMagFilter(getMagFilter(sampler->mag_filter));
+        textureData.sampler.setMinFilter(getMinFilter(sampler->min_filter));
+        textureData.sampler.setWrapModeS(getWrapMode(sampler->wrap_s));
+        textureData.sampler.setWrapModeT(getWrapMode(sampler->wrap_t));
     }
 
     textures[name] = std::move(textureData);

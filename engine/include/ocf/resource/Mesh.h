@@ -24,6 +24,7 @@ class Texture;
 class Mesh : public Resource {
 public:
     using PrimitiveType = rhi::PrimitiveType;
+    using RasterState = rhi::RasterState;
 
     enum ArrayType : uint8_t {
         ArrayVertex     = 0,
@@ -53,6 +54,7 @@ public:
         float roughnessFactor = 1.0f;
         float alphaCutoff = 0.5f;
         AlphaMode alphaMode = AlphaMode::Opaque;
+        RasterState rasterState;
         bool hasNormalMap = false;
     };
 
@@ -64,14 +66,14 @@ public:
 
     struct SubMesh {
         uint64_t format;
-        PrimitiveType primitive;
         VertexBuffer* vertexBuffer;
         IndexBuffer* indexBuffer;
         Texture* baseColorTexture;
         Texture* metallicRoughnessTexture;
         Texture* normalMapTexture;
-        Material* material;
         MaterialParams materialParams;
+        PrimitiveType primitive;
+        TextureSampler sampler;
    };
 
     Mesh();
@@ -114,6 +116,7 @@ private:
         uint8_t vertexStride;
         uint32_t vertexCount;
         uint32_t indexCount;
+        MaterialParams materialParams;
         std::vector<uint8_t> vertexArray;
         std::vector<uint8_t> indexArray;
         std::unordered_map<std::string, TextureData> textures;

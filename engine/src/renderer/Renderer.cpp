@@ -149,8 +149,6 @@ Renderer::Renderer(Engine& engine, rhi::Device* device)
 Renderer::~Renderer()
 {
     m_material->terminate(m_engine);
-    m_materialInstance->terminate(m_engine);
-
     delete m_material;
 }
 
@@ -229,7 +227,7 @@ void Renderer::render(const View* view)
                                     rhi::ResourceState::DepthStencilAttachment);
 
     rhi::RenderingInfo info;
-    info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    info.clearColor = {0.0f, 0.0f, 1.0f, 1.0f};
     commandBuffer->beginRendering(info);
 
     for (auto& cmd : m_renderQueue.getRenderCommands()) {
@@ -239,7 +237,7 @@ void Renderer::render(const View* view)
         m_materialInstance->setParameter("view", view->getCamera()->getView());
         m_materialInstance->setParameter("projection", view->getCamera()->getProjection());
         m_materialInstance->setParameter("eyePosition", view->getCamera()->getPosition());
-        m_materialInstance->setParameter("lightDirection", math::vec3(0.0f, -1.0f, 0.0f));
+        m_materialInstance->setParameter("lightDirection", math::vec4(0.0f, 1.0f, 1.0f, 0.0f));
         m_materialInstance->setParameter("exposure", 1.0f);
 
         m_materialInstance->commit(m_engine);

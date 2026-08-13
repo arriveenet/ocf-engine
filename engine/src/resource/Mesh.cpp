@@ -40,10 +40,16 @@ void Mesh::createSubMeshBuffers(Engine& engine)
                               subMeshLoad.indexArray.size());
         assert(indexBuffer && "Failed to create index buffer");
 
+        TextureSampler sampler;
+
         Texture* baseColorTexture = nullptr;
         auto iter = subMeshLoad.textures.find("Base Color");
         if (iter != subMeshLoad.textures.end()) {
             baseColorTexture = textureManager.addImage(iter->second.uri);
+            sampler = iter->second.sampler;
+        }
+        else {
+            baseColorTexture = textureManager.getWhiteTexture();
         }
 
         Texture* metallicRoughnessTexture = nullptr;
@@ -56,26 +62,27 @@ void Mesh::createSubMeshBuffers(Engine& engine)
         }
 
         Texture* normalMapTexture = nullptr;
-        iter = subMeshLoad.textures.find("Normal Map");
+        iter = subMeshLoad.textures.find("Normal");
         if (iter != subMeshLoad.textures.end()) {
             normalMapTexture = textureManager.addImage(iter->second.uri);
         }
         else {
-            normalMapTexture = textureManager.getWhiteTexture();
+            normalMapTexture = textureManager.getDefaultNormalTexture();
         }
 
         // Store buffers in the submesh
         SubMesh subMesh{
             .format = subMeshLoad.format,
-            .primitive = PrimitiveType::Triangles, // Assuming triangles for now; adjust as needed
             .vertexBuffer = vertexBuffer,
             .indexBuffer = indexBuffer,
             .baseColorTexture = baseColorTexture,
             .metallicRoughnessTexture = metallicRoughnessTexture,
             .normalMapTexture = normalMapTexture,
-            .material = nullptr,
+            .materialParams = subMeshLoad.materialParams,
+            .primitive = PrimitiveType::Triangles, // Assuming triangles for now; adjust as needed
+            .sampler = sampler,
         };
-        m_subMeshes.push_back(subMesh);
+        m_subMeshes.emplace_back(subMesh);
     }
 
     m_subMeshLoads.clear();
@@ -158,9 +165,19 @@ void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
                                        vertexCount, indexArray, indexCount);
     assert(result && "Failed to set surface data");
 
-    m_subMeshLoads.push_back({format, offsets, static_cast<uint8_t>(vertexElementSize),
-                              static_cast<uint32_t>(vertexCount), static_cast<uint32_t>(indexCount),
-                              std::move(vertexArray), std::move(indexArray), textures});
+    SubMeshLoad subMeshLoad{
+        .format = format,
+        .offsets = offsets,
+        .vertexStride = uint8_t(vertexElementSize),
+        .vertexCount = uint32_t(vertexCount),
+        .indexCount = uint32_t(indexCount),
+        .materialParams = materialParams,
+        .vertexArray = std::move(vertexArray),
+        .indexArray = std::move(indexArray),
+        .textures = textures,
+    };  
+
+    m_subMeshLoads.emplace_back(subMeshLoad);
 }
 
 void Mesh::makeOffsetsFromFormat(uint64_t format,
