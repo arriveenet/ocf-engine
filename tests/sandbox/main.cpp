@@ -25,13 +25,23 @@ using namespace ocf;
 using namespace ocf::rhi;
 
 Mesh* g_mesh = nullptr;
+Node* g_node = nullptr;
+
+void update(float deltaTime)
+{
+    if (g_node) {
+        g_node->setRotation(g_node->getRotation() + math::vec3(0.0f, 16.0f * deltaTime, 0.0f));
+    }
+}
 
 void setup(Engine& engine, View* view, Scene *scene)
 {
+    scene->setUpdateCallback(update);
+
     auto cameraNode = scene->getRoot()->createChild();
     auto camera = cameraNode->addComponent<Camera>();
     camera->perspective(math::radians(60.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-    camera->lookAt(math::vec3(5.0f, 5.0f, 5.0f), math::vec3(0.0f, 0.0f, 0.0f),
+    camera->lookAt(math::vec3(0.0f, 6.0f, 10.0f), math::vec3(0.0f, 0.0f, 0.0f),
                    math::vec3(0.0f, 1.0f, 0.0f));
     view->setCamera(camera);
 
@@ -40,10 +50,11 @@ void setup(Engine& engine, View* view, Scene *scene)
 
     g_mesh = new Mesh();
     ModelImporter importer;
-    if(importer.import("models/BoxTextured/glTF/BoxTextured.gltf", *g_mesh)) {
+    if(importer.import("models/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf", *g_mesh)) {
         g_mesh->createSubMeshBuffers(engine);
-        auto node = scene->getRoot()->createChild();
-        auto meshInstance = node->addComponent<MeshInstance>(engine, vsPath, fsPath);
+        g_node = scene->getRoot()->createChild();
+    
+        auto meshInstance = g_node->addComponent<MeshInstance>(engine, vsPath, fsPath);
         meshInstance->setMesh(g_mesh);
     }
     else {
