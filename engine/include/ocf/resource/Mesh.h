@@ -2,7 +2,7 @@
 #pragma once
 
 #include "ocf/core/Variant.h"
-#include "ocf/math/Vec4.h"
+#include "ocf/math/vec4.h"
 #include "ocf/renderer/MaterialEnums.h"
 #include "ocf/renderer/TextureSampler.h"
 #include "ocf/resource/Resource.h"

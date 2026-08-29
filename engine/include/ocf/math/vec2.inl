@@ -1,4 +1,6 @@
 #include "vec2.h"
+#include <cassert>
+
 namespace ocf {
 namespace math {
 
