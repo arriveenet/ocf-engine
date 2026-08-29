@@ -16,6 +16,8 @@ public:
 
     virtual bool load(std::string_view fileName, Mesh& mesh) = 0;
 
+    virtual Mesh* createMesh(std::string_view fileName) = 0;
+
     virtual bool supportsExtension(const std::string& extension) const = 0;
 };
 

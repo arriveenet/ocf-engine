@@ -159,6 +159,11 @@ bool ObjLoader::load(std::string_view fileName, Mesh& mesh)
     return true;
 }
 
+Mesh* ObjLoader::createMesh(std::string_view fileName)
+{
+    return nullptr;
+}
+
 bool ObjLoader::supportsExtension(const std::string& extension) const
 {
     if (extension == "obj") {

@@ -20,22 +20,30 @@ void ModelImporter::registerLoader(std::unique_ptr<IModelLoader> loader)
     m_loaders.push_back(std::move(loader));
 }
 
-bool ModelImporter::import(std::string_view filePath, Mesh& mesh)
+ModelImporter::Result ModelImporter::loadFromFile(std::string_view filePath)
 {
     const auto fullPath = FileSystem::getInstance()->getAssetFullPath(filePath);
     if (fullPath.empty()) {
-        return false;
+        return Result::Err("Failed to get full path");
     }
 
     const auto& ext = FileSystem::getInstance()->getExtension(filePath);
 
     for (const auto& loader : m_loaders) {
-        if (loader->supportsExtension(ext)) {
-            return loader->load(fullPath, mesh);
+        if (!loader->supportsExtension(ext)) {
+            continue;
+        }
+
+        Mesh* mesh = loader->createMesh(fullPath);
+        if (!mesh) {
+            return Result::Err("Failed to create mesh");
+        }
+        else {
+            return Result::Ok(Ref<Mesh>(mesh));
         }
     }
 
-    return false;
+    return Result::Err("Unsupported file extension");
 }
 
 } // namespace ocf

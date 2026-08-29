@@ -8,6 +8,8 @@
 #include "ocf/core/Logger.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
+#include "ocf/math/quat.h"
+#include "ocf/math/matrix_transform.h"
 #include "ocf/platform/FileSystem.h"
 #include "ocf/renderer/TextureSampler.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -23,7 +25,9 @@ namespace ocf {
 
 using namespace math;
 
-static constexpr TextureSampler::MagFilter getMagFilter(cgltf_filter_type filter)
+namespace {
+
+constexpr TextureSampler::MagFilter getMagFilter(cgltf_filter_type filter)
 {
     switch (filter) {
     case cgltf_filter_type_nearest:
@@ -35,7 +39,7 @@ static constexpr TextureSampler::MagFilter getMagFilter(cgltf_filter_type filter
     }
 }
 
-static constexpr TextureSampler::MinFilter getMinFilter(cgltf_filter_type filter)
+constexpr TextureSampler::MinFilter getMinFilter(cgltf_filter_type filter)
 {
     switch (filter) {
     case cgltf_filter_type_nearest:
@@ -55,7 +59,7 @@ static constexpr TextureSampler::MinFilter getMinFilter(cgltf_filter_type filter
     }
 }
 
-static constexpr TextureSampler::WrapMode getWrapMode(cgltf_wrap_mode wrap)
+constexpr TextureSampler::WrapMode getWrapMode(cgltf_wrap_mode wrap)
 {
     switch (wrap) {
     case cgltf_wrap_mode_repeat:
@@ -68,6 +72,7 @@ static constexpr TextureSampler::WrapMode getWrapMode(cgltf_wrap_mode wrap)
         return TextureSampler::WrapMode::Repeat;
     }
 }
+} // anonymous namespace
 
 GLTFLoader::GLTFLoader()
 {
@@ -99,28 +104,66 @@ bool GLTFLoader::load(std::string_view fileName, Mesh& mesh)
         return false;
     }
 
-    m_filePath = FileSystem::getInstance()->getParentFullPath(fileName);
+    m_gltfPath = FileSystem::getInstance()->getParentFullPath(fileName);
 
     OCF_LOG_TRACE("Successfully loaded GLTF file: {}", fileName);
     OCF_LOG_TRACE("Meshes : {}", data->meshes_count);
     OCF_LOG_TRACE("Nodes  : {}", data->nodes_count);
     OCF_LOG_TRACE("Scenes : {}", data->scenes_count);
 
-    for (cgltf_size i = 0; i < data->meshes_count; ++i) {
-        const cgltf_mesh& gltfMesh = data->meshes[i];
-
-        OCF_LOG_TRACE("Mesh {}: {}", i, gltfMesh.name ? gltfMesh.name : "Unnamed");
-        OCF_LOG_TRACE("  Primitives: {}", gltfMesh.primitives_count);
-
-        for (cgltf_size j = 0; j < gltfMesh.primitives_count; ++j) {
-            const cgltf_primitive& primitive = gltfMesh.primitives[j];
-            OCF_LOG_TRACE("    Attributes: {}", primitive.attributes_count);
-            
-            processPrimitive(primitive, mesh);
+    for (cgltf_size i = 0; i < data->scenes_count; ++i) {
+        const cgltf_scene& scene = data->scenes[i];
+        OCF_LOG_TRACE("Scene {}: {}", i, scene.name ? scene.name : "Unnamed");
+        
+        for (cgltf_size j = 0; j < scene.nodes_count; ++j) {
+            const cgltf_node* node = scene.nodes[j];
+            recursePrimitives(node, &mesh);
         }
     }
 
     return true;
+}
+
+Mesh* GLTFLoader::createMesh(std::string_view fileName)
+{
+    cgltf_options options{};
+
+    cgltf_data* rawData = nullptr;
+    if (cgltf_parse_file(&options, fileName.data(), &rawData) != cgltf_result_success) {
+        OCF_LOG_ERROR("Failed to parse GLTF file: {}", fileName);
+        return nullptr;
+    }
+
+    std::unique_ptr<cgltf_data, decltype(&cgltf_free)> data(rawData, cgltf_free);
+    m_gltfData = data.get();
+
+    if (cgltf_load_buffers(&options, data.get(), fileName.data()) != cgltf_result_success) {
+        OCF_LOG_ERROR("Failed to load GLTF buffers: {}", fileName);
+        return nullptr;
+    }
+
+    if (cgltf_validate(data.get()) != cgltf_result_success) {
+        OCF_LOG_ERROR("Failed to validate GLTF data: {}", fileName);
+        return nullptr;
+    }
+
+    m_gltfPath = FileSystem::getInstance()->getParentFullPath(fileName);
+
+    Mesh* mesh = new Mesh();
+
+    OCF_LOG_TRACE("Successfully loaded GLTF file: {}", fileName);
+
+    for (cgltf_size i = 0; i < data->scenes_count; ++i) {
+        const cgltf_scene& scene = data->scenes[i];
+        OCF_LOG_TRACE("Scene {}: {}", i, scene.name ? scene.name : "Unnamed");
+
+        for (cgltf_size j = 0; j < scene.nodes_count; ++j) {
+            const cgltf_node* node = scene.nodes[j];
+            recursePrimitives(node, mesh);
+        }
+    }
+
+    return mesh;
 }
 
 bool GLTFLoader::supportsExtension(const std::string& extension) const
@@ -128,7 +171,79 @@ bool GLTFLoader::supportsExtension(const std::string& extension) const
     return extension == "gltf" || extension == "glb";
 }
 
-void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, Mesh& mesh)
+void GLTFLoader::recursePrimitives(const cgltf_node* node, Mesh* mesh)
+{
+    if (node->mesh) {
+        createPrimitive(node, mesh);
+    }
+
+    for (cgltf_size i = 0; i < node->children_count; ++i) {
+        recursePrimitives(node->children[i], mesh);
+    }
+}
+
+void GLTFLoader::createPrimitive(const cgltf_node* node, Mesh* mesh)
+{
+    OCF_LOG_TRACE("  Node {}: ", node->name ? node->name : "Unnamed");
+
+    math::vec3 translation{0.0f, 0.0f, 0.0f};
+    math::quat rotation{0.0f, 0.0f, 0.0f, 1.0f};
+    math::vec3 scale{1.0f, 1.0f, 1.0f};
+
+    if (node->has_matrix) {
+        OCF_LOG_TRACE("    Transformation: Matrix");
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->matrix[0], node->matrix[1],
+                      node->matrix[2], node->matrix[3]);
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->matrix[4], node->matrix[5],
+                      node->matrix[6], node->matrix[7]);
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->matrix[8], node->matrix[9],
+                      node->matrix[10], node->matrix[11]);
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->matrix[12], node->matrix[13],
+                      node->matrix[14], node->matrix[15]);
+    }
+
+    if (node->has_translation) {
+        OCF_LOG_TRACE("    Transformation: Translation");
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}", node->translation[0], node->translation[1],
+                      node->translation[2]);
+        translation = math::vec3{node->translation[0], node->translation[1], node->translation[2]};
+    }
+
+    if (node->has_rotation) {
+        OCF_LOG_TRACE("    Transformation: Rotation");
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->rotation[0], node->rotation[1],
+                      node->rotation[2], node->rotation[3]);
+        rotation =
+            math::quat{node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[3]};
+    }
+
+    if (node->has_scale) {
+        OCF_LOG_TRACE("    Transformation: Scale");
+        OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}", node->scale[0], node->scale[1], node->scale[2]);
+        scale = math::vec3{node->scale[0], node->scale[1], node->scale[2]};
+    }
+
+    math::mat4 localTransform = math::mat4(1.0f);
+    localTransform = math::translate(localTransform, translation);
+    localTransform = localTransform * mat4_cast(rotation);
+    localTransform = math::scale(localTransform, scale);
+
+    const cgltf_mesh* gltfMesh = node->mesh;
+    if (gltfMesh != nullptr) {
+        OCF_LOG_TRACE("Mesh : {}", gltfMesh->name ? gltfMesh->name : "Unnamed");
+        OCF_LOG_TRACE("  Primitives: {}", gltfMesh->primitives_count);
+
+        for (cgltf_size j = 0; j < gltfMesh->primitives_count; ++j) {
+            const cgltf_primitive& primitive = gltfMesh->primitives[j];
+            OCF_LOG_TRACE("    Attributes: {}", primitive.attributes_count);
+
+            processPrimitive(primitive, localTransform, mesh);
+        }
+    }
+}
+
+void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, const math::mat4& transform,
+                                  Mesh* mesh)
 {
     std::array<Variant, Mesh::ArrayType::ArrayMax> arrays;
     PackedVec3Array positions;
@@ -150,7 +265,9 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, Mesh& mesh)
             float position[3];
             for (cgltf_size j = 0; j < accessor->count; ++j) {
                 cgltf_accessor_read_float(accessor, j, position, 3);
-                positions.push_back(vec3{position[0], position[1], position[2]});
+                vec4 pos = vec4{position[0], position[1], position[2], 1.0f};
+                pos = transform * pos;
+                positions.push_back(vec3{pos.x, pos.y, pos.z});
             }
 
         }
@@ -231,7 +348,7 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, Mesh& mesh)
     arrays[Mesh::ArrayType::ArrayTexCoord0] = std::move(texCoords);
     arrays[Mesh::ArrayType::ArrayIndex] = std::move(indices);
 
-    mesh.addSubMeshFromArrays(Mesh::PrimitiveType::Triangles, arrays, materialParams, textures);
+    mesh->addSubMeshFromArrays(Mesh::PrimitiveType::Triangles, arrays, materialParams, textures);
 }
 
 void GLTFLoader::processMaterial(const cgltf_material& material, Mesh::MaterialParams& materialParams,
@@ -322,7 +439,7 @@ void GLTFLoader::processTexture(const char* name, const cgltf_texture_view& text
 
     OCF_LOG_TRACE("      {} Texture: {}", name, image->uri ? image->uri : "No URI");
     if (image && image->uri) {
-        textureData.uri = FileSystem::getInstance()->getAssetFullPath(m_filePath + "/" + image->uri);
+        textureData.uri = FileSystem::getInstance()->getAssetFullPath(m_gltfPath + "/" + image->uri);
         OCF_LOG_TRACE("        Image URI: {}", image->uri);
     }
     else if (image && image->buffer_view) {

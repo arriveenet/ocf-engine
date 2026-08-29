@@ -24,7 +24,7 @@
 using namespace ocf;
 using namespace ocf::rhi;
 
-Mesh* g_mesh = nullptr;
+Ref<Mesh> g_mesh;
 Node* g_node = nullptr;
 
 void update(float deltaTime)
@@ -48,27 +48,23 @@ void setup(Engine& engine, View* view, Scene *scene)
     auto vsPath = FileSystem::getInstance()->getAssetFullPath("shaders/basic_pbr.vert.spv");
     auto fsPath = FileSystem::getInstance()->getAssetFullPath("shaders/basic_pbr.frag.spv");
 
-    g_mesh = new Mesh();
     ModelImporter importer;
-    if(importer.import("models/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf", *g_mesh)) {
+    auto result = importer.loadFromFile("models/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf");
+    if (result.isOk()) {
+        g_mesh = result.unwrap();
         g_mesh->createSubMeshBuffers(engine);
+
         g_node = scene->getRoot()->createChild();
-    
+
         auto meshInstance = g_node->addComponent<MeshInstance>(engine, vsPath, fsPath);
         meshInstance->setMesh(g_mesh);
-    }
-    else {
-        delete g_mesh;
-        g_mesh = nullptr;
     }
 }
 
 void cleanup(Engine& engine, View* view, Scene *scene)
 {
-    if (g_mesh) {
+    if (g_mesh.ptr() != nullptr) {
         g_mesh->terminate(engine);
-        delete g_mesh;
-        g_mesh = nullptr;
     }
 }
 

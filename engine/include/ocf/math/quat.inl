@@ -1,5 +1,7 @@
 #include <cmath>
+
 #include "quat.h"
+#include "mat3.h"
 
 namespace ocf {
 namespace math {

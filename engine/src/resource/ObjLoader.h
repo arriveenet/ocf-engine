@@ -14,6 +14,8 @@ public:
 
     bool load(std::string_view fileName, Mesh& mesh) override;
 
+    Mesh* createMesh(std::string_view fileName) override;
+
     bool supportsExtension(const std::string& extension) const override;
 };
 
