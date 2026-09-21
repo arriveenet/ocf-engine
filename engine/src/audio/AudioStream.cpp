@@ -5,8 +5,8 @@
 #include "audio/AudioMixer.h"
 #include "audio/AudioUtility.h"
 
-#include "ocf/core/job/JobSystem.h"
 #include "ocf/core/Logger.h"
+#include "ocf/core/job/JobSystem.h"
 
 #include <cstring>
 
@@ -27,10 +27,12 @@ AudioStream::AudioStream(std::unique_ptr<AudioDecoder> decoder)
 
     ma_rb_init(RingBufferSize, nullptr, nullptr, &m_ringBuffer);
 
-    OCF_LOG_DEBUG("[Audio] format: {}, Sample rate: {}, Channels: {}, Total frames: {}",
+    OCF_LOG_DEBUG("[Audio] format: {}, Sample rate: {}, Channels: {}, Total frames: {}, "
+                  "RingBuffer: {}ms",
                   AudioUtility::getAudioFormatString(m_decoder->getFormat()),
                   m_decoder->getSampleRate(), m_decoder->getChannelCount(),
-                  m_decoder->getTotalFrames());
+                  m_decoder->getTotalFrames(),
+                  (RingBufferSize * 1000) / (InternalSampleRate * BytesPerFrame));
 }
 
 AudioStream::~AudioStream()
@@ -51,14 +53,37 @@ void AudioStream::render(float* output, uint32_t frameCount, uint32_t channels)
 
     void* bufferOut = nullptr;
     size_t bytesAvailable = bytesToRead;
+    size_t totalBytesRead = 0;
 
     ma_result result = ma_rb_acquire_read(&m_ringBuffer, &bytesAvailable, &bufferOut);
     if (result != MA_SUCCESS) {
         return;
     }
 
-    std::memcpy(output, bufferOut, bytesAvailable);
-    ma_rb_commit_read(&m_ringBuffer, bytesAvailable);
+    if (bytesAvailable > 0) {
+        std::memcpy(output, bufferOut, bytesAvailable);
+        ma_rb_commit_read(&m_ringBuffer, bytesAvailable);
+        totalBytesRead += bytesAvailable;
+    }
+
+    if (totalBytesRead < bytesToRead) {
+        size_t remainingBytes = bytesToRead - totalBytesRead;
+        bufferOut = nullptr;
+        bytesAvailable = remainingBytes;
+
+        result = ma_rb_acquire_read(&m_ringBuffer, &bytesAvailable, &bufferOut);
+        if (result == MA_SUCCESS && bytesAvailable > 0) {
+            std::memcpy(reinterpret_cast<uint8_t*>(output) + totalBytesRead, bufferOut, bytesAvailable);
+            ma_rb_commit_read(&m_ringBuffer, bytesAvailable);
+            totalBytesRead += bytesAvailable;
+        }
+    }
+
+    if (totalBytesRead != totalBytesRead) {
+        OCF_LOG_WARN(
+            "[Audio] RingBuffer underflow: requested {} bytes, but only {} bytes were read.",
+            bytesToRead, totalBytesRead);
+    }
 
     if (needsMoreData()) {
         m_needsMoreData.store(true, std::memory_order_release);
@@ -76,8 +101,6 @@ void AudioStream::update()
     if (m_needsMoreData.load(std::memory_order_acquire)) {
         bool expected = false;
         if (m_isDecoding.compare_exchange_strong(expected, true, std::memory_order_acq_rel)) {
-            // TODO: Consider using a thread pool or a dedicated audio decoding thread for better
-            // performance.
             auto job = jobSystem.createJob([this](void*) {
                 decodeTask();
                 m_isDecoding.store(false, std::memory_order_release);
@@ -92,6 +115,7 @@ void AudioStream::play()
     if (getState() != AudioSource::State::Paused) {
         m_decoder->seek(0);
         ma_rb_reset(&m_ringBuffer);
+        m_needsMoreData.store(true, std::memory_order_release);
     }
 
     AudioSource::play();
@@ -101,7 +125,8 @@ void AudioStream::stop()
 {
     m_decoder->seek(0);
     ma_rb_reset(&m_ringBuffer);
-     
+    m_needsMoreData.store(false, std::memory_order_release);
+
     AudioSource::stop();
 }
 
@@ -141,26 +166,30 @@ void AudioStream::decodeTask()
         return;
     }
 
-    uint32_t framesRead = m_decoder->readFixedFrames(inputBuffer, static_cast<uint32_t>(inputFrameCount));
+    uint32_t framesRead = m_decoder->readFixedFrames(inputBuffer,
+                                                     static_cast<uint32_t>(inputFrameCount));
 
-    if (framesRead == 0 ) {
+    if (framesRead == 0) {
         if (isLooping()) {
             m_decoder->seek(0);
-            framesRead = m_decoder->readFixedFrames(inputBuffer, static_cast<uint32_t>(inputFrameCount));
+            framesRead = m_decoder->readFixedFrames(inputBuffer,
+                                                    static_cast<uint32_t>(inputFrameCount));
         }
         else {
             stop();
         }
     }
 
-    size_t writtenFrameCount =
-        m_converter.process(inputBuffer, inputFrameCount, outputBuffer, outputFrameCount);
+    size_t writtenFrameCount = m_converter.process(inputBuffer,
+                                                   inputFrameCount,
+                                                   outputBuffer,
+                                                   outputFrameCount);
 
     ma_rb_commit_write(&m_ringBuffer, writtenFrameCount * outputBytesPerFrame);
 
     std::free(inputBuffer);
 
-    if (needsMoreData()) {
+    if (!needsMoreData()) {
         m_needsMoreData.store(false, std::memory_order_release);
     }
 }
