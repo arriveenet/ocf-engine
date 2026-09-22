@@ -7,12 +7,12 @@ namespace ocf::audio {
 
 class Apu;
 
-class NesApu : public AudioSource {
+class AudioNesApu : public AudioSource {
 public:
     static constexpr double CPU_FREQUENCY = 1789773.0;
 
-    NesApu();
-    ~NesApu() override;
+    AudioNesApu();
+    ~AudioNesApu() override;
 
     void render(float* output, uint32_t frameCount, uint32_t channels) override;
 

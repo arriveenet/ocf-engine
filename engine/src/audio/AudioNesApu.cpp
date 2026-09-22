@@ -1,20 +1,20 @@
-#include "ocf/audio/NesApu.h"
+#include "ocf/audio/AudioNesApu.h"
 
 #include "audio/apu/Apu.h"
 #include "audio/AudioMixer.h"
 
 namespace ocf::audio {
 
-NesApu::NesApu()
+AudioNesApu::AudioNesApu()
     : m_apu(std::make_unique<Apu>())
 {
 }
 
-NesApu::~NesApu()
+AudioNesApu::~AudioNesApu()
 {
 }
 
-void NesApu::render(float* output, uint32_t frameCount, uint32_t channels)
+void AudioNesApu::render(float* output, uint32_t frameCount, uint32_t channels)
 {
     for (uint32_t i = 0; i < frameCount; i++) {
         m_cpuRemainder += CPU_FREQUENCY / static_cast<double>(InternalSampleRate);
@@ -30,17 +30,17 @@ void NesApu::render(float* output, uint32_t frameCount, uint32_t channels)
     }
 }
 
-void NesApu::writeRegister(uint16_t address, uint8_t data)
+void AudioNesApu::writeRegister(uint16_t address, uint8_t data)
 {
     m_apu->writeRegister(address, data);
 }
 
-uint8_t NesApu::readStatusRegister()
+uint8_t AudioNesApu::readStatusRegister()
 {
     return m_apu->readStatusRegister();
 }
 
-void NesApu::writeStatusRegister(uint8_t data)
+void AudioNesApu::writeStatusRegister(uint8_t data)
 {
     m_apu->writeStatusRegister(data);
 }
