@@ -8,6 +8,7 @@
 #include "audio/AudioMixer.h"
 #include "audio/AudioStream.h"
 #include "audio/AudioUtility.h"
+#include "audio/AudioWorkerThread.h"
 
 #include "ocf/audio/AudioSource.h"
 #include "ocf/core/job/JobSystem.h"
@@ -24,6 +25,7 @@ struct AudioSystem::Imple {
     std::unique_ptr<AudioMixer> m_audioMixer = nullptr;
     std::unordered_map<AudioHandle, AudioSource*> m_audioSources;
     std::vector<AudioSource*> m_audioStreams;
+    AudioWorkerThread m_workerThread;
 };
 
 
@@ -60,6 +62,7 @@ bool AudioSystem::initialize()
 
     if (m_initialized) {
         m_imple->m_audioDevice->start();
+        m_imple->m_workerThread.start();
     }
 
     return m_initialized;
@@ -74,6 +77,7 @@ void AudioSystem::shutdown()
     m_imple->m_audioSources.clear();
 
     if (m_imple->m_audioDevice) {
+        m_imple->m_workerThread.stop();
         m_imple->m_audioDevice->stop();
         m_imple->m_audioDevice->shutdown();
     }
@@ -81,9 +85,6 @@ void AudioSystem::shutdown()
 
 void AudioSystem::update()
 {
-    for (auto& stream : m_imple->m_audioStreams) {
-        stream->update();
-    }
 }
 
 AudioHandle AudioSystem::createStream(std::string_view filename)
@@ -130,6 +131,7 @@ void AudioSystem::play(AudioHandle handle, bool loop, float volume)
     auto iter = m_imple->m_audioSources.find(handle);
     if (iter != m_imple->m_audioSources.end()) {
         m_imple->m_audioMixer->addSource(iter->second);
+        m_imple->m_workerThread.addSource(iter->second);
 
         iter->second->play();
         iter->second->setLooping(loop);
@@ -146,6 +148,7 @@ void AudioSystem::stop(AudioHandle handle)
     auto iter = m_imple->m_audioSources.find(handle);
     if (iter != m_imple->m_audioSources.end()) {
         m_imple->m_audioMixer->removeSource(iter->second);
+        m_imple->m_workerThread.removeSource(iter->second);
         iter->second->stop();
     }
 }
