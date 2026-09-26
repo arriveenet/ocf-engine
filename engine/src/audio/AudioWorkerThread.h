@@ -10,7 +10,7 @@
 
 namespace ocf::audio {
 
-class AudioSource;
+class AudioStreamBuffer;
 
 class AudioWorkerThread {
 public:
@@ -23,9 +23,9 @@ public:
 
     void stop();
 
-    void addSource(AudioSource* source);
+    void addStreamBuffer(AudioStreamBuffer* buffer);
 
-    void removeSource(AudioSource* source);
+    void removeStreamBuffer(AudioStreamBuffer* buffer);
 
 private:
     void threadMain();
@@ -34,7 +34,7 @@ private:
     std::thread m_thread;
     std::atomic<bool> m_running = false;
 
-    std::vector<AudioSource*> m_streams;
+    std::vector<AudioStreamBuffer*> m_streams;
     std::mutex m_streamsMutex;
 
     std::condition_variable m_cv;

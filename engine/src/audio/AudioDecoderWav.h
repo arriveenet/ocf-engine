@@ -90,13 +90,15 @@ public:
 
     void close() override;
 
-    uint32_t framesToBytes(uint32_t frames) const override;
+    uint64_t framesToBytes(uint64_t frames) const override;
 
-    uint32_t bytesToFrames(uint32_t bytes) const override;
+    uint64_t bytesToFrames(uint64_t bytes) const override;
 
-    uint32_t read(void* buffer, uint32_t frameCount) override;
+    uint64_t read(void* buffer, uint64_t frameCount) override;
 
-    bool seek(uint32_t frameOffset) override;
+    bool seek(uint64_t frameOffset) override;
+
+    uint64_t tell() override;
 
 protected:
     WavFile m_wavFile;

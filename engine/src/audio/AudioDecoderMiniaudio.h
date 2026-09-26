@@ -16,9 +16,11 @@ public:
 
     void close() override;
 
-    uint32_t read(void* buffer, uint32_t frameCount) override;
+    uint64_t read(void* buffer, uint64_t frameCount) override;
 
-    bool seek(uint32_t frameOffset) override;
+    bool seek(uint64_t frameOffset) override;
+
+    uint64_t tell() override;
 
 private:
     ma_decoder m_decoder;

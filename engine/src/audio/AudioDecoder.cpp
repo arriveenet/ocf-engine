@@ -5,10 +5,10 @@
 namespace ocf {
 namespace audio {
 
-uint32_t AudioDecoder::readFixedFrames(void* buffer, uint32_t frameCount)
+uint64_t AudioDecoder::readFixedFrames(void* buffer, uint64_t frameCount)
 {
-    uint32_t framesRead = 0;
-    uint32_t framesReadOnce = 0;
+    uint64_t framesRead = 0;
+    uint64_t framesReadOnce = 0;
     char* byteBuffer = static_cast<char*>(buffer);
 
     do {
@@ -30,17 +30,17 @@ bool AudioDecoder::isOpened() const
     return m_isOpened;
 }
 
-uint32_t AudioDecoder::getTotalFrames() const
+uint64_t AudioDecoder::getTotalFrames() const
 {
     return m_totalFrames;
 }
 
-uint32_t AudioDecoder::framesToBytes(uint32_t frames) const
+uint64_t AudioDecoder::framesToBytes(uint64_t frames) const
 {
     return m_bytesPerBlock * frames;
 }
 
-uint32_t AudioDecoder::bytesToFrames(uint32_t bytes) const
+uint64_t AudioDecoder::bytesToFrames(uint64_t bytes) const
 {
     return bytes / m_bytesPerBlock;
 }

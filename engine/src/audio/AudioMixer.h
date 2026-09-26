@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "ocf/audio/AudioEnums.h"
-
 #include <cstdint>
 #include <vector>
 
@@ -10,10 +8,6 @@ namespace ocf {
 namespace audio {
 
 class AudioSource;
-
-constexpr uint32_t InternalSampleRate = 48000;
-constexpr uint32_t InternalChannels = 2;
-constexpr AudioFormat InternalFormat = AudioFormat::F32;
 
 class AudioMixer {
 public:

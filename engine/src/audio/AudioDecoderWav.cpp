@@ -131,7 +131,7 @@ void AudioDecoderWav::close()
     }
 }
 
-uint32_t AudioDecoderWav::framesToBytes(uint32_t frames) const
+uint64_t AudioDecoderWav::framesToBytes(uint64_t frames) const
 {
     if (m_samplesPerBlock == 1) {
         return m_bytesPerBlock * frames;
@@ -139,7 +139,7 @@ uint32_t AudioDecoderWav::framesToBytes(uint32_t frames) const
     return frames / m_samplesPerBlock * m_bytesPerBlock;
 }
 
-uint32_t AudioDecoderWav::bytesToFrames(uint32_t bytes) const
+uint64_t AudioDecoderWav::bytesToFrames(uint64_t bytes) const
 {
     if (m_samplesPerBlock == 1) {
         return bytes / m_bytesPerBlock;
@@ -147,22 +147,29 @@ uint32_t AudioDecoderWav::bytesToFrames(uint32_t bytes) const
     return bytes / m_bytesPerBlock * m_samplesPerBlock;
 }
 
-uint32_t AudioDecoderWav::read(void* buffer, uint32_t frameCount)
+uint64_t AudioDecoderWav::read(void* buffer, uint64_t frameCount)
 {
-    uint32_t bytesToRead = framesToBytes(frameCount);
+    uint64_t bytesToRead = framesToBytes(frameCount);
     size_t readCount = fread(buffer, bytesToRead, 1, m_wavFile.pFile);
-    uint32_t bytesRead = static_cast<uint32_t>(bytesToRead * readCount);
+    uint64_t bytesRead = static_cast<uint64_t>(bytesToRead * readCount);
     return bytesToFrames(bytesRead);
 }
 
-bool AudioDecoderWav::seek(uint32_t frameOffset)
+bool AudioDecoderWav::seek(uint64_t frameOffset)
 {
     auto offset = framesToBytes(frameOffset);
     fseek(m_wavFile.pFile, m_wavFile.pcmDataOffset + offset, SEEK_SET);
-    uint32_t newOffset = static_cast<uint32_t>(ftell(m_wavFile.pFile));
+    uint64_t newOffset = static_cast<uint64_t>(ftell(m_wavFile.pFile));
     newOffset = (newOffset >= m_wavFile.pcmDataOffset) ? newOffset - m_wavFile.pcmDataOffset : -1;
 
     return offset == newOffset;
+}
+
+uint64_t AudioDecoderWav::tell()
+{
+    uint64_t offset = static_cast<uint64_t>(ftell(m_wavFile.pFile));
+    offset = (offset >= m_wavFile.pcmDataOffset) ? offset - m_wavFile.pcmDataOffset : -1;
+    return bytesToFrames(offset);
 }
 
 } // namespace ocf::audio

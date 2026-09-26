@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "audio/AudioWorkerThread.h"
 
-#include "ocf/audio/AudioSource.h"
+#include "audio/AudioStreamBuffer.h"
 
 #include <algorithm>
 #include <atomic>
@@ -33,25 +33,25 @@ void AudioWorkerThread::stop()
     }
 }
 
-void AudioWorkerThread::addSource(AudioSource* source)
+void AudioWorkerThread::addStreamBuffer(AudioStreamBuffer* buffer)
 {
     std::lock_guard<std::mutex> lock(m_streamsMutex);
-    m_streams.push_back(source);
+    m_streams.push_back(buffer);
     m_cv.notify_one();
 }
 
-void AudioWorkerThread::removeSource(AudioSource* source)
+void AudioWorkerThread::removeStreamBuffer(AudioStreamBuffer* buffer)
 {
     std::lock_guard<std::mutex> lock(m_streamsMutex);
     m_streams.erase(
-        std::remove(m_streams.begin(), m_streams.end(), source),
+        std::remove(m_streams.begin(), m_streams.end(), buffer),
         m_streams.end()
     );
 }
 
 void AudioWorkerThread::threadMain()
 {
-    std::vector<AudioSource*> localStreams;
+    std::vector<AudioStreamBuffer*> localStreams;
 
     while (m_running.load(std::memory_order_relaxed)) {
         // Copying the managed list
@@ -61,8 +61,10 @@ void AudioWorkerThread::threadMain()
         }
 
         // Stream decode and fill buffer
-       for (auto* source : localStreams) {
-            source->update();
+       for (auto* buffer : localStreams) {
+            if (buffer->needsMoreData()) {
+                buffer->decodeTask();
+            }
        }
 
         // Sleep

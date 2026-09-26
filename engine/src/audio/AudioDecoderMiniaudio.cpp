@@ -32,7 +32,7 @@ bool AudioDecoderMiniaudio::open(std::string_view filename)
     
     ma_uint64 totalFrames = 0;
     ma_decoder_get_length_in_pcm_frames(&m_decoder, &totalFrames);
-    m_totalFrames = static_cast<uint32_t>(totalFrames);
+    m_totalFrames = static_cast<uint64_t>(totalFrames);
 
     m_isOpened = true;
 
@@ -47,7 +47,7 @@ void AudioDecoderMiniaudio::close()
     }
 }
 
-uint32_t AudioDecoderMiniaudio::read(void* buffer, uint32_t frameCount)
+uint64_t AudioDecoderMiniaudio::read(void* buffer, uint64_t frameCount)
 {
     ma_uint64 totalFrameRead = 0;
 
@@ -68,12 +68,19 @@ uint32_t AudioDecoderMiniaudio::read(void* buffer, uint32_t frameCount)
         }
     }
 
-    return static_cast<uint32_t>(totalFrameRead);
+    return static_cast<uint64_t>(totalFrameRead);
 }
 
-bool AudioDecoderMiniaudio::seek(uint32_t frameOffset)
+bool AudioDecoderMiniaudio::seek(uint64_t frameOffset)
 {
     return ma_decoder_seek_to_pcm_frame(&m_decoder, frameOffset) == MA_SUCCESS;
+}
+
+uint64_t AudioDecoderMiniaudio::tell()
+{
+    ma_uint64 currentFrame = 0;
+    ma_decoder_get_cursor_in_pcm_frames(&m_decoder, &currentFrame);
+    return static_cast<uint64_t>(currentFrame);
 }
 
 } // namespace ocf::audio

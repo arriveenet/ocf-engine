@@ -2,16 +2,15 @@
 #include "ocf/audio/AudioSystem.h"
 
 #include "audio/AudioDecoderMiniaudio.h"
-#include "audio/AudioDecoderWav.h"
 #include "audio/AudioDevice.h"
 #include "audio/AudioDeviceMiniaudio.h"
 #include "audio/AudioMixer.h"
-#include "audio/AudioStream.h"
-#include "audio/AudioUtility.h"
+#include "audio/AudioNesApu.h"
+#include "audio/AudioSource.h"
+#include "audio/AudioStreamBuffer.h"
 #include "audio/AudioWorkerThread.h"
 
-#include "ocf/audio/AudioSource.h"
-#include "ocf/core/job/JobSystem.h"
+
 #include "ocf/core/Logger.h"
 #include "ocf/platform/FileSystem.h"
 
@@ -20,39 +19,40 @@
 namespace ocf {
 namespace audio {
 
-struct AudioSystem::Imple {
+struct AudioSystem::Impl {
     std::unique_ptr<AudioDevice> m_audioDevice = nullptr;
     std::unique_ptr<AudioMixer> m_audioMixer = nullptr;
-    std::unordered_map<AudioHandle, AudioSource*> m_audioSources;
-    std::vector<AudioSource*> m_audioStreams;
+    std::unordered_map<HandleId, AudioBuffer*> m_audioBuffers;
+    std::unordered_map<HandleId, AudioSource*> m_audioSources;
+    std::vector<AudioStreamBuffer*> m_audioStreams;
     AudioWorkerThread m_workerThread;
 };
 
 
 AudioSystem::AudioSystem()
 {
-    m_imple = std::make_unique<Imple>();
+    m_impl = std::make_unique<Impl>();
 
-    m_imple->m_audioMixer = std::make_unique<AudioMixer>();
-    m_imple->m_audioDevice = std::make_unique<AudioDeviceMiniaudio>();
+    m_impl->m_audioMixer = std::make_unique<AudioMixer>();
+    m_impl->m_audioDevice = std::make_unique<AudioDeviceMiniaudio>();
 }
 
 AudioSystem::~AudioSystem()
 {
-    if (m_imple->m_audioDevice) {
-        m_imple->m_audioDevice->shutdown();
-        m_imple->m_audioDevice.reset();
+    if (m_impl->m_audioDevice) {
+        m_impl->m_audioDevice->shutdown();
+        m_impl->m_audioDevice.reset();
     }
 
-    if (m_imple->m_audioMixer) {
-        m_imple->m_audioMixer.reset();
+    if (m_impl->m_audioMixer) {
+        m_impl->m_audioMixer.reset();
     }
 }
 
 bool AudioSystem::initialize()
 {
-    if (m_imple->m_audioDevice) {
-        m_initialized = m_imple->m_audioDevice->initialize(m_imple->m_audioMixer.get());
+    if (m_impl->m_audioDevice) {
+        m_initialized = m_impl->m_audioDevice->initialize(m_impl->m_audioMixer.get());
         if (m_initialized) {
             OCF_LOG_INFO("Audio device initialized");
         } else {
@@ -61,8 +61,8 @@ bool AudioSystem::initialize()
     }
 
     if (m_initialized) {
-        m_imple->m_audioDevice->start();
-        m_imple->m_workerThread.start();
+        m_impl->m_audioDevice->start();
+        m_impl->m_workerThread.start();
     }
 
     return m_initialized;
@@ -70,32 +70,53 @@ bool AudioSystem::initialize()
 
 void AudioSystem::shutdown()
 {
+    m_impl->m_workerThread.stop();
+
     // Delete all audio sources
-    for (auto& [handle, source] : m_imple->m_audioSources) {
+    for (auto& [handle, source] : m_impl->m_audioSources) {
+        m_impl->m_audioMixer->removeSource(source);
         delete source;
     }
-    m_imple->m_audioSources.clear();
+    m_impl->m_audioSources.clear();
 
-    if (m_imple->m_audioDevice) {
-        m_imple->m_workerThread.stop();
-        m_imple->m_audioDevice->stop();
-        m_imple->m_audioDevice->shutdown();
+    // Delete all audio buffers
+    for (auto& [handle, buffer] : m_impl->m_audioBuffers) {
+        delete buffer;
+    }
+    m_impl->m_audioBuffers.clear();
+
+    if (m_impl->m_audioDevice) {
+        m_impl->m_audioDevice->stop();
+        m_impl->m_audioDevice->shutdown();
     }
 }
 
 void AudioSystem::update()
 {
+    for (auto& [handle, source] : m_impl->m_audioSources) {
+        source->update();
+
+        if (source->isStopped()) {
+            m_impl->m_audioMixer->removeSource(source);
+
+            AudioBuffer* buffer = source->getBuffer();
+            // If the source is using a stream buffer, remove it from the worker thread
+            if ((buffer != nullptr) && (buffer->getType() == AudioBuffer::Type::Stream)) {
+                m_impl->m_workerThread.removeStreamBuffer(
+                    static_cast<AudioStreamBuffer*>(buffer));
+            }
+        }
+    }
 }
 
-AudioHandle AudioSystem::createStream(std::string_view filename)
+AudioBufferHandle AudioSystem::createStreamBuffer(std::string_view filename)
 {
     auto fullPath = FileSystem::getInstance()->getAssetFullPath(filename);
     std::unique_ptr<AudioDecoder> decoder = std::make_unique<AudioDecoderMiniaudio>();
     if (decoder->open(fullPath)) {
-        AudioStream* stream = new AudioStream(std::move(decoder));
-        AudioHandle handle = AudioHandle(m_HandleCounter++);
-        m_imple->m_audioSources[handle] = stream;
-        m_imple->m_audioStreams.push_back(stream);
+        AudioStreamBuffer* streamBuffer = new AudioStreamBuffer(std::move(decoder));
+        AudioBufferHandle handle = AudioBufferHandle(m_HandleCounter++);
+        m_impl->m_audioBuffers[handle.getId()] = streamBuffer;
 
         OCF_LOG_DEBUG("[Audio] Loaded file: {}", filename);
         return handle;
@@ -104,89 +125,219 @@ AudioHandle AudioSystem::createStream(std::string_view filename)
         OCF_LOG_ERROR("[Audio] Failed to load file: {}", filename);
     }
 
-    return AUDIO_INVALID_HANDLE;
+    return AudioBufferHandle::InvalidHandle;
 }
 
-AudioHandle AudioSystem::createStream(AudioSource* source)
+AudioSourceHandle AudioSystem::createSource(AudioBufferHandle bufferHandle)
 {
-    if (source != nullptr) {
-        AudioHandle handle = AudioHandle(m_HandleCounter++);
-        m_imple->m_audioSources[handle] = source;
-        m_imple->m_audioStreams.push_back(source);
-        OCF_LOG_DEBUG("[Audio] Created stream from AudioSource");
+    auto iter = m_impl->m_audioBuffers.find(bufferHandle.getId());
+    if (iter != m_impl->m_audioBuffers.end()) {
+        AudioSource* source = new AudioSource(iter->second);
+        AudioSourceHandle handle = AudioSourceHandle(m_HandleCounter++);
+        m_impl->m_audioSources[handle.getId()] = source;
         return handle;
     }
-    else {
-        OCF_LOG_ERROR("[Audio] Failed to create stream from AudioSource: source is null");
-    }
-    return AUDIO_INVALID_HANDLE;
+
+    return AudioSourceHandle::InvalidHandle;
 }
 
-void AudioSystem::play(AudioHandle handle, bool loop, float volume)
+AudioSourceHandle AudioSystem::createNesApuSource()
 {
-    if (handle == AUDIO_INVALID_HANDLE) {
+    AudioNesApu* apu = new AudioNesApu();
+    AudioSourceHandle handle = AudioSourceHandle(m_HandleCounter++);
+    m_impl->m_audioSources[handle.getId()] = apu;
+
+    return handle;
+}
+
+void AudioSystem::destroyBuffer(AudioBufferHandle handle)
+{
+    if (!handle) {
         return;
     }
 
-    auto iter = m_imple->m_audioSources.find(handle);
-    if (iter != m_imple->m_audioSources.end()) {
-        m_imple->m_audioMixer->addSource(iter->second);
-        m_imple->m_workerThread.addSource(iter->second);
-
-        iter->second->play();
-        iter->second->setLooping(loop);
-        iter->second->setVolume(volume);
+    // TODO: Check if any sources are using this buffer and stop them before deleting the buffer
+    auto iter = m_impl->m_audioBuffers.find(handle.getId());
+    if (iter != m_impl->m_audioBuffers.end()) {
+        delete iter->second;
+        m_impl->m_audioBuffers.erase(iter);
     }
 }
 
-void AudioSystem::stop(AudioHandle handle)
+void AudioSystem::destroySource(AudioSourceHandle handle)
 {
-    if (handle == AUDIO_INVALID_HANDLE) {
+    if (!handle) {
         return;
     }
 
-    auto iter = m_imple->m_audioSources.find(handle);
-    if (iter != m_imple->m_audioSources.end()) {
-        m_imple->m_audioMixer->removeSource(iter->second);
-        m_imple->m_workerThread.removeSource(iter->second);
+    // TODO: Remove source from mixer and stop playback if it's currently playing
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        iter->second->stop();
+        delete iter->second;
+        m_impl->m_audioSources.erase(iter);
+    }
+}
+
+void AudioSystem::play(AudioSourceHandle handle, bool loop, float volume)
+{
+    if (!handle) {
+        return;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        AudioSource* source = iter->second;
+        m_impl->m_audioMixer->addSource(source);
+
+        // If the source is using a stream buffer, add it to the worker thread for decoding
+        AudioBuffer* buffer = source->getBuffer();
+        if (buffer != nullptr && buffer->getType() == AudioBuffer::Type::Stream) {
+            m_impl->m_workerThread.addStreamBuffer(static_cast<AudioStreamBuffer*>(buffer));
+        }
+
+        source->play();
+        source->setLooping(loop);
+        source->setVolume(volume);
+    }
+}
+
+void AudioSystem::stop(AudioSourceHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        m_impl->m_audioMixer->removeSource(iter->second);
+
+        // If the source is using a stream buffer, remove it from the worker thread
+        if (iter->second->getBuffer()->getType() == AudioBuffer::Type::Stream) {
+            m_impl->m_workerThread.removeStreamBuffer(
+                static_cast<AudioStreamBuffer*>(iter->second->getBuffer()));
+        }
+
         iter->second->stop();
     }
 }
 
-void AudioSystem::pause(AudioHandle handle)
+void AudioSystem::pause(AudioSourceHandle handle)
 {
-    if (handle == AUDIO_INVALID_HANDLE) {
+    if (!handle) {
         return;
     }
 
-    auto iter = m_imple->m_audioSources.find(handle);
-    if (iter != m_imple->m_audioSources.end()) {
-        m_imple->m_audioMixer->removeSource(iter->second);
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        m_impl->m_audioMixer->removeSource(iter->second);
         iter->second->pause();
     }
 }
 
-void AudioSystem::setVolume(AudioHandle handle, float volume)
+AudioState AudioSystem::getState(AudioSourceHandle handle) const
 {
-    if (handle == AUDIO_INVALID_HANDLE) {
+    if (!handle) {
+        return AudioState::Initial;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        return iter->second->getState();
+    }
+
+    return AudioState::Initial;
+}
+
+float AudioSystem::getVolume(AudioSourceHandle handle) const
+{
+    if (!handle) {
+        return 0.0f;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        return iter->second->getVolume();
+    }
+
+    return 0.0f;
+}
+
+void AudioSystem::setVolume(AudioSourceHandle handle, float volume)
+{
+    if (!handle) {
         return;
     }
 
-    auto iter = m_imple->m_audioSources.find(handle);
-    if (iter != m_imple->m_audioSources.end()) {
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
         iter->second->setVolume(volume);
     }
 }
 
-void AudioSystem::setLoop(AudioHandle handle, bool loop)
+bool AudioSystem::isLoop(AudioSourceHandle handle) const
 {
-    if (handle == AUDIO_INVALID_HANDLE) {
+    if (!handle) {
+        return false;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        return iter->second->isLooping();
+    }
+
+    return false;
+}
+
+void AudioSystem::setLoop(AudioSourceHandle handle, bool loop)
+{
+    if (!handle) {
         return;
     }
 
-    auto iter = m_imple->m_audioSources.find(handle);
-    if (iter != m_imple->m_audioSources.end()) {
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
         iter->second->setLooping(loop);
+    }
+}
+
+void AudioSystem::apu_writeRegister(AudioSourceHandle handle, uint16_t address, uint8_t data)
+{
+    if (!handle) {
+        return;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        AudioNesApu* apu = static_cast<AudioNesApu*>(iter->second);
+        apu->writeRegister(address, data);
+    }
+}
+
+uint8_t AudioSystem::apu_readStatusRegister(AudioSourceHandle handle)
+{
+    if (!handle) {
+        return 0;
+    }
+
+    auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        AudioNesApu* apu = static_cast<AudioNesApu*>(iter->second);
+        return apu->readStatusRegister();
+    }
+    return 0;
+}
+
+void AudioSystem::apu_writeStatusRegister(AudioSourceHandle handle, uint8_t data)
+{
+    if (!handle) {
+        return;
+    }
+
+        auto iter = m_impl->m_audioSources.find(handle.getId());
+    if (iter != m_impl->m_audioSources.end()) {
+        AudioNesApu* apu = static_cast<AudioNesApu*>(iter->second);
+        apu->writeStatusRegister(data);
     }
 }
 

@@ -18,19 +18,21 @@ public:
 
     virtual void close() = 0;
 
-    virtual uint32_t read(void* buffer, uint32_t frameCount) = 0;
+    virtual uint64_t read(void* buffer, uint64_t frameCount) = 0;
 
-    virtual uint32_t readFixedFrames(void* buffer, uint32_t frameCount);
+    virtual uint64_t readFixedFrames(void* buffer, uint64_t frameCount);
 
-    virtual bool seek(uint32_t frameOffset) = 0;
+    virtual bool seek(uint64_t frameOffset) = 0;
+
+    virtual uint64_t tell() = 0;
 
     virtual bool isOpened() const;
 
-    virtual uint32_t getTotalFrames() const;
+    virtual uint64_t getTotalFrames() const;
 
-    virtual uint32_t framesToBytes(uint32_t frames) const;
+    virtual uint64_t framesToBytes(uint64_t frames) const;
 
-    virtual uint32_t bytesToFrames(uint32_t bytes) const;
+    virtual uint64_t bytesToFrames(uint64_t bytes) const;
 
     virtual uint32_t getSampleRate() const;
 
@@ -42,7 +44,7 @@ public:
 
 protected:
     bool m_isOpened = false;
-    uint32_t m_totalFrames = 0;
+    uint64_t m_totalFrames = 0;
     uint32_t m_bytesPerBlock = 0;
     uint32_t m_samplesPerBlock = 1;
     uint32_t m_sampleRate = 0;

@@ -1,5 +1,5 @@
 #pragma once
-#include "ocf/audio/AudioSource.h"
+#include "audio/AudioSource.h"
 
 #include <memory>
 
@@ -15,6 +15,12 @@ public:
     ~AudioNesApu() override;
 
     void render(float* output, uint32_t frameCount, uint32_t channels) override;
+
+    void play() override { m_state = AudioState::Playing; }
+
+    void pause() override { m_state = AudioState::Paused; }
+
+    void stop() override { m_state = AudioState::Stopped; }
 
     // Write registers
     void writeRegister(uint16_t address, uint8_t data);
