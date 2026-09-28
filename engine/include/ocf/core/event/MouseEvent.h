@@ -9,7 +9,7 @@ namespace ocf {
 class MouseEvent : public Event {
 public:
     enum class MouseEventType {
-        Unkown,
+        Unknown,
         Down,
         Up,
         Move,
