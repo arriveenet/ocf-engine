@@ -5,7 +5,7 @@
 #include "ocf/core/Logger.h"
 
 #include <cstddef>
-#include <string.h>
+#include <cstring>
 #include <utility>
 #include <vector>
 
