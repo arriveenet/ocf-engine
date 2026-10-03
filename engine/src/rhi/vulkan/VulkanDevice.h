@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 
 #include <array>
+#include <deque>
 #include <memory>
 #include <vector>
 
@@ -127,6 +128,23 @@ private:
     struct FrameContext {
         std::shared_ptr<VulkanCommandBuffer> commandBuffer;
         VkFence inFlightFence = VK_NULL_HANDLE;
+        uint64_t frameNumber = 0; // Frame number of the last submission using this context
+    };
+
+    /** A resource whose destruction is deferred until the GPU no longer uses it */
+    struct PendingDeletion {
+        enum class Type : uint8_t {
+            VertexBuffer,
+            IndexBuffer,
+            BufferObject,
+            Texture,
+            DescriptorSet,
+            Pipeline,
+        };
+
+        Type type;
+        HandleBase::HandleId id;
+        uint64_t frameNumber; // Frame number in which the destruction was requested
     };
 
     template <typename D, typename... ARGS>
@@ -193,6 +211,28 @@ private:
 
     void buildFeatures();
 
+    void enqueueDeletion(PendingDeletion::Type type, const HandleBase& handle);
+
+    /** Destroys the resources requested in frames up to completedFrameNumber */
+    void processDeletionQueue(uint64_t completedFrameNumber);
+
+    /** Destroys all pending resources. The GPU must be idle. */
+    void flushDeletionQueue();
+
+    void executeDeletion(const PendingDeletion& deletion);
+
+    void destroyVertexBufferNow(VertexBufferHandle handle);
+
+    void destroyIndexBufferNow(IndexBufferHandle handle);
+
+    void destroyBufferObjectNow(BufferObjectHandle handle);
+
+    void destroyTextureNow(TextureHandle handle);
+
+    void destroyDescriptorSetNow(DescriptorSetHandle handle);
+
+    void destroyPipelineNow(PipelineHandle handle);
+
 private:
     static VkPhysicalDeviceMemoryProperties s_memoryProperties;
 
@@ -207,6 +247,9 @@ private:
     VulkanSwapchain* m_swapchain = nullptr;
     std::vector<FrameContext> m_frameContext;
     uint32_t m_currentFrameIndex = 0;
+    uint64_t m_currentFrameNumber = 1;   // Frame number currently being recorded
+    uint64_t m_completedFrameNumber = 0; // Last frame number known to be completed by the GPU
+    std::deque<PendingDeletion> m_deletionQueue;
 
     std::unique_ptr<ResourceUploader> m_resourceUploader;
     std::shared_ptr<DepthBuffer> m_depthBuffer;

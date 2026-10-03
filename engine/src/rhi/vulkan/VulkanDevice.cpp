@@ -14,6 +14,7 @@
 
 #include "ocf/core/Logger.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <thread>
@@ -121,8 +122,10 @@ void VulkanDevice::terminate()
     }
 
     if (m_depthBufferHandle) {
-        destroyTexture(m_depthBufferHandle);
+        destroyTextureNow(m_depthBufferHandle);
     }
+
+    flushDeletionQueue();
 
     if (m_resourceUploader) {
         m_resourceUploader->cleanup();
@@ -473,6 +476,11 @@ void VulkanDevice::destroyVertexBufferInfo(VertexBufferInfoHandle handle)
 
 void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::VertexBuffer, handle);
+}
+
+void VulkanDevice::destroyVertexBufferNow(VertexBufferHandle handle)
+{
     if (handle) {
         VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
         destruct(handle, vb);
@@ -481,6 +489,11 @@ void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
 
 void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::IndexBuffer, handle);
+}
+
+void VulkanDevice::destroyIndexBufferNow(IndexBufferHandle handle)
+{
     if (handle) {
         VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
         destruct(handle, ib);
@@ -488,6 +501,11 @@ void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
 }
 
 void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
+{
+    enqueueDeletion(PendingDeletion::Type::BufferObject, handle);
+}
+
+void VulkanDevice::destroyBufferObjectNow(BufferObjectHandle handle)
 {
     if (!handle) {
         return;
@@ -498,6 +516,11 @@ void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
 }
 
 void VulkanDevice::destroyTexture(TextureHandle handle)
+{
+    enqueueDeletion(PendingDeletion::Type::Texture, handle);
+}
+
+void VulkanDevice::destroyTextureNow(TextureHandle handle)
 {
     if (!handle) {
         return;
@@ -538,6 +561,11 @@ void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
 
 void VulkanDevice::destroyDescriptorSet(DescriptorSetHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::DescriptorSet, handle);
+}
+
+void VulkanDevice::destroyDescriptorSetNow(DescriptorSetHandle handle)
+{
     if (!handle) {
         return;
     }
@@ -550,6 +578,11 @@ void VulkanDevice::destroyDescriptorSet(DescriptorSetHandle handle)
 
 void VulkanDevice::destroyPipeline(PipelineHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::Pipeline, handle);
+}
+
+void VulkanDevice::destroyPipelineNow(PipelineHandle handle)
+{
     if (!handle) {
         return;
     }
@@ -558,8 +591,6 @@ void VulkanDevice::destroyPipeline(PipelineHandle handle)
     if (pipeline == nullptr) {
         return;
     }
-
-    vkDeviceWaitIdle(m_device);
 
     if (pipeline->vk.pipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(m_device, pipeline->vk.pipeline, nullptr);
@@ -1008,6 +1039,10 @@ VulkanResult VulkanDevice::acquireNextImage()
     auto fence = frame->inFlightFence;
     vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
 
+    // All work submitted up to this frame has completed, so its resources can be destroyed
+    m_completedFrameNumber = std::max(m_completedFrameNumber, frame->frameNumber);
+    processDeletionQueue(m_completedFrameNumber);
+
     auto result = m_swapchain->acquireNextImage();
     if (result.isOk()) {
         vkResetFences(m_device, 1, &fence);
@@ -1045,6 +1080,8 @@ void VulkanDevice::submitPresent()
     submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
     auto result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.inFlightFence);
     assert(result != VK_ERROR_DEVICE_LOST);
+
+    frame.frameNumber = m_currentFrameNumber++;
 
     m_swapchain->queuePresent(m_graphicsQueue);
     advanceFrame();
@@ -1092,6 +1129,61 @@ VulkanDevice::FrameContext* VulkanDevice::getCurrentFrameContext()
 void VulkanDevice::advanceFrame()
 {
     m_currentFrameIndex = (m_currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanDevice::enqueueDeletion(PendingDeletion::Type type, const HandleBase& handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    m_deletionQueue.push_back(PendingDeletion{
+        .type = type,
+        .id = handle.getId(),
+        .frameNumber = m_currentFrameNumber,
+    });
+}
+
+void VulkanDevice::processDeletionQueue(uint64_t completedFrameNumber)
+{
+    // Entries are queued in frame order, so stop at the first one still in flight
+    while (!m_deletionQueue.empty() &&
+           m_deletionQueue.front().frameNumber <= completedFrameNumber) {
+        executeDeletion(m_deletionQueue.front());
+        m_deletionQueue.pop_front();
+    }
+}
+
+void VulkanDevice::flushDeletionQueue()
+{
+    for (const auto& deletion : m_deletionQueue) {
+        executeDeletion(deletion);
+    }
+    m_deletionQueue.clear();
+}
+
+void VulkanDevice::executeDeletion(const PendingDeletion& deletion)
+{
+    switch (deletion.type) {
+    case PendingDeletion::Type::VertexBuffer:
+        destroyVertexBufferNow(VertexBufferHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::IndexBuffer:
+        destroyIndexBufferNow(IndexBufferHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::BufferObject:
+        destroyBufferObjectNow(BufferObjectHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::Texture:
+        destroyTextureNow(TextureHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::DescriptorSet:
+        destroyDescriptorSetNow(DescriptorSetHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::Pipeline:
+        destroyPipelineNow(PipelineHandle{deletion.id});
+        break;
+    }
 }
 
 void VulkanDevice::buildFeatures()

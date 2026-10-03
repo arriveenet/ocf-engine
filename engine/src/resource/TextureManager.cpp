@@ -77,9 +77,9 @@ Texture* TextureManager::addImage(std::string_view filePath)
 
 Texture* TextureManager::getTextureForKey(std::string_view textureKeyName) const
 {
-    auto iter = m_textures.find(textureKeyName.data());
+    auto iter = m_textures.find(std::string(textureKeyName));
 
-    if (iter != m_textures.end()) {
+    if (iter == m_textures.end()) {
         auto key = FileSystem::getInstance()->getAssetFullPath(textureKeyName.data());
         iter = m_textures.find(key);
     }
