@@ -6,6 +6,8 @@
 #include "GLTFLoader.h"
 
 #include "ocf/core/Logger.h"
+#include "ocf/math/geometric.h"
+#include "ocf/math/mat3.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
 #include "ocf/math/quat.h"
@@ -186,10 +188,6 @@ void GLTFLoader::createPrimitive(const cgltf_node* node, Mesh* mesh)
 {
     OCF_LOG_TRACE("  Node {}: ", node->name ? node->name : "Unnamed");
 
-    math::vec3 translation{0.0f, 0.0f, 0.0f};
-    math::quat rotation{0.0f, 0.0f, 0.0f, 1.0f};
-    math::vec3 scale{1.0f, 1.0f, 1.0f};
-
     if (node->has_matrix) {
         OCF_LOG_TRACE("    Transformation: Matrix");
         OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->matrix[0], node->matrix[1],
@@ -206,27 +204,28 @@ void GLTFLoader::createPrimitive(const cgltf_node* node, Mesh* mesh)
         OCF_LOG_TRACE("    Transformation: Translation");
         OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}", node->translation[0], node->translation[1],
                       node->translation[2]);
-        translation = math::vec3{node->translation[0], node->translation[1], node->translation[2]};
     }
 
     if (node->has_rotation) {
         OCF_LOG_TRACE("    Transformation: Rotation");
         OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}, {:.3f}", node->rotation[0], node->rotation[1],
                       node->rotation[2], node->rotation[3]);
-        rotation =
-            math::quat{node->rotation[0], node->rotation[1], node->rotation[2], node->rotation[3]};
     }
 
     if (node->has_scale) {
         OCF_LOG_TRACE("    Transformation: Scale");
         OCF_LOG_TRACE("    {:.3f}, {:.3f}, {:.3f}", node->scale[0], node->scale[1], node->scale[2]);
-        scale = math::vec3{node->scale[0], node->scale[1], node->scale[2]};
     }
 
-    math::mat4 localTransform = math::mat4(1.0f);
-    localTransform = math::translate(localTransform, translation);
-    localTransform = localTransform * mat4_cast(rotation);
-    localTransform = math::scale(localTransform, scale);
+    // Accumulate the transforms of all ancestors, including nodes specified by a matrix
+    cgltf_float m[16];
+    cgltf_node_transform_world(node, m);
+
+    // cgltf returns a column-major matrix, which matches the component order of mat4
+    const math::mat4 worldTransform(m[0], m[1], m[2], m[3],
+                                    m[4], m[5], m[6], m[7],
+                                    m[8], m[9], m[10], m[11],
+                                    m[12], m[13], m[14], m[15]);
 
     const cgltf_mesh* gltfMesh = node->mesh;
     if (gltfMesh != nullptr) {
@@ -237,7 +236,7 @@ void GLTFLoader::createPrimitive(const cgltf_node* node, Mesh* mesh)
             const cgltf_primitive& primitive = gltfMesh->primitives[j];
             OCF_LOG_TRACE("    Attributes: {}", primitive.attributes_count);
 
-            processPrimitive(primitive, localTransform, mesh);
+            processPrimitive(primitive, worldTransform, mesh);
         }
     }
 }
@@ -251,6 +250,11 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, const math::
     PackedVec4Array tangents;
     PackedVec2Array texCoords;
     PackedUint32Array indices;
+
+    // Normals are transformed by the inverse transpose so that they stay perpendicular to the
+    // surface under non-uniform scaling. Tangents lie on the surface, so they use the model matrix.
+    const mat3 tangentMatrix = mat3(transform);
+    const mat3 normalMatrix = transpose(inverse(tangentMatrix));
 
     /* ------------------------- Vertex Attributes ------------------------- */
     for (cgltf_size i = 0; i < primitive.attributes_count; ++i) {
@@ -279,7 +283,8 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, const math::
             float normal[3];
             for (cgltf_size j = 0; j < accessor->count; ++j) {
                 cgltf_accessor_read_float(accessor, j, normal, 3);
-                normals.push_back(vec3{normal[0], normal[1], normal[2]});
+                const vec3 n = normalMatrix * vec3{normal[0], normal[1], normal[2]};
+                normals.push_back(normalize(n));
             }
         }
         else if (attribute.type == cgltf_attribute_type_tangent) {
@@ -291,7 +296,9 @@ void GLTFLoader::processPrimitive(const cgltf_primitive& primitive, const math::
             float tangent[4];
             for (cgltf_size j = 0; j < accessor->count; ++j) {
                 cgltf_accessor_read_float(accessor, j, tangent, 4);
-                tangents.push_back(vec4{tangent[0], tangent[1], tangent[2], tangent[3]});
+                const vec3 t = normalize(tangentMatrix * vec3{tangent[0], tangent[1], tangent[2]});
+                // w holds the bitangent handedness and is not affected by the transform
+                tangents.push_back(vec4{t.x, t.y, t.z, tangent[3]});
             }
         }
         else if (attribute.type == cgltf_attribute_type_texcoord) {
