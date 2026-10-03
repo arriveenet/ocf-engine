@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include "ocf/renderer/MaterialEnums.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/math/mat4.h"
 
@@ -19,6 +20,9 @@ struct RenderCommand {
     rhi::PipelineHandle pipelineHandle;
 
     math::mat4 matWorld = math::mat4(1.0f);
+
+    AlphaMode alphaMode = AlphaMode::Opaque;
+    float distanceToCamera = 0.0f; // Squared distance, used to sort transparent objects
 
     uint32_t indexCount = 0;
     uint32_t indexOffset = 0;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/renderer/RenderQueue.h"
 
+#include <algorithm>
+
 namespace ocf {
 
 RenderQueue::RenderQueue()
@@ -28,7 +30,18 @@ void RenderQueue::addCommand(const RenderCommand& command)
 
 void RenderQueue::sort()
 {
-    // TODO: Implement sorting logic for render commands based on material, pipeline, etc.
+    // Draw opaque, then masked, then blended objects.
+    // Blended objects are drawn back to front so that the objects behind them show through.
+    std::stable_sort(m_renderCommands.begin(), m_renderCommands.end(),
+                     [](const RenderCommand& a, const RenderCommand& b) {
+                         if (a.alphaMode != b.alphaMode) {
+                             return a.alphaMode < b.alphaMode;
+                         }
+                         if (a.alphaMode == AlphaMode::Blend) {
+                             return a.distanceToCamera > b.distanceToCamera;
+                         }
+                         return false;
+                     });
 }
 
 } // namespace ocf

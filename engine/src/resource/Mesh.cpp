@@ -8,6 +8,7 @@
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/resource/TextureManager.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace ocf {
@@ -81,6 +82,7 @@ void Mesh::createSubMeshBuffers(Engine& engine)
             .materialParams = subMeshLoad.materialParams,
             .primitive = PrimitiveType::Triangles, // Assuming triangles for now; adjust as needed
             .sampler = sampler,
+            .center = subMeshLoad.center,
         };
         m_subMeshes.emplace_back(subMesh);
     }
@@ -165,6 +167,21 @@ void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
                                        vertexCount, indexArray, indexCount);
     assert(result && "Failed to set surface data");
 
+    // Compute the bounding box center, used for sorting transparent submeshes
+    vec3 center(0.0f);
+    if (std::holds_alternative<PackedVec3Array>(arrays[ArrayType::ArrayVertex])) {
+        const auto& positions = std::get<PackedVec3Array>(arrays[ArrayType::ArrayVertex]);
+        if (!positions.empty()) {
+            vec3 minPos = positions[0];
+            vec3 maxPos = positions[0];
+            for (const auto& p : positions) {
+                minPos = vec3(std::min(minPos.x, p.x), std::min(minPos.y, p.y), std::min(minPos.z, p.z));
+                maxPos = vec3(std::max(maxPos.x, p.x), std::max(maxPos.y, p.y), std::max(maxPos.z, p.z));
+            }
+            center = (minPos + maxPos) * 0.5f;
+        }
+    }
+
     SubMeshLoad subMeshLoad{
         .format = format,
         .offsets = offsets,
@@ -175,6 +192,7 @@ void Mesh::addSubMeshFromArrays(PrimitiveType primitive,
         .vertexArray = std::move(vertexArray),
         .indexArray = std::move(indexArray),
         .textures = textures,
+        .center = center,
     };  
 
     m_subMeshLoads.emplace_back(subMeshLoad);

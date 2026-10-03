@@ -88,7 +88,7 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
         materialInstance->setParameter("metallicFactor", subMesh.materialParams.metallicFactor);
         materialInstance->setParameter("roughnessFactor", subMesh.materialParams.roughnessFactor);
         materialInstance->setParameter("alphaCutoff", subMesh.materialParams.alphaCutoff);
-        materialInstance->setParameter("alphaMode", 0);
+        materialInstance->setParameter("alphaMode", int(subMesh.materialParams.alphaMode));
         materialInstance->setParameter("hasNormalMap", int(subMesh.materialParams.hasNormalMap));
         materialInstance->setParameter("baseColorTexture", subMesh.baseColorTexture, subMesh.sampler);
         materialInstance->setParameter("metallicRoughnessTexture",
@@ -108,7 +108,8 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
         auto pipelineHandle = m_engine.getDevice().createPipeline(pipeline);
 
         Renderable* renderable = new Renderable(subMesh.vertexBuffer, subMesh.indexBuffer,
-                                                materialInstance, pipelineHandle);
+                                                materialInstance, pipelineHandle,
+                                                subMesh.materialParams.alphaMode, subMesh.center);
         m_renderables.push_back(renderable);
     }
 

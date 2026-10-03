@@ -4,6 +4,7 @@
 
 #include "ocf/core/Engine.h"
 #include "ocf/math/constants.h"
+#include "ocf/math/geometric.h"
 #include "ocf/math/matrix_transform.h"
 #include "ocf/platform/FileSystem.h"
 #include "ocf/renderer/IndexBuffer.h"
@@ -191,8 +192,10 @@ void Renderer::render(const View* view)
 
     m_renderQueue.clear();
 
+    const math::vec3 cameraPosition = view->getCamera()->getPosition();
+
     // Collect renderable objects from the scene
-    scene->traverseNodes(scene->getRoot(), [this](Node* node) {
+    scene->traverseNodes(scene->getRoot(), [this, &cameraPosition](Node* node) {
         for (const auto& component : node->getComponents()) {
             auto renderables = component->getRenderables();
             for (const auto& renderable : renderables) {
@@ -202,6 +205,12 @@ void Renderer::render(const View* view)
                 cmd.materialInstance = renderable->getMaterialInstance();
                 cmd.pipelineHandle = renderable->getPipelineHandle();
                 cmd.matWorld = node->getTransform().getWorldMatrix();
+                cmd.alphaMode = renderable->getAlphaMode();
+
+                const math::vec3& center = renderable->getCenter();
+                const math::vec4 worldCenter = cmd.matWorld * math::vec4(center.x, center.y, center.z, 1.0f);
+                const math::vec3 toCamera = math::vec3(worldCenter.x, worldCenter.y, worldCenter.z) - cameraPosition;
+                cmd.distanceToCamera = math::dot(toCamera, toCamera);
 
                 if (cmd.indexBuffer != nullptr) {
                     cmd.indexCount = cmd.indexBuffer->getIndexCount();
@@ -215,6 +224,8 @@ void Renderer::render(const View* view)
             }
         }
     });
+
+    m_renderQueue.sort();
 
     const uint32_t frameIndex = m_device->getCurrentFrameIndex();
 

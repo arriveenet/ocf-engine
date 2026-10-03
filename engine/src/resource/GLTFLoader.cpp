@@ -392,18 +392,14 @@ void GLTFLoader::processMaterial(const cgltf_material& material, Mesh::MaterialP
     Mesh::RasterState& rasterState = materialParams.rasterState;
     switch (material.alpha_mode) {
     case cgltf_alpha_mode_opaque:
+        materialParams.alphaMode = AlphaMode::Opaque;
         break;
     case cgltf_alpha_mode_mask:
-        rasterState.bits.blendFunctionSrcColor = Mesh::RasterState::BlendFunction::SrcAlpha;
-        rasterState.bits.blendFunctionDstColor = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
-        rasterState.bits.blendEquationColor = Mesh::RasterState::BlendEquation::Add;
-        rasterState.bits.blendFunctionSrcAlpha = Mesh::RasterState::BlendFunction::SrcAlpha;
-        rasterState.bits.blendFunctionDstAlpha = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
-        rasterState.bits.blendEquationAlpha = Mesh::RasterState::BlendEquation::Add;
-
-        rasterState.bits.depthWriteEnable = true;
+        // Masked fragments are discarded in the shader; the rest are drawn as opaque
+        materialParams.alphaMode = AlphaMode::Mask;
         break;
     case cgltf_alpha_mode_blend:
+        materialParams.alphaMode = AlphaMode::Blend;
         rasterState.bits.blendFunctionSrcColor = Mesh::RasterState::BlendFunction::SrcAlpha;
         rasterState.bits.blendFunctionDstColor = Mesh::RasterState::BlendFunction::OneMinusSrcAlpha;
         rasterState.bits.blendEquationColor = Mesh::RasterState::BlendEquation::Add;
@@ -415,6 +411,13 @@ void GLTFLoader::processMaterial(const cgltf_material& material, Mesh::MaterialP
         break;
     default:
         break;
+    }
+
+    materialParams.alphaCutoff = material.alpha_cutoff;
+
+    // Double Sided
+    if (material.double_sided) {
+        rasterState.bits.culling = Mesh::RasterState::CullingMode::None;
     }
 
     const char* alphaModeStr = (material.alpha_mode == cgltf_alpha_mode_opaque)  ? "Opaque"

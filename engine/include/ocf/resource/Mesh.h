@@ -74,6 +74,7 @@ public:
         MaterialParams materialParams;
         PrimitiveType primitive;
         TextureSampler sampler;
+        math::vec3 center; // Center of the bounding box in mesh space
    };
 
     Mesh();
@@ -120,6 +121,7 @@ private:
         std::vector<uint8_t> vertexArray;
         std::vector<uint8_t> indexArray;
         std::unordered_map<std::string, TextureData> textures;
+        math::vec3 center;
     };
 
     std::vector<SubMeshLoad> m_subMeshLoads;
