@@ -16,10 +16,13 @@ endif()
 # ==================================================================================================
 #  Sub Projects
 # ==================================================================================================
+add_subdirectory(third-party/cgltf/ocf)
 add_subdirectory(third-party/glfw)
 add_subdirectory(third-party/googletest/ocf)
 add_subdirectory(third-party/miniaudio/ocf)
 add_subdirectory(third-party/stb/ocf)
+add_subdirectory(third-party/tinyobjloader)
+add_subdirectory(third-party/xxHash)
 
 add_subdirectory(engine)
 

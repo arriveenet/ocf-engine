@@ -1,3 +1,5 @@
+#include "mat4.h"
+
 namespace ocf {
 namespace math {
 
@@ -31,6 +33,24 @@ inline mat<4, 4, T>::mat(const col_type& v0, const col_type& v1, const col_type&
     this->value[1] = v1;
     this->value[2] = v2;
     this->value[3] = v3;
+}
+
+template <typename T>
+inline constexpr mat<4, 4, T>::mat(const mat<2, 2, T>& m)
+{
+    this->value[0] = col_type(m[0], T(0), T(0));
+    this->value[1] = col_type(m[1], T(0), T(0));
+    this->value[2] = col_type(T(0), T(0), T(1), T(0));
+    this->value[3] = col_type(T(0), T(0), T(0), T(1));
+}
+
+template <typename T>
+inline constexpr mat<4, 4, T>::mat(const mat<3, 3, T>& m)
+{
+    this->value[0] = col_type(m[0], T(0));
+    this->value[1] = col_type(m[1], T(0));
+    this->value[2] = col_type(m[2], T(0));
+    this->value[3] = col_type(T(0), T(0), T(0), T(1));
 }
 
 // Array indexer

@@ -1,4 +1,6 @@
 #include "vec2.h"
+#include <cassert>
+
 namespace ocf {
 namespace math {
 
@@ -22,6 +24,36 @@ inline vec<2, T>::vec(A x, B y)
     : x(static_cast<T>(x))
     , y(static_cast<T>(y))
 {
+}
+
+template <typename T>
+T& vec<2, T>::operator[](length_t i)
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    default:
+        return x;
+    }
+}
+
+template <typename T>
+const T& vec<2, T>::operator[](length_t i) const
+{
+    assert(i >= 0 && i < this->length());
+
+    switch (i) {
+    case 0:
+        return x;
+    case 1:
+        return y;
+    default:
+        return x;
+    }
 }
 
 template <typename T>

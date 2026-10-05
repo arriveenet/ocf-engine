@@ -2,8 +2,10 @@
 
 #pragma once
 
-#include "ocf/rhi/RHIEnums.h"
 #include "ocf/rhi/Handle.h"
+#include "ocf/rhi/RHIEnums.h"
+
+#include <cstdint>
 
 namespace ocf::rhi {
 
@@ -23,7 +25,8 @@ public:
 
     virtual void bindPipeline(PipelineHandle ph) = 0;
 
-    virtual void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh) = 0;
+    virtual void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh, uint32_t firstSet,
+                                    uint32_t descriptorSetCount) = 0;
 
     virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                                    VertexBufferHandle vbh) = 0;

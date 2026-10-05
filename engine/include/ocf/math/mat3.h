@@ -30,6 +30,8 @@ public:
     // Column constructor
     mat(const col_type& v0, const col_type& v1, const col_type& v2);
 
+    explicit constexpr mat(const mat<4, 4, T>& m);
+
     // Array indexer
     col_type& operator[](length_t i);
     const col_type& operator[](length_t i) const;

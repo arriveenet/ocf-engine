@@ -14,6 +14,7 @@
 
 #include "ocf/core/Logger.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <thread>
@@ -121,8 +122,10 @@ void VulkanDevice::terminate()
     }
 
     if (m_depthBufferHandle) {
-        destroyTexture(m_depthBufferHandle);
+        destroyTextureNow(m_depthBufferHandle);
     }
+
+    flushDeletionQueue();
 
     if (m_resourceUploader) {
         m_resourceUploader->cleanup();
@@ -217,8 +220,7 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
         .height = uint32_t(height)
     };
 
-    // TODO
-    const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkFormat vkFormat = VulkanUtility::getTextureFormat(format);
     const uint32_t mipLevels = levels;
 
     // Set the destination texture
@@ -307,13 +309,21 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
 {
     Handle<VulkanPipeline> handle = initHandle<VulkanPipeline>();
     VulkanPipeline* pipeline = handle_cast<VulkanPipeline*>(handle);
-    VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(state.layout);
+
+    VkDescriptorSetLayout setLayouts[DESCRIPTOR_SET_COUNT_MAX] = {};
+    uint32_t setLayoutCount = 0;
+    for (auto& layout : state.pipelineLayout.setLayout) {
+        if (layout.getId() != HandleBase::nullid) {
+            VulkanDescriptorSetLayout* dsl = handle_cast<VulkanDescriptorSetLayout*>(layout);
+            setLayouts[setLayoutCount++] = dsl->vk.id;
+        }
+    }
 
     // Create pipeline layout
     VkPipelineLayoutCreateInfo layoutInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = 1,
-        .pSetLayouts = &dsl->vk.id,
+        .setLayoutCount = setLayoutCount,
+        .pSetLayouts = setLayouts,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr,
     };
@@ -364,8 +374,8 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     VkPipelineDepthStencilStateCreateInfo depthStencilState{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = VulkanUtility::getDepthFunc(state.rasterState.depthFunc),
+        .depthWriteEnable = state.rasterState.bits.depthWriteEnable ? VK_TRUE : VK_FALSE,
+        .depthCompareOp = VulkanUtility::getDepthFunc(state.rasterState.bits.depthFunc),
     };
 
     // Culling settings
@@ -374,10 +384,23 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VulkanUtility::getCullMode(state.rasterState.culling),
+        .cullMode = VulkanUtility::getCullMode(state.rasterState.bits.culling),
         .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
         .depthBiasEnable = VK_FALSE,
         .lineWidth = 1.0f,
+    };
+
+    // Color blending settings
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{
+        .blendEnable = state.rasterState.hasBlending() ? VK_TRUE : VK_FALSE,
+        .srcColorBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionSrcColor),
+        .dstColorBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionDstColor),
+        .colorBlendOp = VulkanUtility::getBlendEquation(state.rasterState.bits.blendEquationColor),
+        .srcAlphaBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionSrcAlpha),
+        .dstAlphaBlendFactor = VulkanUtility::getBlendFunction(state.rasterState.bits.blendFunctionDstAlpha),
+        .alphaBlendOp = VulkanUtility::getBlendEquation(state.rasterState.bits.blendEquationAlpha),
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
     // Format
@@ -394,11 +417,9 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     builder.setPipelineLayout(pipelineLayout);
     builder.setDepthStencilState(depthStencilState);
     builder.setRasterizationState(rasterizerState);
+    builder.setColorBlendAttachmentState(colorBlendAttachment);
     builder.useDynamicRendering(colorFormat, depthFormat);
     pipeline->vk.pipeline = builder.build(m_device);
-
-    vkDestroyShaderModule(m_device, vs->vk.id, nullptr);
-    vkDestroyShaderModule(m_device, fs->vk.id, nullptr);
 
     return Handle<RHIPipeline>{handle.getId()};
 }
@@ -455,6 +476,11 @@ void VulkanDevice::destroyVertexBufferInfo(VertexBufferInfoHandle handle)
 
 void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::VertexBuffer, handle);
+}
+
+void VulkanDevice::destroyVertexBufferNow(VertexBufferHandle handle)
+{
     if (handle) {
         VulkanVertexBuffer* vb = handle_cast<VulkanVertexBuffer*>(handle);
         destruct(handle, vb);
@@ -463,6 +489,11 @@ void VulkanDevice::destroyVertexBuffer(VertexBufferHandle handle)
 
 void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::IndexBuffer, handle);
+}
+
+void VulkanDevice::destroyIndexBufferNow(IndexBufferHandle handle)
+{
     if (handle) {
         VulkanIndexBuffer* ib = handle_cast<VulkanIndexBuffer*>(handle);
         destruct(handle, ib);
@@ -470,6 +501,11 @@ void VulkanDevice::destroyIndexBuffer(IndexBufferHandle handle)
 }
 
 void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
+{
+    enqueueDeletion(PendingDeletion::Type::BufferObject, handle);
+}
+
+void VulkanDevice::destroyBufferObjectNow(BufferObjectHandle handle)
 {
     if (!handle) {
         return;
@@ -481,6 +517,11 @@ void VulkanDevice::destroyBufferObject(BufferObjectHandle handle)
 
 void VulkanDevice::destroyTexture(TextureHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::Texture, handle);
+}
+
+void VulkanDevice::destroyTextureNow(TextureHandle handle)
+{
     if (!handle) {
         return;
     }
@@ -489,6 +530,21 @@ void VulkanDevice::destroyTexture(TextureHandle handle)
     tex->image.reset();
 
     destruct(handle, tex);
+}
+
+void VulkanDevice::destroyShaderModule(ShaderModuleHandle handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    VulkanShaderModule* shaderModule = handle_cast<VulkanShaderModule*>(handle);
+    if (shaderModule->vk.id != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(m_device, shaderModule->vk.id, nullptr);
+        shaderModule->vk.id = VK_NULL_HANDLE;
+    }
+
+    destruct(handle, shaderModule);
 }
 
 void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
@@ -505,6 +561,11 @@ void VulkanDevice::destroyDescriptorSetLayout(DescriptorSetLayoutHandle handle)
 
 void VulkanDevice::destroyDescriptorSet(DescriptorSetHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::DescriptorSet, handle);
+}
+
+void VulkanDevice::destroyDescriptorSetNow(DescriptorSetHandle handle)
+{
     if (!handle) {
         return;
     }
@@ -517,6 +578,11 @@ void VulkanDevice::destroyDescriptorSet(DescriptorSetHandle handle)
 
 void VulkanDevice::destroyPipeline(PipelineHandle handle)
 {
+    enqueueDeletion(PendingDeletion::Type::Pipeline, handle);
+}
+
+void VulkanDevice::destroyPipelineNow(PipelineHandle handle)
+{
     if (!handle) {
         return;
     }
@@ -525,8 +591,6 @@ void VulkanDevice::destroyPipeline(PipelineHandle handle)
     if (pipeline == nullptr) {
         return;
     }
-
-    vkDeviceWaitIdle(m_device);
 
     if (pipeline->vk.pipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(m_device, pipeline->vk.pipeline, nullptr);
@@ -975,6 +1039,10 @@ VulkanResult VulkanDevice::acquireNextImage()
     auto fence = frame->inFlightFence;
     vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
 
+    // All work submitted up to this frame has completed, so its resources can be destroyed
+    m_completedFrameNumber = std::max(m_completedFrameNumber, frame->frameNumber);
+    processDeletionQueue(m_completedFrameNumber);
+
     auto result = m_swapchain->acquireNextImage();
     if (result.isOk()) {
         vkResetFences(m_device, 1, &fence);
@@ -1000,18 +1068,20 @@ void VulkanDevice::submitPresent()
     };
     // Get current frame semaphore
     VkSemaphore renderCompleteSemaphore = m_swapchain->getRenderCompleteSemaphore();
-    VkSemaphore presentComplateSemaphore = m_swapchain->getPresentCompleteSemaphore();
+    VkSemaphore presentCompleteSemaphore = m_swapchain->getPresentCompleteSemaphore();
 
     VkCommandBuffer commandBuffer = frame.commandBuffer->getHandle();
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
     submitInfo.pWaitDstStageMask = &waitStageMask;
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &presentComplateSemaphore;
+    submitInfo.pWaitSemaphores = &presentCompleteSemaphore;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
     auto result = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, frame.inFlightFence);
     assert(result != VK_ERROR_DEVICE_LOST);
+
+    frame.frameNumber = m_currentFrameNumber++;
 
     m_swapchain->queuePresent(m_graphicsQueue);
     advanceFrame();
@@ -1059,6 +1129,61 @@ VulkanDevice::FrameContext* VulkanDevice::getCurrentFrameContext()
 void VulkanDevice::advanceFrame()
 {
     m_currentFrameIndex = (m_currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void VulkanDevice::enqueueDeletion(PendingDeletion::Type type, const HandleBase& handle)
+{
+    if (!handle) {
+        return;
+    }
+
+    m_deletionQueue.push_back(PendingDeletion{
+        .type = type,
+        .id = handle.getId(),
+        .frameNumber = m_currentFrameNumber,
+    });
+}
+
+void VulkanDevice::processDeletionQueue(uint64_t completedFrameNumber)
+{
+    // Entries are queued in frame order, so stop at the first one still in flight
+    while (!m_deletionQueue.empty() &&
+           m_deletionQueue.front().frameNumber <= completedFrameNumber) {
+        executeDeletion(m_deletionQueue.front());
+        m_deletionQueue.pop_front();
+    }
+}
+
+void VulkanDevice::flushDeletionQueue()
+{
+    for (const auto& deletion : m_deletionQueue) {
+        executeDeletion(deletion);
+    }
+    m_deletionQueue.clear();
+}
+
+void VulkanDevice::executeDeletion(const PendingDeletion& deletion)
+{
+    switch (deletion.type) {
+    case PendingDeletion::Type::VertexBuffer:
+        destroyVertexBufferNow(VertexBufferHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::IndexBuffer:
+        destroyIndexBufferNow(IndexBufferHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::BufferObject:
+        destroyBufferObjectNow(BufferObjectHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::Texture:
+        destroyTextureNow(TextureHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::DescriptorSet:
+        destroyDescriptorSetNow(DescriptorSetHandle{deletion.id});
+        break;
+    case PendingDeletion::Type::Pipeline:
+        destroyPipelineNow(PipelineHandle{deletion.id});
+        break;
+    }
 }
 
 void VulkanDevice::buildFeatures()

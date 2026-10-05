@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "Material.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
 #include "ocf/rhi/Handle.h"
+#include "ocf/renderer/Material.h"
+#include "ocf/renderer/RenderQueue.h"
 
 #include <memory>
 
@@ -17,6 +18,7 @@ class Texture;
 class Material;
 class MaterialInstance;
 class Engine;
+class View;
 
 namespace rhi {
 class Device;
@@ -44,7 +46,12 @@ public:
 
     void endFrame();
 
-    void render();
+    void render(const View* view);
+
+    Material* getUBOMaterial() const { return m_material; }
+    MaterialInstance* getUBOMaterialInstance() const { return m_materialInstance; }
+
+protected:
 
 private:
     Engine& m_engine;
@@ -54,8 +61,9 @@ private:
     IndexBuffer* m_indexBuffer = nullptr;
     Texture* m_texture = nullptr;
     Material* m_material = nullptr;
-    std::shared_ptr<MaterialInstance> m_materialInstance;
+    MaterialInstance* m_materialInstance = nullptr;
     rhi::PipelineHandle m_pipelineHandle;
+    RenderQueue m_renderQueue;
 };
 
 } // namespace ocf

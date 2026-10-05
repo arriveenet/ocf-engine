@@ -1,19 +1,36 @@
 // SPDX-License-Identifier: MIT
-#include <gtest/gtest.h>
 #include <cmath>
+#include <gtest/gtest.h>
 
-#include <ocf/math/constants.h>
+#include <ocf/math/constants.inl>
 #include <ocf/math/geometric.h>
+#include <ocf/math/mat3.h>
+#include <ocf/math/mat4.h>
 #include <ocf/math/quat.h>
 #include <ocf/math/vec3.h>
 
 using namespace ocf::math;
+
+namespace {
+constexpr float kEpsilon = 1e-6f;
+
+bool IsSameRotation(const quat& a, const quat& b, float epsilon = 1e-4f)
+{
+    const quat na = normalize(a);
+    const quat nb = normalize(b);
+    return std::abs(dot(na, nb)) >= (1.0f - epsilon);
+}
+}
 
 // quatのデフォルトコンストラクタのテスト
 TEST(QuatTest, DefaultConstructor)
 {
     quat q;
     // デフォルトコンストラクタで初期化された値をテスト
+    EXPECT_FLOAT_EQ(q.x, 0.0f);
+    EXPECT_FLOAT_EQ(q.y, 0.0f);
+    EXPECT_FLOAT_EQ(q.z, 0.0f);
+    EXPECT_FLOAT_EQ(q.w, 1.0f);
 }
 
 // quatのスカラーコンストラクタのテスト（単位クォータニオン）
@@ -39,18 +56,106 @@ TEST(QuatTest, ComponentConstructor)
     EXPECT_FLOAT_EQ(q.w, 4.0f);
 }
 
-// quatの軸角度コンストラクタのテスト
-TEST(QuatTest, AxisAngleConstructor)
+TEST(QuatTest, EulerAnglesZeroCreatesIdentityQuaternion)
 {
-    vec3 axis(0.0f, 0.0f, 1.0f);  // Z軸
-    constexpr float angle = pi<float>() / 2.0f; // 90度
-    quat q(axis, angle);
-    
-    // Z軸周りの90度回転のクォータニオン
-    EXPECT_FLOAT_EQ(q.x, 0.0f);
-    EXPECT_FLOAT_EQ(q.y, 0.0f);
-    EXPECT_NEAR(q.z, std::sin(pi<float>() / 4.0f), 1e-6f);  // sin(45°)
-    EXPECT_NEAR(q.w, std::cos(pi<float>() / 4.0f), 1e-6f);  // cos(45°)
+    quat q(vec3(0.0f, 0.0f, 0.0f));
+
+    EXPECT_NEAR(q.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.z, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.w, 1.0f, kEpsilon);
+}
+
+TEST(QuatTest, EulerAnglesZ90CreatesExpectedQuaternion)
+{
+    quat q(vec3(0.0f, 0.0f, pi<float>() * 0.5f));
+
+    EXPECT_NEAR(q.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.z, std::sin(pi<float>() * 0.25f), kEpsilon);
+    EXPECT_NEAR(q.w, std::cos(pi<float>() * 0.25f), kEpsilon);
+}
+
+TEST(QuatTest, Mat3IdentityCreatesIdentityQuaternion)
+{
+    mat3 m(1.0f);
+    quat q(m);
+
+    EXPECT_NEAR(q.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.z, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.w, 1.0f, kEpsilon);
+}
+
+TEST(QuatTest, Mat4IdentityCreatesIdentityQuaternion)
+{
+    mat4 m(1.0f);
+    quat q(m);
+
+    EXPECT_NEAR(q.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.z, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.w, 1.0f, kEpsilon);
+}
+
+TEST(QuatTest, Mat3CastZ90CreatesExpectedRotationMatrix)
+{
+    const quat q = angleAxis(pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
+    const mat3 m = mat3_cast(q);
+
+    EXPECT_NEAR(m[0].x, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[0].y, 1.0f, kEpsilon);
+    EXPECT_NEAR(m[0].z, 0.0f, kEpsilon);
+
+    EXPECT_NEAR(m[1].x, -1.0f, kEpsilon);
+    EXPECT_NEAR(m[1].y, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[1].z, 0.0f, kEpsilon);
+
+    EXPECT_NEAR(m[2].x, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[2].y, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[2].z, 1.0f, kEpsilon);
+}
+
+TEST(QuatTest, Mat4CastZ90PreservesRotationAndHomogeneousPart)
+{
+    const quat q = angleAxis(pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
+    const mat4 m = mat4_cast(q);
+
+    EXPECT_NEAR(m[0].x, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[0].y, 1.0f, kEpsilon);
+    EXPECT_NEAR(m[0].z, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[0].w, 0.0f, kEpsilon);
+
+    EXPECT_NEAR(m[1].x, -1.0f, kEpsilon);
+    EXPECT_NEAR(m[1].y, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[1].z, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[1].w, 0.0f, kEpsilon);
+
+    EXPECT_NEAR(m[2].x, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[2].y, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[2].z, 1.0f, kEpsilon);
+    EXPECT_NEAR(m[2].w, 0.0f, kEpsilon);
+
+    EXPECT_NEAR(m[3].x, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[3].y, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[3].z, 0.0f, kEpsilon);
+    EXPECT_NEAR(m[3].w, 1.0f, kEpsilon);
+}
+
+TEST(QuatTest, QuatCastFromMat3RoundTripPreservesRotation)
+{
+    const quat q = angleAxis(pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
+    const quat roundTrip = quat_cast(mat3_cast(q));
+
+    EXPECT_TRUE(IsSameRotation(q, roundTrip));
+}
+
+TEST(QuatTest, QuatCastFromMat4RoundTripPreservesRotation)
+{
+    const quat q = angleAxis(pi<float>() * 0.5f, vec3(0.0f, 0.0f, 1.0f));
+    const quat roundTrip = quat_cast(mat4_cast(q));
+
+    EXPECT_TRUE(IsSameRotation(q, roundTrip));
 }
 
 // 配列アクセス演算子のテスト
@@ -193,10 +298,10 @@ TEST(QuatTest, Inverse)
     quat identity = q * inv;
     
     // 逆クォータニオンとの乗算が単位クォータニオンになることを確認
-    EXPECT_NEAR(identity.x, 0.0f, 1e-6f);
-    EXPECT_NEAR(identity.y, 0.0f, 1e-6f);
-    EXPECT_NEAR(identity.z, 0.0f, 1e-6f);
-    EXPECT_NEAR(identity.w, 1.0f, 1e-6f);
+    EXPECT_NEAR(identity.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(identity.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(identity.z, 0.0f, kEpsilon);
+    EXPECT_NEAR(identity.w, 1.0f, kEpsilon);
 }
 
 // ベクトル回転のテスト
@@ -204,15 +309,15 @@ TEST(QuatTest, RotateVector)
 {
     // Z軸周りの90度回転
     vec3 axis(0.0f, 0.0f, 1.0f);
-    quat q(axis, pi<float>() / 2.0f);
+    quat q = angleAxis(pi<float>() * 0.5f, axis);
     
     vec3 v(1.0f, 0.0f, 0.0f);  // X軸ベクトル
     vec3 rotated = rotate(q, v);
     
     // 90度回転後はY軸方向になるはず
-    EXPECT_NEAR(rotated.x, 0.0f, 1e-6f);
-    EXPECT_NEAR(rotated.y, 1.0f, 1e-6f);
-    EXPECT_NEAR(rotated.z, 0.0f, 1e-6f);
+    EXPECT_NEAR(rotated.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(rotated.y, 1.0f, kEpsilon);
+    EXPECT_NEAR(rotated.z, 0.0f, kEpsilon);
 }
 
 // angleAxis関数のテスト
@@ -223,10 +328,10 @@ TEST(QuatTest, AngleAxis)
     
     quat q = angleAxis(angle, axis);
     
-    EXPECT_NEAR(q.x, 0.0f, 1e-6f);
-    EXPECT_NEAR(q.y, std::sin(pi<float>() / 6.0f), 1e-6f);  // sin(30°)
-    EXPECT_NEAR(q.z, 0.0f, 1e-6f);
-    EXPECT_NEAR(q.w, std::cos(pi<float>() / 6.0f), 1e-6f);  // cos(30°)
+    EXPECT_NEAR(q.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.y, std::sin(pi<float>() / 6.0f), kEpsilon);  // sin(30°)
+    EXPECT_NEAR(q.z, 0.0f, kEpsilon);
+    EXPECT_NEAR(q.w, std::cos(pi<float>() / 6.0f), kEpsilon);  // cos(30°)
 }
 
 // slerp（球面線形補間）のテスト
@@ -238,10 +343,10 @@ TEST(QuatTest, Slerp)
     quat result = slerp(q1, q2, 0.5f);  // 中間点
     
     // 45度回転になっているはず
-    EXPECT_NEAR(result.x, 0.0f, 1e-5f);
-    EXPECT_NEAR(result.y, 0.0f, 1e-5f);
-    EXPECT_NEAR(result.z, 0.382683f, 1e-5f);  // sin(22.5°)
-    EXPECT_NEAR(result.w, 0.92388f, 1e-5f);   // cos(22.5°)
+    EXPECT_NEAR(result.x, 0.0f, kEpsilon);
+    EXPECT_NEAR(result.y, 0.0f, kEpsilon);
+    EXPECT_NEAR(result.z, 0.382683f, kEpsilon);  // sin(22.5°)
+    EXPECT_NEAR(result.w, 0.92388f, kEpsilon);   // cos(22.5°)
 }
 
 // 型エイリアスのテスト

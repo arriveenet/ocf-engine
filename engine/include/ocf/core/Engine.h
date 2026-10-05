@@ -23,6 +23,8 @@ class Window;
 class Scene;
 class Renderer;
 class EventDispatcher;
+class View;
+class TextureManager;
 
 /**
  * @class Engine
@@ -93,6 +95,18 @@ public:
     Scene* createScene();
 
     /**
+     * @brief Creates a new view and adds it to the engine's view list.
+     * @return Pointer to the newly created View instance
+     */
+    View* createView();
+
+    /**
+     * @brief 
+     * @param view 
+     */
+    void addView(View* view);
+
+    /**
      * @brief Retrieves the rendering device.
      *
      * @return Reference to the RHI Device instance
@@ -106,6 +120,13 @@ public:
      */
     Renderer& getRenderer() const;
 
+    /**
+     * @brief Retrieves the texture manager instance.
+     *
+     * @return Reference to the TextureManager instance
+     */
+    TextureManager& getTextureManager() const;
+  
     /**
      * @brief Retrieves the audio system instance.
      *
@@ -154,13 +175,15 @@ private:
     bool init();
 
 private:
-    std::shared_ptr<Window> m_window;      ///< Shared pointer to the application window
-    std::unique_ptr<Scene> m_currentScene; ///< Unique pointer to the active scene
-    std::unique_ptr<Renderer> m_renderer;  ///< Unique pointer to the renderer instance
-    std::unique_ptr<rhi::Device> m_device; ///< Unique pointer to the rendering device
+    std::shared_ptr<Window> m_window;      //!< Shared pointer to the application window
+    std::unique_ptr<Scene> m_currentScene; //!< Unique pointer to the active scene
+    std::unique_ptr<Renderer> m_renderer;  //!< Unique pointer to the renderer instance
+    std::unique_ptr<rhi::Device> m_device; //!< Unique pointer to the rendering device
+    std::unique_ptr<TextureManager> m_textureManager; //!< Unique pointer to the texture manager
     std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
-    FrameCounter m_frameCounter;           ///< Frame counter for tracking FPS
-    EventDispatcher& m_eventDispatcher;    ///< Reference to the event dispatcher
+    std::vector<View*> m_views;            //!< Vector of view pointers
+    FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
+    EventDispatcher& m_eventDispatcher;    //!< Reference to the event dispatcher
 };
 
 } // namespace ocf

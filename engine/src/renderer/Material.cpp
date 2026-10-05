@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/renderer/Material.h"
 
-#include "renderer/DescriptorSet.h"
-
 #include "ocf/core/Engine.h"
+#include "ocf/renderer/DescriptorSet.h"
 #include "ocf/renderer/MaterialInstance.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -70,12 +69,18 @@ Material::~Material()
 
 void Material::terminate(Engine& engine)
 {
+    for (MaterialInstance* instance : m_instances) {
+        instance->terminate(engine);
+        delete instance;
+    }
+    m_instances.clear();
     m_descriptorSetLayout.terminate(engine);
 }
 
-std::shared_ptr<MaterialInstance> Material::createInstance()
+MaterialInstance* Material::createInstance()
 {
-    auto instance = std::make_shared<MaterialInstance>(this);
+    MaterialInstance* instance = new MaterialInstance(this);
+    m_instances.push_back(instance);
     instance->create(*m_engine);
     return instance;
 }

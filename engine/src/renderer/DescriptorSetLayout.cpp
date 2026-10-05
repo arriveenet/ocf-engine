@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "DescriptorSetLayout.h"
+#include "ocf/renderer/DescriptorSetLayout.h"
 
 #include "ocf/core/Engine.h"
 #include "ocf/rhi/Device.h"

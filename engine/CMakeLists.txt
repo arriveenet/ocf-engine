@@ -67,6 +67,7 @@ add_filtered_std("core/job")
 add_filtered_std("math")
 add_filtered_std("platform")
 add_filtered_std("renderer")
+add_filtered_std("resource")
 add_filtered_std("rhi")
 add_filtered_std("scene")
 
@@ -123,9 +124,12 @@ set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 # ==================================================================================================
 # Dependencies
 # ==================================================================================================
+target_link_libraries(${TARGET} PRIVATE cgltf)
 target_link_libraries(${TARGET} PRIVATE glfw)
 target_link_libraries(${TARGET} PRIVATE miniaudio)
 target_link_libraries(${TARGET} PRIVATE stb)
+target_link_libraries(${TARGET} PRIVATE tinyobjloader)
+target_link_libraries(${TARGET} PRIVATE xxHash)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
 # ==================================================================================================

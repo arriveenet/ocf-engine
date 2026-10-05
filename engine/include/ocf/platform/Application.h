@@ -13,12 +13,13 @@ namespace ocf {
 
 class Engine;
 class Window;
+class View;
 class Scene;
 
 class OCF_API Application {
 public:
-    using SetupCallback = std::function<void(Engine& engine, Scene* scene)>;
-    using CleanupCallback = std::function<void(Engine& engine, Scene* scene)>;
+    using SetupCallback = std::function<void(Engine& engine, View* view, Scene* scene)>;
+    using CleanupCallback = std::function<void(Engine& engine, View* view, Scene* scene)>;
 
     struct Config {
         std::string title;
