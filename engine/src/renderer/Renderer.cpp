@@ -28,119 +28,6 @@
 
 namespace ocf {
 
-using namespace rhi;
-using MinFilter = TextureSampler::MinFilter;
-using MagFilter = TextureSampler::MagFilter;
-
-static std::vector<Vertex2> vertices{};
-
-static std::vector<uint32_t> indices{};
-
-//static void createCubeGeometry()
-//{
-//    const math::vec3 A(-0.5f, 0.5f, 0.5f), B(-0.5f, -0.5f, 0.5f),
-//    C(0.5f, 0.5f, 0.5f), D(0.5f, -0.5f, 0.5f),
-//    E(-0.5f, 0.5f, -0.5f), F(-0.5f, -0.5f, -0.5f),
-//    G(0.5f, 0.5f, -0.5f), H(0.5f, -0.5f, -0.5f);
-//
-//    vertices =
-//    {
-//        // front
-//        { A, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 1.0f } },
-//        { B, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
-//        { C, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f } },
-//        { D, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
-//        // back
-//        { E, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 1.0f } },
-//        { F, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 0.0f } },
-//        { G, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 1.0f } },
-//        { H, { 0.0f, 0.0f, -1.0f }, { 0.0f, 1.0f, 0.0f } },
-//        // right
-//        { C, { 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
-//        { D, { 1.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } },
-//        { G, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 1.0f } },
-//        { H, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-//        // left
-//        { E, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-//        { F, { -1.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-//        { A, { -1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 1.0f } },
-//        { B, { -1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-//        // top
-//        { E, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-//        { A, { 0.0f, 1.0f, 0.0f }, { 1.0f, 0.0f, 1.0f } },
-//        { G, { 0.0f, 1.0f, 0.0f }, { 0.0f, 1.0f, 1.0f } },
-//        { C, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f } },
-//        // bottom
-//        { B, { 0.0f, -1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-//        { F, { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } },
-//        { D, { 0.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f } },
-//        { H, { 0.0f, -1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-//    };
-//
-//    indices = {
-//        0, 1, 2, 2, 1, 3,       // front
-//        6, 7, 4, 4, 7, 5,       // back
-//        8, 9, 10, 10, 9, 11,    // right
-//        12, 13, 14, 14, 13, 15, // left
-//        16, 17, 18, 18, 17, 19, // top
-//        20, 21, 22, 22, 21, 23, // bottom
-//    };
-//}
-//
-//static void createSphareGeometry()
-//{
-//    const int stackCount = 32;
-//    const int sliceCount = 48;
-//    constexpr auto PI = math::pi<float>();
-//    const auto sliceStep = PI * 2.0f / sliceCount;
-//    const auto stackStep = PI / stackCount;
-//
-//    for (int stack = 0; stack <= stackCount; ++stack) {
-//        auto stackAngle = (float)PI / 2 - stack * stackStep;
-//
-//        for (int slice = 0; slice <= sliceCount; ++slice) {
-//            auto sliceAngle = slice * sliceStep;
-//
-//            auto x = std::cosf(stackAngle) * std::cosf(sliceAngle);
-//            auto y = std::sinf(stackAngle);
-//            auto z = std::cosf(stackAngle) * std::sinf(sliceAngle);
-//
-//            Vertex v;
-//            v.position = math::vec3(x, y, z);
-//            v.normal = normalize(v.position);
-//            v.color = math::vec3(0.7f, 0.85f, 0.9f);
-//            vertices.push_back(v);
-//        }
-//    }
-//
-//    for (int stack = 0; stack < stackCount; ++stack) {
-//        uint32_t k1 = stack * (sliceCount + 1);
-//        uint32_t k2 = k1 + sliceCount + 1;
-//
-//        for (int slice = 0; slice < sliceCount; ++slice, ++k1, ++k2) {
-//            if (stack != 0) {
-//                indices.insert(indices.end(), { k1, k1 + 1, k2 });
-//            }
-//            if (stack != (stackCount - 1)) {
-//                indices.insert(indices.end(), { k1 + 1, k2 + 1, k2 });
-//            }
-//        }
-//    }
-//}
-
-static void createPlaneGeometry()
-{
-    vertices = {
-        {{-0.5f, -0.5f, 0.5f}, {0.0f, 24.0f}},
-        {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.5f}, {24.0f, 24.0f}},
-        {{0.5f, 0.5f, 0.5f}, {24.0f, 0.0f}},
-    };
-    indices = {
-        0, 3, 1, 0, 2, 3,
-    };
-}
-
 Renderer::Renderer(Engine& engine, rhi::Device* device)
     : m_engine(engine)
     , m_device(device)
@@ -158,14 +45,14 @@ bool Renderer::init()
     m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
 
     m_material = Material::Builder()
-                    .uniformBlock(0, "UBO", 224)
-                    .uniformMember("UBO", "projection", rhi::UniformType::Mat4, 0, 64)
-                    .uniformMember("UBO", "view", rhi::UniformType::Mat4, 64, 64)
-                    .uniformMember("UBO", "model", rhi::UniformType::Mat4, 128, 64)
-                    .uniformMember("UBO", "lightDirection", rhi::UniformType::Float4, 192, 16)
-                    .uniformMember("UBO", "eyePosition", rhi::UniformType::Float3, 208, 12)
-                    .uniformMember("UBO", "exposure", rhi::UniformType::Float, 220, 4)
-                    .build(m_engine);
+                .uniformBlock(0, "UBO", 224)
+                .uniformMember("UBO", "projection", rhi::UniformType::Mat4, 0, 64)
+                .uniformMember("UBO", "view", rhi::UniformType::Mat4, 64, 64)
+                .uniformMember("UBO", "model", rhi::UniformType::Mat4, 128, 64)
+                .uniformMember("UBO", "lightDirection", rhi::UniformType::Float4, 192, 16)
+                .uniformMember("UBO", "eyePosition", rhi::UniformType::Float3, 208, 12)
+                .uniformMember("UBO", "exposure", rhi::UniformType::Float, 220, 4)
+                .build(m_engine);
 
     m_materialInstance = m_material->createInstance();
 
@@ -281,4 +168,3 @@ void Renderer::render(const View* view)
 }
 
 } // namespace ocf
-
