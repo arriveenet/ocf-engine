@@ -2,6 +2,7 @@
 #pragma once
 #include "ocf/core/Object.h"
 #include <atomic>
+#include <utility>
 
 namespace ocf {
 
@@ -52,6 +53,7 @@ public:
         if (m_reference == rhs.m_reference) {
             return;
         }
+        unreference();
         m_reference = rhs.m_reference;
         reference();
     }
@@ -67,22 +69,22 @@ public:
         rhs.m_reference = nullptr;
     }
 
-    inline bool operator==(const T* ptr)
+    inline bool operator==(const T* ptr) const
     {
         return m_reference == ptr;
     }
 
-    inline bool operator!=(const T* ptr)
+    inline bool operator!=(const T* ptr) const
     {
         return m_reference != ptr;
     }
 
-    inline bool operator==(const Ref<T>& rhs)
+    inline bool operator==(const Ref<T>& rhs) const
     {
         return m_reference == rhs.m_reference;
     }
 
-    inline bool operator!=(const Ref<T>& rhs)
+    inline bool operator!=(const Ref<T>& rhs) const
     {
         return m_reference != rhs.m_reference;
     }
@@ -102,7 +104,8 @@ public:
     template <typename... Args>
     void instantiate(Args&&... args)
     {
-        m_reference = new T(args...);
+        unreference();
+        m_reference = new T(std::forward<Args>(args)...);
         reference();
     }
 
