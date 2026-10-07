@@ -14,27 +14,9 @@ else()
 endif()
 
 # ==================================================================================================
-#  Options
-# ==================================================================================================
-option(OCF_USE_FREETYPE "Use FreeType instead of stb_truetype for TrueType fonts" OFF)
-
-# ==================================================================================================
 #  Sub Projects
 # ==================================================================================================
 add_subdirectory(third-party/cgltf/ocf)
-
-if (OCF_USE_FREETYPE)
-    # Disable optional external dependencies of FreeType
-    set(FT_DISABLE_ZLIB     ON CACHE BOOL "" FORCE)
-    set(FT_DISABLE_BZIP2    ON CACHE BOOL "" FORCE)
-    set(FT_DISABLE_PNG      ON CACHE BOOL "" FORCE)
-    set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
-    set(FT_DISABLE_BROTLI   ON CACHE BOOL "" FORCE)
-    set(SKIP_INSTALL_ALL    ON CACHE BOOL "" FORCE)
-    add_subdirectory(third-party/freetype)
-    set_target_properties(freetype PROPERTIES FOLDER ThirdParty)
-endif()
-
 add_subdirectory(third-party/glfw)
 add_subdirectory(third-party/googletest/ocf)
 add_subdirectory(third-party/miniaudio/ocf)
