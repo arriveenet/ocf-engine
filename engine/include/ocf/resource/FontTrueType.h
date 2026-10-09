@@ -19,6 +19,7 @@ struct FontTrueTypeConfig {
     std::string fontPath;
     int fontSize = 0;
     GlyphCollection glyphs = GlyphCollection::Ascii;
+    TextureFilter filter = TextureFilter::Linear;
 };
 
 class FontTrueType : public Font {

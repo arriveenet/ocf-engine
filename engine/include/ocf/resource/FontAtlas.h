@@ -20,6 +20,8 @@ class FontAtlas : public Resource {
 public:
     static constexpr int DEFAULT_TEXTURE_WIDTH = 512;
     static constexpr int DEFAULT_TEXTURE_HEIGHT = 512;
+    // Transparent texels kept around each glyph by insert() to prevent texture bleeding
+    static constexpr int GLYPH_PADDING = 2;
 
     FontAtlas(Engine& engine);
     FontAtlas(Engine& engine, int width, int height);

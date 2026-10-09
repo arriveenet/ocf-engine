@@ -13,7 +13,7 @@ void Font::addCharacterDefinition(char32_t utf32char, const CharacterDefinition&
     m_characterDefinition[utf32char] = defintition;
 }
 
-bool Font::getCharacterDefinition(char32_t utf32char, CharacterDefinition& defintition)
+bool Font::getCharacterDefinition(char32_t utf32char, CharacterDefinition& defintition) const
 {
     auto iter = m_characterDefinition.find(utf32char);
     if (iter != m_characterDefinition.end()) {

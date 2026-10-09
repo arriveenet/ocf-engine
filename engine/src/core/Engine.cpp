@@ -38,7 +38,7 @@ Engine::~Engine()
     m_currentScene.reset();
 
     // Fonts own atlas textures, so release them while the device is still alive
-    m_fontManager->release();
+    m_fontManager->clear();
     m_fontManager.reset();
 
     m_textureManager.reset();

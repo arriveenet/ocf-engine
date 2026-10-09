@@ -94,7 +94,7 @@ bool FontTrueType::prepareLetterDefinitions(const std::u32string& utf32Text)
             .width = tempRect.m_size.x,
             .height = tempRect.m_size.y,
             .xoffset = static_cast<float>(glyph.left),
-            .yoffset = m_lineHeight + static_cast<float>(m_descender - glyph.top),
+            .yoffset = static_cast<float>(m_ascender - glyph.top),
             .xadvance = glyph.advance,
             .page = m_fontAtlas->getCurrentPage()
         };

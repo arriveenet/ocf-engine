@@ -56,13 +56,19 @@ bool FontAtlas::insert(math::Rect& outRect, const uint8_t* bitmap, int width, in
         addNewPage();
     }
 
-    Rect result = m_binPack->insert(static_cast<float>(width), static_cast<float>(height));
+    // Reserve a transparent border around the glyph so linear filtering at its edges does not
+    // pick up texels of the neighboring glyphs
+    const int paddedWidth = width + GLYPH_PADDING * 2;
+    const int paddedHeight = height + GLYPH_PADDING * 2;
+
+    Rect result =
+        m_binPack->insert(static_cast<float>(paddedWidth), static_cast<float>(paddedHeight));
     if (result.m_size.x == 0 || result.m_size.y == 0) {
         return false;
     }
 
-    const int resultX = static_cast<int>(result.m_position.x);
-    const int resultY = static_cast<int>(result.m_position.y);
+    const int resultX = static_cast<int>(result.m_position.x) + GLYPH_PADDING;
+    const int resultY = static_cast<int>(result.m_position.y) + GLYPH_PADDING;
 
     // Copy the bitmap data into the current page's texture
     for (int y = 0; y < height; y++) {
@@ -72,7 +78,9 @@ bool FontAtlas::insert(math::Rect& outRect, const uint8_t* bitmap, int width, in
     }
 
     m_dirty = true;
-    outRect = result;
+    // Callers only see the glyph itself, not the padding
+    outRect = Rect(static_cast<float>(resultX), static_cast<float>(resultY),
+                   static_cast<float>(width), static_cast<float>(height));
 
     return true;
 }
