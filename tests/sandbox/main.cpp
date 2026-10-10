@@ -16,6 +16,7 @@
 #include <ocf/core/Engine.h>
 #include <ocf/rhi/Handle.h>
 #include <ocf/rhi/PipelineState.h>
+#include <ocf/resource/FontManager.h>
 
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>

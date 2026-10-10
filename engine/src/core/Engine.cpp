@@ -9,6 +9,7 @@
 #include "ocf/platform/FileSystem.h"
 #include "ocf/platform/Window.h"
 #include "ocf/renderer/Renderer.h"
+#include "ocf/resource/FontManager.h"
 #include "ocf/resource/TextureManager.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
@@ -35,6 +36,11 @@ Engine::~Engine()
     }
 
     m_currentScene.reset();
+
+    // Fonts own atlas textures, so release them while the device is still alive
+    m_fontManager->clear();
+    m_fontManager.reset();
+
     m_textureManager.reset();
     m_audioSystem->shutdown();
 
@@ -70,6 +76,9 @@ bool Engine::init()
 
     // Initialize Texture Manager
     m_textureManager = std::make_unique<TextureManager>(*this);
+
+    // Initialize Font Manager
+    m_fontManager = std::make_unique<FontManager>(*this);
   
     // Initialize Audio System
     m_audioSystem = std::make_unique<audio::AudioSystem>();
@@ -151,6 +160,11 @@ Renderer& Engine::getRenderer() const
 TextureManager& Engine::getTextureManager() const
 {
     return *m_textureManager.get();
+}
+
+FontManager& Engine::getFontManager() const
+{
+    return *m_fontManager.get();
 }
 
 audio::AudioSystem& Engine::getAudioSystem() const

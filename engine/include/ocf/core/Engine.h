@@ -24,6 +24,7 @@ class Scene;
 class Renderer;
 class EventDispatcher;
 class View;
+class FontManager;
 class TextureManager;
 
 /**
@@ -126,6 +127,13 @@ public:
      * @return Reference to the TextureManager instance
      */
     TextureManager& getTextureManager() const;
+    
+    /**
+     * @brief Retrieves the font manager instance.
+     *
+     * @return Reference to the FontManager instance
+     */
+    FontManager& getFontManager() const;
   
     /**
      * @brief Retrieves the audio system instance.
@@ -180,6 +188,7 @@ private:
     std::unique_ptr<Renderer> m_renderer;  //!< Unique pointer to the renderer instance
     std::unique_ptr<rhi::Device> m_device; //!< Unique pointer to the rendering device
     std::unique_ptr<TextureManager> m_textureManager; //!< Unique pointer to the texture manager
+    std::unique_ptr<FontManager> m_fontManager;       //!< Unique pointer to the font manager
     std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
     std::vector<View*> m_views;            //!< Vector of view pointers
     FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
