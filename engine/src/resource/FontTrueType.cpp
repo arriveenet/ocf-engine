@@ -109,6 +109,11 @@ bool FontTrueType::prepareLetterDefinitions(const std::u32string& utf32Text)
 
 bool FontTrueType::initFont(std::string_view fontPath, int fontSize)
 {
+    if (fontSize <= 0) {
+        OCF_LOG_ERROR("Invalid font size {} for font: {}", fontSize, fontPath);
+        return false;
+    }
+
     std::string path = FileSystem::getInstance()->getAssetFullPath(fontPath);
 
     if (path.empty()) {

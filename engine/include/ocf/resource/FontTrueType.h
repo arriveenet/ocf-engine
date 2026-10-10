@@ -16,8 +16,10 @@ enum class GlyphCollection {
 };
 
 struct FontTrueTypeConfig {
+    static constexpr int DEFAULT_FONT_SIZE = 32;
+
     std::string fontPath;
-    int fontSize = 0;
+    int fontSize = DEFAULT_FONT_SIZE; // Em size in pixels; must be positive
     GlyphCollection glyphs = GlyphCollection::Ascii;
     TextureFilter filter = TextureFilter::Linear;
 };
