@@ -22,7 +22,7 @@ public:
         addGlyph(U'A', 0.0f, 0, 10.0f);
         addGlyph(U'B', 8.0f, 0, 10.0f);
         addGlyph(U'C', 16.0f, 1, 10.0f);
-        addGlyph(U'あ', 24.0f, 0, 16.0f); // あ: wider advance
+        addGlyph(U'\u3042', 24.0f, 0, 16.0f); // あ: wider advance
 
         // Space has no bitmap, only an advance
         addCharacterDefinition(U' ', {.x = 0.0f, .y = 0.0f, .width = 0.0f, .height = 0.0f,
@@ -110,7 +110,7 @@ TEST_F(TextLayoutTest, MissingCharacterIsSkipped)
 
 TEST_F(TextLayoutTest, NonAsciiCharacter)
 {
-    TextLayoutResult result = TextLayout::layout(*m_font.ptr(), U"あA");
+    TextLayoutResult result = TextLayout::layout(*m_font.ptr(), U"\u3042A");
 
     ASSERT_EQ(result.quads.size(), 2u);
     EXPECT_FLOAT_EQ(result.quads[1].position.x, 16.0f + 1.0f);
