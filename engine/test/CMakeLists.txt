@@ -22,3 +22,11 @@ add_executable(test_${TARGET}
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
 
 set_target_properties(test_${TARGET} PROPERTIES FOLDER Tests)
+
+# ==================================================================================================
+#  Compiler flags
+# ==================================================================================================
+if (MSVC)
+    target_compile_options(test_${TARGET} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    target_compile_options(test_${TARGET} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
