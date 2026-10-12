@@ -24,7 +24,7 @@ target_link_libraries(${TARGET} PRIVATE ocfengine)
 # Compiler flags
 # ==================================================================================================
 if (MSVC)
-    set(COMPILER_FLAGS /W3)
+    set(COMPILER_FLAGS /W3 /utf-8)
 else()
     set(COMPILER_FLAGS -Wall)
 endif()

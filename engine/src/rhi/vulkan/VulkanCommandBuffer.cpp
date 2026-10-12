@@ -112,7 +112,7 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
         .layerCount = 1,
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorAttachment,
-        .pDepthAttachment = &depthAttachment,
+        .pDepthAttachment = info.useDepthBuffer ? &depthAttachment : nullptr,
     };
 
     vkCmdBeginRendering(m_commandBuffer, &renderingInfo);

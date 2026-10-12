@@ -16,6 +16,8 @@
 #include <ocf/scene/Text.h>
 #include <ocf/scene/View.h>
 
+#include <imgui.h>
+
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #ifdef _WIN32
@@ -25,6 +27,7 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <string>
 #include <string_view>
 
 using namespace ocf;
@@ -232,7 +235,8 @@ public:
 
     void onUpdate(float deltaTime) override
     {
-        m_state.modelRotation = std::fmod(m_state.modelRotation + 16.0f * deltaTime, 360.0f);
+        m_state.modelRotation =
+            std::fmod(m_state.modelRotation + m_rotationSpeed * deltaTime, 360.0f);
         m_modelNodes[0]->setRotation(math::vec3(0.0f, m_state.modelRotation, 0.0f));
         m_modelNodes[1]->setRotation(math::vec3(0.0f, -m_state.modelRotation, 0.0f));
     }
@@ -261,8 +265,23 @@ public:
         event.setHandled(true);
     }
 
+    void onImGui() override
+    {
+        ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("FPS: %.1f", getEngine().getFrameCounter().getFrameRate());
+        ImGui::SliderFloat("回転速度 (deg/s)", &m_rotationSpeed, 0.0f, 180.0f);
+        ImGui::Checkbox("Demo Window", &m_showDemoWindow);
+        ImGui::End();
+
+        if (m_showDemoWindow) {
+            ImGui::ShowDemoWindow(&m_showDemoWindow);
+        }
+    }
+
 private:
     GameState& m_state;
+    float m_rotationSpeed = 16.0f; // Degrees per second
+    bool m_showDemoWindow = false;
     Ref<Mesh> m_mesh;
     SceneGraph* m_world = nullptr;
     Camera* m_camera = nullptr;
@@ -356,6 +375,16 @@ int main()
     Application& app = Application::getInstance();
     app.run(
         config,
-        [&state](Engine& engine) { engine.getSceneManager().change<TitleScene>(state); },
+        [&state](Engine& engine) {
+            // The built-in ImGui font has no Japanese glyphs
+            engine.configureImGui([](ImGuiIO& io) {
+                const std::string fontPath =
+                    FileSystem::getInstance()->getAssetFullPath("fonts/NotoSansJP-Regular.ttf");
+                if (!fontPath.empty()) {
+                    io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 18.0f);
+                }
+            });
+            engine.getSceneManager().change<TitleScene>(state);
+        },
         nullptr);
 }

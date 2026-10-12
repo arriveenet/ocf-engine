@@ -5,6 +5,7 @@ add_executable(test_${TARGET}
     test_allocator.cpp
     test_event_dispatcher.cpp
     test_geometric.cpp
+    test_imgui.cpp
     test_jobsystem.cpp
     test_main.cpp
     test_mat2.cpp
@@ -22,10 +23,6 @@ add_executable(test_${TARGET}
     test_text_utility.cpp
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
-
-if (OCF_ENABLE_IMGUI)
-    target_sources(test_${TARGET} PRIVATE test_imgui.cpp)
-endif()
 
 set_target_properties(test_${TARGET} PROPERTIES FOLDER Tests)
 

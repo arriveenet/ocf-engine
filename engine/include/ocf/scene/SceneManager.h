@@ -114,6 +114,13 @@ public:
     /** @brief Apply the queued changes, then update the active scenes. */
     void update(float deltaTime);
 
+    /**
+     * @brief Let every active scene build its debug UI, from the bottom layer up.
+     *
+     * Only called by the engine while an ImGui frame is open.
+     */
+    void updateImGui();
+
     /** @brief Pass an input event to the active scenes from the top layer down. */
     void dispatchEvent(Event& event);
 

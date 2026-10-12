@@ -16,6 +16,10 @@
 #include "ocf/scene/SceneManager.h"
 #include "ocf/scene/View.h"
 
+#include "renderer/ImGuiLayer.h"
+
+#include <imgui.h>
+
 namespace ocf {
 
 using namespace audio;
@@ -45,6 +49,11 @@ Engine::~Engine()
     auto& jobSystem = JobSystem::getInstance();
     jobSystem.waitAll();
     jobSystem.shutdown();
+
+#if OCF_ENABLE_IMGUI
+    // Owns GPU resources, so it goes before the device
+    m_imGuiLayer.reset();
+#endif
 
     m_renderer.reset();
     m_device.reset();
@@ -82,6 +91,11 @@ bool Engine::init()
     m_audioSystem = std::make_unique<audio::AudioSystem>();
     m_audioSystem->initialize();
 
+#if OCF_ENABLE_IMGUI
+    // Before the scene manager, so that it receives the input events first
+    m_imGuiLayer = std::make_unique<ImGuiLayer>(*m_window, *m_device, m_eventDispatcher);
+#endif
+
     // Initialize Scene Manager
     m_sceneManager = std::make_unique<SceneManager>(this);
 
@@ -110,6 +124,12 @@ void Engine::update()
     m_frameCounter.update();
     m_audioSystem->update();
     m_sceneManager->update(m_frameCounter.getDeltaTime());
+
+#if OCF_ENABLE_IMGUI
+    // The ImGui frame only spans Scene::onImGui(), the one place scenes may use ImGui from
+    m_imGuiLayer->beginFrame();
+    m_sceneManager->updateImGui();
+#endif
 }
 
 void Engine::draw()
@@ -121,6 +141,11 @@ void Engine::draw()
     for (auto view : m_frameViews) {
         m_renderer->render(view);
     }
+
+#if OCF_ENABLE_IMGUI
+    // The debug UI is drawn over the views
+    m_renderer->renderImGui(*m_imGuiLayer);
+#endif
 
     m_renderer->endFrame();
 }
@@ -167,6 +192,13 @@ audio::AudioSystem& Engine::getAudioSystem() const
 math::ivec2 Engine::getWindowSize() const
 {
     return math::ivec2(m_window->getWidth(), m_window->getHeight());
+}
+
+void Engine::configureImGui([[maybe_unused]] const std::function<void(ImGuiIO&)>& configure)
+{
+#if OCF_ENABLE_IMGUI
+    configure(ImGui::GetIO());
+#endif
 }
 
 } // namespace ocf

@@ -42,6 +42,7 @@ public:
     void onEnter() override { record("enter"); }
     void onExit() override { record("exit"); }
     void onUpdate(float) override { record("update"); }
+    void onImGui() override { record("imgui"); }
 
     void onEvent(Event& event) override
     {
@@ -211,6 +212,20 @@ TEST(SceneManagerTest, BlocksUpdatePausesTheLayersBelow)
     log.clear();
     manager.update(0.0f);
     EXPECT_EQ(log, (Log{"pause.exit", "pause.destroy", "main.update", "hud.update"}));
+}
+
+TEST(SceneManagerTest, ImGuiIsBuiltFromTheBottomUpEvenBelowABlockingScene)
+{
+    Log log;
+    SceneManager manager(nullptr);
+    manager.add<RecordingScene>(0, log, "main");
+    Scene* pause = manager.add<RecordingScene>(200, log, "pause");
+    pause->setBlocksUpdate(true);
+    manager.update(0.0f);
+
+    log.clear();
+    manager.updateImGui();
+    EXPECT_EQ(log, (Log{"main.imgui", "pause.imgui"}));
 }
 
 TEST(SceneManagerTest, EventsGoFromTheTopDown)

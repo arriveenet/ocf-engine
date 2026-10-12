@@ -28,6 +28,8 @@ public:
 
     NativeHandle getNativeHandle() const override;
 
+    GLFWwindow* getHandle() const noexcept { return m_pMainWindow; }
+
 private:
     void onGLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     void onGLFWMouseMoveCallback(GLFWwindow* window, double xpos, double ypos);

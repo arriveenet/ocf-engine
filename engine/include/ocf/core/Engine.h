@@ -7,8 +7,11 @@
 #include "ocf/math/vec2.h"
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <vector>
+
+struct ImGuiIO;
 
 namespace ocf {
 
@@ -27,6 +30,7 @@ class EventDispatcher;
 class View;
 class FontManager;
 class TextureManager;
+class ImGuiLayer;
 
 /**
  * @class Engine
@@ -147,6 +151,16 @@ public:
 
     EventDispatcher& getEventDispatcher() const noexcept { return m_eventDispatcher; }
 
+    /**
+     * @brief Configures Dear ImGui, e.g. to add fonts or change the style.
+     *
+     * The function is called right away. When the engine is built without OCF_ENABLE_IMGUI,
+     * it is not called at all.
+     *
+     * @param configure Function given the ImGui IO of the engine's context
+     */
+    void configureImGui(const std::function<void(ImGuiIO&)>& configure);
+
 private:
     /**
      * @brief Private constructor for Engine initialization.
@@ -179,6 +193,9 @@ private:
     std::unique_ptr<TextureManager> m_textureManager; //!< Unique pointer to the texture manager
     std::unique_ptr<FontManager> m_fontManager;       //!< Unique pointer to the font manager
     std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
+#if OCF_ENABLE_IMGUI
+    std::unique_ptr<ImGuiLayer> m_imGuiLayer;          //!< Dear ImGui debug UI
+#endif
     std::vector<View*> m_frameViews;       //!< Views drawn this frame, in drawing order
     FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
     EventDispatcher& m_eventDispatcher;    //!< Reference to the event dispatcher

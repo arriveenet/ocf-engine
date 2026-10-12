@@ -124,6 +124,8 @@ public:
 
     std::shared_ptr<DepthBuffer> getDepthBuffer() const noexcept { return m_depthBuffer; }
 
+    VulkanSwapchain* getSwapchain() const noexcept { return m_swapchain; }
+
 private:
     struct FrameContext {
         std::shared_ptr<VulkanCommandBuffer> commandBuffer;
@@ -196,8 +198,6 @@ private:
 
     /** Execute the command in the current frame context and publish the presentation */
     void submitPresent();
-
-    VulkanSwapchain* getSwapchain() const noexcept { return m_swapchain; }
 
     std::shared_ptr<VulkanCommandBuffer> createCommandBuffer();
 
