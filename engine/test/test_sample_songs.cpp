@@ -19,10 +19,13 @@ namespace {
 const std::filesystem::path CANON_IN_D =
     std::filesystem::path(OCF_TEST_ASSETS_DIR) / "songs" / "canon_in_d.json";
 
+/** With LF line endings, as the serializer writes, even if the checkout converted them. */
 std::string readFile(const std::filesystem::path& path)
 {
     std::ifstream file(path, std::ios::binary);
-    return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::erase(text, '\r');
+    return text;
 }
 
 } // namespace
