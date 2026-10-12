@@ -22,6 +22,7 @@ class Material;
 class MaterialInstance;
 class Engine;
 class View;
+class ImGuiLayer;
 
 namespace rhi {
 class CommandBuffer;
@@ -65,6 +66,11 @@ public:
     /** @brief Record one rendering pass that draws the view over the passes before it. */
     void render(const View* view);
 
+#if OCF_ENABLE_IMGUI
+    /** @brief Record a rendering pass that draws the ImGui frame over the passes before it. */
+    void renderImGui(ImGuiLayer& imGuiLayer);
+#endif
+
     /** @brief Material of the per-view uniforms bound at set 0. */
     Material* getUBOMaterial() const { return m_material; }
 
@@ -88,6 +94,7 @@ private:
     // instance, so they are pooled and reused every frame.
     std::vector<MaterialInstance*> m_viewUniforms;
     size_t m_viewCount = 0; // Views drawn so far in the current frame
+    size_t m_passCount = 0; // Rendering passes recorded so far in the current frame
 };
 
 } // namespace ocf

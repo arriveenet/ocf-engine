@@ -211,6 +211,7 @@ struct RenderingInfo {
     math::vec4 clearColor;
     bool clearColorBuffer = true; ///< false keeps the color drawn by earlier passes
     bool clearDepthBuffer = true; ///< false keeps the depth written by earlier passes
+    bool useDepthBuffer = true;   ///< false renders without depth, e.g. UI drawn over the views
 };
 
 /**

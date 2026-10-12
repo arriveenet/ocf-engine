@@ -127,6 +127,16 @@ void SceneManager::update(float deltaTime)
     }
 }
 
+void SceneManager::updateImGui()
+{
+    // m_scenes only changes in update(); requests from onImGui() are applied there
+    for (const auto& scene : m_scenes) {
+        if (scene->isActive()) {
+            scene->onImGui();
+        }
+    }
+}
+
 void SceneManager::dispatchEvent(Event& event)
 {
     for (size_t i = m_scenes.size(); i-- > 0;) {

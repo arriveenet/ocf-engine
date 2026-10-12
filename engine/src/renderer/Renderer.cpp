@@ -2,6 +2,8 @@
 
 #include "ocf/renderer/Renderer.h"
 
+#include "ImGuiLayer.h"
+
 #include "ocf/core/Engine.h"
 #include "ocf/math/geometric.h"
 #include "ocf/renderer/IndexBuffer.h"
@@ -54,6 +56,7 @@ void Renderer::beginFrame()
     m_device->beginFrame();
 
     m_viewCount = 0;
+    m_passCount = 0;
 
     m_commandBuffer = m_device->getCommandBuffer();
     m_commandBuffer->begin();
@@ -66,8 +69,8 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    // Never present an undefined image when no view was drawn
-    if (m_viewCount == 0) {
+    // Never present an undefined image when nothing was drawn
+    if (m_passCount == 0) {
         rhi::RenderingInfo info;
         info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
         m_commandBuffer->beginRendering(info);
@@ -144,7 +147,6 @@ void Renderer::render(const View* view)
 
     // The camera uniforms are written once per view; each view has its own buffer so that
     // views drawn later in the frame do not overwrite them
-    const bool isFirstView = (m_viewCount == 0);
     MaterialInstance* viewUniforms = acquireViewUniforms();
     viewUniforms->setFrameIndex(m_device->getCurrentFrameIndex());
     viewUniforms->setParameter("view", camera->getView());
@@ -155,13 +157,15 @@ void Renderer::render(const View* view)
     viewUniforms->commit(m_engine);
     const rhi::DescriptorSetHandle viewDescriptorSet = viewUniforms->getDescriptorSetHandle();
 
-    // The attachments are undefined at the start of a frame, so the first view always clears
+    // The attachments are undefined at the start of a frame, so the first pass always clears
+    const bool isFirstPass = (m_passCount == 0);
     const View::ClearFlags clearFlags = view->getClearFlags();
     rhi::RenderingInfo info;
     info.clearColor = view->getClearColor();
-    info.clearColorBuffer = isFirstView || hasFlag(clearFlags, View::ClearFlags::Color);
-    info.clearDepthBuffer = isFirstView || hasFlag(clearFlags, View::ClearFlags::Depth);
+    info.clearColorBuffer = isFirstPass || hasFlag(clearFlags, View::ClearFlags::Color);
+    info.clearDepthBuffer = isFirstPass || hasFlag(clearFlags, View::ClearFlags::Depth);
     m_commandBuffer->beginRendering(info);
+    m_passCount++;
 
     for (const auto& cmd : m_renderQueue.getRenderCommands()) {
         // Bind pipeline, descriptor sets, vertex/index buffers, and draw
@@ -187,5 +191,22 @@ void Renderer::render(const View* view)
 
     m_commandBuffer->endRendering();
 }
+
+#if OCF_ENABLE_IMGUI
+void Renderer::renderImGui(ImGuiLayer& imGuiLayer)
+{
+    // The UI does not depth test. The color attachment is undefined if no view was drawn.
+    rhi::RenderingInfo info;
+    info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+    info.clearColorBuffer = (m_passCount == 0);
+    info.useDepthBuffer = false;
+    m_commandBuffer->beginRendering(info);
+    m_passCount++;
+
+    imGuiLayer.render(*m_commandBuffer);
+
+    m_commandBuffer->endRendering();
+}
+#endif
 
 } // namespace ocf

@@ -25,7 +25,7 @@ class View;
  * ordered by layer: a higher layer is updated and drawn after, and receives input before, the
  * layers below it.
  *
- * Lifecycle: onLoad() -> onEnter() -> onUpdate() / onEvent() every frame -> onExit().
+ * Lifecycle: onLoad() -> onEnter() -> onUpdate() / onEvent() / onImGui() every frame -> onExit().
  *
  * onLoad() runs on a worker thread when the scene is loaded with SceneManager::loadAsync(),
  * so it must only do CPU work: reading files, parsing, building nodes. GPU resources are
@@ -68,6 +68,17 @@ public:
      * Call event.setHandled(true) to stop the event from reaching the layers below.
      */
     virtual void onEvent(Event& /*event*/) {}
+
+    /**
+     * @brief Called every frame after the update to build the Dear ImGui debug UI.
+     *
+     * Use the ImGui API only from here. When the engine is built without OCF_ENABLE_IMGUI,
+     * ImGui is never initialized and this is never called, so the code needs no #if.
+     *
+     * Unlike onUpdate(), it is also called while a scene above blocks the update, so that the
+     * debug UI of a paused scene stays visible.
+     */
+    virtual void onImGui() {}
 
     /**
      * @brief Add a scene whose lifetime is nested in this one.
