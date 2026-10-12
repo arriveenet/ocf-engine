@@ -8,6 +8,7 @@
 #include "audio/AudioNesApu.h"
 #include "audio/AudioSource.h"
 #include "audio/AudioStreamBuffer.h"
+#include "audio/AudioTrackerSource.h"
 #include "audio/AudioWorkerThread.h"
 
 
@@ -26,6 +27,18 @@ struct AudioSystem::Impl {
     std::unordered_map<HandleId, AudioSource*> m_audioSources;
     std::vector<AudioStreamBuffer*> m_audioStreams;
     AudioWorkerThread m_workerThread;
+
+    AudioTrackerSource* findTrackerSource(AudioSourceHandle handle) const
+    {
+        if (!handle) {
+            return nullptr;
+        }
+        auto iter = m_audioSources.find(handle.getId());
+        if (iter == m_audioSources.end()) {
+            return nullptr;
+        }
+        return dynamic_cast<AudioTrackerSource*>(iter->second);
+    }
 };
 
 
@@ -213,9 +226,9 @@ void AudioSystem::stop(AudioSourceHandle handle)
         m_impl->m_audioMixer->removeSource(iter->second);
 
         // If the source is using a stream buffer, remove it from the worker thread
-        if (iter->second->getBuffer()->getType() == AudioBuffer::Type::Stream) {
-            m_impl->m_workerThread.removeStreamBuffer(
-                static_cast<AudioStreamBuffer*>(iter->second->getBuffer()));
+        AudioBuffer* buffer = iter->second->getBuffer();
+        if (buffer != nullptr && buffer->getType() == AudioBuffer::Type::Stream) {
+            m_impl->m_workerThread.removeStreamBuffer(static_cast<AudioStreamBuffer*>(buffer));
         }
 
         iter->second->stop();
@@ -338,6 +351,68 @@ void AudioSystem::apu_writeStatusRegister(AudioSourceHandle handle, uint8_t data
     if (iter != m_impl->m_audioSources.end()) {
         AudioNesApu* apu = static_cast<AudioNesApu*>(iter->second);
         apu->writeStatusRegister(data);
+    }
+}
+
+AudioSourceHandle AudioSystem::createTrackerSource()
+{
+    AudioTrackerSource* source = new AudioTrackerSource();
+    AudioSourceHandle handle = AudioSourceHandle(m_HandleCounter++);
+    m_impl->m_audioSources[handle.getId()] = source;
+
+    return handle;
+}
+
+void AudioSystem::tracker_setSong(AudioSourceHandle handle,
+                                  std::shared_ptr<const tracker::Song> song)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->setSong(std::move(song));
+    }
+}
+
+void AudioSystem::tracker_play(AudioSourceHandle handle, uint16_t frame, uint16_t row)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->playSong(frame, row);
+    }
+}
+
+void AudioSystem::tracker_stop(AudioSourceHandle handle)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->stopSong();
+    }
+}
+
+tracker::PlaybackStatus AudioSystem::tracker_getStatus(AudioSourceHandle handle) const
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        return source->getStatus();
+    }
+    return tracker::PlaybackStatus{};
+}
+
+void AudioSystem::tracker_playNote(AudioSourceHandle handle, tracker::ChannelType channel,
+                                   uint8_t note, uint8_t instrument)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->playNote(channel, note, instrument);
+    }
+}
+
+void AudioSystem::tracker_stopNote(AudioSourceHandle handle, tracker::ChannelType channel)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->stopNote(channel);
+    }
+}
+
+void AudioSystem::tracker_setChannelMuted(AudioSourceHandle handle, tracker::ChannelType channel,
+                                          bool muted)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->setChannelMuted(channel, muted);
     }
 }
 
