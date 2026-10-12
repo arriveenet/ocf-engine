@@ -21,6 +21,8 @@ add_executable(test_${TARGET}
     test_texture_sampler.cpp
     test_text_layout.cpp
     test_text_utility.cpp
+    test_tracker_notation.cpp
+    test_tracker_song.cpp
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
 
