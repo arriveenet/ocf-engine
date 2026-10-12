@@ -18,9 +18,14 @@ TriangleChannel::TriangleChannel()
 
 void TriangleChannel::clock()
 {
+    // The timer runs at the CPU clock: a period of t steps every t + 1 CPU cycles
     if (m_timerCounter == 0) {
-        m_timerCounter = m_frequency + 1;
-        m_sequenceStep = (m_sequenceStep + 1) & 31; // 0–31
+        m_timerCounter = m_frequency;
+
+        // The sequencer only runs while both counters are non-zero
+        if (m_lengthCounter > 0 && m_linearCounter > 0) {
+            m_sequenceStep = (m_sequenceStep + 1) & 31; // 0–31
+        }
     }
     else {
         m_timerCounter--;
@@ -49,9 +54,8 @@ void TriangleChannel::clockFrameCounterHalfFrame()
 
 uint8_t TriangleChannel::getOutput()
 {
-    if (m_lengthCounter == 0 || m_linearCounter == 0)
-        return 0;
-
+    // When the sequencer stops, the output stays at its current level instead of dropping to
+    // zero, which avoids a click
     return TRIANGLE_TABLE[m_sequenceStep];
 }
 

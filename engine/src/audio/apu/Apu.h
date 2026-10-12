@@ -35,7 +35,7 @@ private:
     FrameSequencer m_frameSequencer;
 
     // Channels
-    PulseChannel m_pulseChannel[2];
+    PulseChannel m_pulseChannel[2] = {PulseChannel(true), PulseChannel(false)};
     TriangleChannel m_triangleChannel;
 
     friend FrameSequencer;

@@ -15,14 +15,16 @@ static constexpr uint8_t DUTY_CYCLE_TABLE[4][8] = {
 
 namespace ocf::audio {
 
-PulseChannel::PulseChannel()
+PulseChannel::PulseChannel(bool onesComplementSweep)
+    : m_sweepUnit(onesComplementSweep)
 {
 }
 
 void PulseChannel::clock()
 {
+    // The timer runs at half the CPU clock: a period of t steps every 2 * (t + 1) CPU cycles
     if (m_timerCounter == 0) {
-        m_timerCounter = m_sweepUnit.getTargetTimer() * 2;
+        m_timerCounter = m_sweepUnit.getPeriod() * 2 + 1;
         m_sequenceStep = (m_sequenceStep + 1) & 0x07; // 0–7
     }
     else {
@@ -80,47 +82,22 @@ void PulseChannel::setRegister(uint8_t registerNumber, uint8_t data)
     }
     // Sweep unit
     else if (registerNumber == 1) {
-        // Enable sweep
-        m_sweepUnit.setEnabled((data & 0x80) != 0);
-
-        // Sweep period
-        m_sweepUnit.setDividerPeriod((data & 0x70) >> 4);
-
-        // Negate flag
-        m_sweepUnit.setNegateFlag((data & 0x08) != 0);
-
-        // Shift count
-        m_sweepUnit.setShiftCount(data & 0x07);
-
-        bool enabled = (data & 0x80) != 0;
-        uint8_t period = (data & 0x70) >> 4;
-        bool negateFlag = (data & 0x08) != 0;
-        uint8_t shiftCount = data & 0x07;
-
-        // std::cout << "Pulse Channel Sweep Unit - Enabled: " << enabled
-        //           << ", Period: " << (int)period
-        //           << ", Negate Flag: " << negateFlag
-        //           << ", Shift Count: " << (int)shiftCount << std::endl;
+        m_sweepUnit.setRegister(data);
     }
-    // Timer low
+    // Timer low. The period is held by the sweep unit, which also changes it
     else if (registerNumber == 2) {
-        m_timer = (m_timer & 0x700) | data;
+        m_sweepUnit.setPeriod((m_sweepUnit.getPeriod() & 0x700) | data);
     }
     // Timer high and length counter load
     else if (registerNumber == 3) {
-        m_timer = (m_timer & 0xFF) | ((data & 0x07) << 8);
+        m_sweepUnit.setPeriod((m_sweepUnit.getPeriod() & 0xFF) | ((data & 0x07) << 8));
 
-        // Start envelope
+        // Restart the sequencer and the envelope. The timer is not reset
+        m_sequenceStep = 0;
         m_envelopeUnit.start();
-
-        // Update sweep unit timer
-        m_sweepUnit.setTimer(m_timer);
 
         // Length counter load
         m_lengthCounter = LENGTH_COUNTER_TABLE[(data & 0xF8) >> 3];
-
-        // float freq = 1789773.0f / (16 * (float)(m_timer + 1));
-        // std::cout << "Pulse Channel Frequency set to: " << freq << " Hz" << std::endl;
     }
 }
 

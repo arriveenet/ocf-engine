@@ -6,7 +6,8 @@
 namespace ocf::audio {
 
 struct PulseChannel {
-    PulseChannel();
+    // Pulse 1 sweeps down with one's complement, pulse 2 with two's complement
+    explicit PulseChannel(bool onesComplementSweep = false);
 
     void clock();
 
@@ -23,7 +24,6 @@ struct PulseChannel {
 private:
     uint8_t m_lengthCounter = 0;
 
-    uint16_t m_timer = 0;
     uint16_t m_timerCounter = 0;
     uint8_t m_dutyCycle = 0;
     uint8_t m_sequenceStep = 0;

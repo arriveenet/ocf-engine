@@ -29,9 +29,9 @@ private:
 
     Apu& m_apu;
     uint16_t m_counter = 0;
-    bool m_interrup;
-    bool m_disableInterrupt;
-    bool m_sequence5StepMode;
+    bool m_interrup = false;
+    bool m_disableInterrupt = false;
+    bool m_sequence5StepMode = false;
 };
 
 } // namespace ocf::audio

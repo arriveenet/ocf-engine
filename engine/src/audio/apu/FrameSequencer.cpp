@@ -23,6 +23,7 @@ void FrameSequencer::clock()
 
 void FrameSequencer::setDisableInterrupt(bool disable)
 {
+    m_disableInterrupt = disable;
 }
 
 void FrameSequencer::setSequence5StepMode(bool sequence5stepMode)

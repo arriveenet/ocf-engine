@@ -29,6 +29,9 @@ AudioTrackerSource::AudioTrackerSource()
     : m_apu(std::make_unique<Apu>())
     , m_player([this](uint16_t address, uint8_t data) { writeRegister(address, data); })
 {
+    // The triangle rests at a non-zero level. Starting the filter there avoids a click
+    m_previousInput = m_apu->getOutput();
+
     // Avoid allocating on the audio thread in the common case
     m_pendingCommands.reserve(64);
     m_processingCommands.reserve(64);
