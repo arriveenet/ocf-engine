@@ -4,7 +4,9 @@
 #include "DemoSong.h"
 #include "TrackerAudio.h"
 
+#include <ocf/audio/tracker/SongSerializer.h>
 #include <ocf/core/Engine.h>
+#include <ocf/platform/FileSystem.h>
 
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -12,6 +14,7 @@
 #include <algorithm>
 #include <format>
 #include <string>
+#include <utility>
 
 namespace ocf::tracker_tool {
 
@@ -22,6 +25,11 @@ constexpr float SONG_WINDOW_HEIGHT = 215.0f;
 constexpr float FRAME_WINDOW_HEIGHT = 210.0f;
 
 constexpr const char* CONFIRM_POPUP = "Confirm";
+constexpr const char* ERROR_POPUP = "Error";
+
+// Songs are kept with the other assets, so that games can load them
+constexpr const char* SONG_DIRECTORY = "songs";
+constexpr const char* DEFAULT_FILE_NAME = "untitled.json";
 
 struct KeyHelp {
     const char* keys;
@@ -47,6 +55,9 @@ constexpr KeyHelp KEY_HELP[] = {
     {"F6", "Play from the start of the cursor's frame"},
     {"F7", "Play from the cursor"},
     {"F8", "Stop"},
+    {"Ctrl+N", "New song"},
+    {"Ctrl+O", "Open a song"},
+    {"Ctrl+S / Ctrl+Shift+S", "Save / save as"},
 };
 
 } // namespace
@@ -109,6 +120,8 @@ void TrackerScene::onImGui()
     m_patternEditor.draw(m_state, *m_audio, m_monospaceFont);
 
     drawConfirmPopup();
+    drawFileDialog();
+    drawErrorPopup();
     drawHelpWindow();
 
     // Send the changes of this frame to the player at once
@@ -123,6 +136,24 @@ void TrackerScene::handleShortcuts()
     const ImGuiIO& io = ImGui::GetIO();
     if (io.WantTextInput ||
         ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel)) {
+        return;
+    }
+
+    if (io.KeyCtrl) {
+        if (ImGui::IsKeyPressed(ImGuiKey_N, false)) {
+            requestAction(PendingAction::NewSong);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_O, false)) {
+            requestAction(PendingAction::OpenFile);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_S, false)) {
+            if (io.KeyShift) {
+                saveAs();
+            }
+            else {
+                save();
+            }
+        }
         return;
     }
 
@@ -156,19 +187,21 @@ void TrackerScene::drawMenuBar()
     }
 
     if (ImGui::BeginMenu("File")) {
-        if (ImGui::MenuItem("New")) {
+        if (ImGui::MenuItem("New", "Ctrl+N")) {
             requestAction(PendingAction::NewSong);
+        }
+        if (ImGui::MenuItem("Open...", "Ctrl+O")) {
+            requestAction(PendingAction::OpenFile);
         }
         if (ImGui::MenuItem("Open Demo Song")) {
             requestAction(PendingAction::DemoSong);
         }
         ImGui::Separator();
-        // Waiting for the JSON serializer (docs/tracker-format.md)
-        for (const char* label : {"Open...", "Save", "Save As..."}) {
-            ImGui::MenuItem(label, nullptr, false, false);
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip("Reading and writing JSON is not implemented yet");
-            }
+        if (ImGui::MenuItem("Save", "Ctrl+S")) {
+            save();
+        }
+        if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
+            saveAs();
         }
         ImGui::EndMenu();
     }
@@ -196,11 +229,16 @@ void TrackerScene::drawMenuBar()
         ImGui::EndMenu();
     }
 
-    const std::string status =
+    const std::string fileName = m_state.filePath.empty()
+                                     ? std::string("(untitled)")
+                                     : pathToUtf8(m_state.filePath.filename());
+    const std::string playback =
         m_state.playback.playing
             ? std::format("Playing  Frame {:02X}  Row {:02X}", m_state.playback.frame,
                           m_state.playback.row)
             : std::string("Stopped");
+    const std::string status =
+        std::format("{}{}    {}", fileName, m_state.modified ? "*" : "", playback);
     const float statusWidth = ImGui::CalcTextSize(status.c_str()).x;
     ImGui::SameLine(ImGui::GetWindowWidth() - statusWidth - ImGui::GetStyle().ItemSpacing.x * 2);
     ImGui::TextUnformatted(status.c_str());
@@ -277,6 +315,35 @@ void TrackerScene::drawConfirmPopup()
     }
 }
 
+void TrackerScene::drawErrorPopup()
+{
+    if (m_openErrorPopup) {
+        ImGui::OpenPopup(ERROR_POPUP);
+        m_openErrorPopup = false;
+    }
+
+    if (ImGui::BeginPopupModal(ERROR_POPUP, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextUnformatted(m_errorMessage.c_str());
+        if (ImGui::Button("OK", ImVec2(120.0f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void TrackerScene::drawFileDialog()
+{
+    if (!m_fileDialog.draw()) {
+        return;
+    }
+    if (m_fileDialog.getMode() == FileDialog::Mode::Open) {
+        openFrom(m_fileDialog.getPath());
+    }
+    else {
+        saveTo(m_fileDialog.getPath());
+    }
+}
+
 void TrackerScene::drawHelpWindow()
 {
     if (!m_showHelp) {
@@ -298,7 +365,8 @@ void TrackerScene::drawHelpWindow()
             }
             ImGui::EndTable();
         }
-        ImGui::TextDisabled("Click a channel name to mute it. Right-click it to change the number of effect columns.");
+        ImGui::TextDisabled("Click a channel name to mute it. Right-click it to change the "
+                            "number of effect columns.");
     }
     ImGui::End();
 }
@@ -325,8 +393,65 @@ void TrackerScene::runAction(PendingAction action)
         stop();
         m_state.replaceSong(createDemoSong());
         break;
+    case PendingAction::OpenFile:
+        m_fileDialog.open(FileDialog::Mode::Open, getSongDirectory());
+        break;
     default: break;
     }
+}
+
+void TrackerScene::save()
+{
+    if (m_state.filePath.empty()) {
+        saveAs();
+    }
+    else {
+        saveTo(m_state.filePath);
+    }
+}
+
+void TrackerScene::saveAs()
+{
+    const std::string fileName = m_state.filePath.empty() ? std::string(DEFAULT_FILE_NAME)
+                                                          : pathToUtf8(m_state.filePath.filename());
+    m_fileDialog.open(FileDialog::Mode::Save, getSongDirectory(), fileName);
+}
+
+void TrackerScene::saveTo(const std::filesystem::path& path)
+{
+    const auto result = audio::tracker::saveSong(m_state.song, path);
+    if (result.isErr()) {
+        showError(std::format("Could not save the song.\n\n{}", result.unwrapErr()));
+        return;
+    }
+    m_state.filePath = path;
+    m_state.modified = false;
+}
+
+void TrackerScene::openFrom(const std::filesystem::path& path)
+{
+    auto result = audio::tracker::loadSong(path);
+    if (result.isErr()) {
+        showError(std::format("Could not open {}.\n\n{}", pathToUtf8(path.filename()),
+                              result.unwrapErr()));
+        return;
+    }
+    stop();
+    m_state.replaceSong(std::move(result).unwrap(), path);
+}
+
+std::filesystem::path TrackerScene::getSongDirectory() const
+{
+    if (!m_state.filePath.empty()) {
+        return m_state.filePath.parent_path();
+    }
+    return std::filesystem::path(FileSystem::getInstance()->getAssetPath()) / SONG_DIRECTORY;
+}
+
+void TrackerScene::showError(std::string message)
+{
+    m_errorMessage = std::move(message);
+    m_openErrorPopup = true;
 }
 
 void TrackerScene::playFromStart()

@@ -4,7 +4,7 @@
 
 エンジンのNES APUエミュレーション（`engine/src/audio/apu/`）で鳴らす曲を作る、FamiTracker風のトラッカーです。
 エディタ本体は `tools/tracker`（実行ファイル `ocf_tracker`）で、GUIはDear ImGuiで作っています。画面の表示は英語です。
-作った曲は、エンジンの `AudioSystem` からゲーム中でも再生できます。
+作った曲はJSONファイルに保存し（フォーマットは [tracker-format.md](tracker-format.md)）、エンジンの `AudioSystem` からゲーム中でも再生できます。
 
 現在は最小構成です。対応している機能と、まだの機能は[機能一覧](#機能一覧)を参照してください。
 
@@ -32,6 +32,25 @@ ImGuiを使うので、`OCF_ENABLE_IMGUI=OFF` のときはビルドされませ�
 - ノート: `C-4` `C#4` など。ノイズチャンネルは `0-#`〜`F-#`（`F-#` が最も高い）。`---` はノートオフ、`===` はノートリリース
 - 4行ごと・16行ごとに行の色が変わります
 - 再生中の行は紫、カーソルの行は青（編集モード中は赤）で表示されます
+
+### ファイル
+
+`File` メニューで、曲の作成・読み込み・保存をします。
+
+| メニュー | キー | 内容 |
+| --- | --- | --- |
+| `New` | `Ctrl+N` | 新しい曲 |
+| `Open...` | `Ctrl+O` | JSONファイルを開く |
+| `Open Demo Song` | | デモ曲を開く |
+| `Save` | `Ctrl+S` | 上書き保存。まだ保存していない曲は `Save As...` と同じ |
+| `Save As...` | `Ctrl+Shift+S` | 名前を付けて保存。拡張子を省略すると `.json` を付けます |
+
+- ファイルの選択は、ツール内のダイアログで行います。フォルダの移動（一覧のフォルダをクリック、`Up`、パスの直接入力）と、`.json` ファイルの選択ができます。
+- 最初は `assets/songs` を開きます（無ければ保存時に作ります）。ゲームからは `FileSystem::getAssetFullPath("songs/...")` で読み込めます。
+- 既にあるファイルに保存するときは、置き換えてよいか確認します。
+- 変更があるときに `New` や `Open...` を選ぶと、変更を破棄してよいか確認します。ウィンドウを閉じるときは確認しないので、先に保存してください。
+- メニューバーの右端に、ファイル名（未保存なら `(untitled)`）と、変更があるときは `*` を表示します。
+- 読み込みに失敗したときは、問題の場所を示すメッセージを表示します（例: `/patterns/3/rows/7/note: invalid note "H-4"`）。
 
 ### インストゥルメント
 
@@ -73,6 +92,8 @@ ImGuiを使うので、`OCF_ENABLE_IMGUI=OFF` のときはビルドされませ�
 | `F6` | カーソルのフレームの先頭から再生 |
 | `F7` | カーソル位置から再生 |
 | `F8` | 停止 |
+| `Ctrl+N` / `Ctrl+O` | 新しい曲 / 開く |
+| `Ctrl+S` / `Ctrl+Shift+S` | 保存 / 名前を付けて保存 |
 
 - 編集モードがオフのときは、ノートのキーを押すと試聴だけします（キーを離すと止まる）。オンのときは、試聴してからセルに書き込み、`Step` の行数だけカーソルを進めます。
 - ノート以外の列（インストゥルメント・音量・エフェクト）への入力と `Delete` は、編集モード中だけ有効です。
@@ -102,7 +123,7 @@ ImGuiの標準では `Tab` でウィジェット間のフォーカスが移動�
 | DPCM | 編集できる（データだけ）。再生しない |
 | インストゥルメント | 音量・デューティのシーケンス |
 | エフェクト | `Fxx` `Bxx` `Dxx` `Cxx` |
-| ファイルの保存・読み込み | 未実装。フォーマットは設計済み（[tracker-format.md](tracker-format.md)） |
+| ファイルの保存・読み込み | JSON（[tracker-format.md](tracker-format.md)） |
 | アルペジオ・ピッチのシーケンス、ピッチ系エフェクト（`0xy` `1xx` `2xx` `3xx` `4xy` など） | 未実装 |
 | Undo / Redo、範囲選択、コピー・貼り付け | 未実装 |
 
@@ -115,6 +136,7 @@ ImGuiの標準では `Tab` でウィジェット間のフォーカスが移動�
 | `engine/include/ocf/audio/tracker/TrackerTypes.h` | チャンネル・エフェクトなどの種類、定数 |
 | `engine/include/ocf/audio/tracker/Song.h` | 曲のデータ（`Song` `Pattern` `Cell` `Instrument` `Sequence`） |
 | `engine/include/ocf/audio/tracker/SongNotation.h` | ノート・エフェクト・シーケンスの文字列表記。ファイルフォーマットとエディタで共通 |
+| `engine/include/ocf/audio/tracker/SongSerializer.h` | 曲のJSONの読み書き（実装は `engine/src/audio/tracker/SongSerializer.cpp`、yyjsonを使用） |
 | `engine/src/audio/tracker/SongPlayer.h` / `.cpp` | 曲を再生する。1tickごとに行を進め、APUのレジスタを書く |
 | `engine/src/audio/tracker/NoteTable.h` / `.cpp` | ノートからAPUのタイマー周期への変換（NTSC） |
 | `engine/src/audio/AudioTrackerSource.h` / `.cpp` | 専用のAPUを持つオーディオソース。オーディオスレッドで `SongPlayer` を動かす |
@@ -124,13 +146,20 @@ ImGuiの標準では `Tab` でウィジェット間のフォーカスが移動�
 
 ```cpp
 #include <ocf/audio/AudioSystem.h>
-#include <ocf/audio/tracker/Song.h>
+#include <ocf/audio/tracker/SongSerializer.h>
+#include <ocf/platform/FileSystem.h>
+
+auto result = audio::tracker::loadSong(FileSystem::getInstance()->getAssetFullPath("songs/stage1.json"));
+if (result.isErr()) {
+    OCF_LOG_ERROR("{}", result.unwrapErr());
+    return;
+}
 
 auto& audioSystem = engine.getAudioSystem();
 audio::AudioSourceHandle bgm = audioSystem.createTrackerSource();
 audioSystem.play(bgm); // ソースをミキサーに載せる（曲はまだ鳴らない）
 
-audioSystem.tracker_setSong(bgm, std::make_shared<const audio::tracker::Song>(song));
+audioSystem.tracker_setSong(bgm, std::make_shared<const audio::tracker::Song>(std::move(result).unwrap()));
 audioSystem.tracker_play(bgm); // 曲の先頭から再生
 
 // 終了時
@@ -181,5 +210,6 @@ AudioSystem::update()
 | `engine/test/test_song_player.cpp` | `SongPlayer` が書くレジスタ（テンポ、エフェクト、シーケンス、ミュート、プレビュー） |
 | `engine/test/test_audio_tracker_source.cpp` | APUを通した出力（音が出るか、音程、停止後の無音、古い曲の解放） |
 | `engine/test/test_apu.cpp` | APUの矩形波・三角波・スイープ（周期、`$4002` だけでの周期変更、ミュート条件） |
+| `engine/test/test_song_serializer.cpp` | JSONの読み書き（設計書の例と同じ文字列になるか、往復、検証エラーとメッセージ、ファイル） |
 
 `SongPlayer` などの内部クラスをテストするため、テストのターゲットには `engine/src` もインクルードパスに入れています。

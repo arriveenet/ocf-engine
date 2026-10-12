@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
 #include <utility>
 
 namespace ocf::tracker_tool {
@@ -72,9 +73,10 @@ struct EditorState {
     std::array<bool, CHANNEL_COUNT> muted{};
     PlaybackStatus playback; // As of this frame
 
-    bool songChanged = true; // The song must be sent to the player
-    bool modified = false;   // Changed since it was created or opened
-    int songRevision = 0;    // Incremented when the whole song is replaced
+    bool songChanged = true;        // The song must be sent to the player
+    bool modified = false;          // Changed since it was created, opened or saved
+    int songRevision = 0;           // Incremented when the whole song is replaced
+    std::filesystem::path filePath; // Empty until the song is saved or opened
 
     void markModified()
     {
@@ -82,9 +84,10 @@ struct EditorState {
         modified = true;
     }
 
-    void replaceSong(Song newSong)
+    void replaceSong(Song newSong, std::filesystem::path path = {})
     {
         song = std::move(newSong);
+        filePath = std::move(path);
         cursor = Cursor{};
         currentInstrument = 0;
         songChanged = true;

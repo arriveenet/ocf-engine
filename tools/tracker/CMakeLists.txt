@@ -9,6 +9,7 @@ set(TARGET tracker)
 set(HDRS
     DemoSong.h
     EditorState.h
+    FileDialog.h
     FrameEditor.h
     InstrumentEditor.h
     PatternEditor.h
@@ -18,6 +19,7 @@ set(HDRS
 
 set(SRCS
     DemoSong.cpp
+    FileDialog.cpp
     FrameEditor.cpp
     InstrumentEditor.cpp
     main.cpp
