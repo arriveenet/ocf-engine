@@ -4,7 +4,6 @@
 
 #include "ocf/core/Engine.h"
 #include "ocf/platform/Application.h"
-#include "ocf/scene/View.h"
 
 namespace ocf {
 
@@ -40,13 +39,8 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     m_engine = Engine::create(engineConfig);
 
-    Scene* scene = m_engine->createScene();
-    View* view = m_engine->createView();
-    view->setScene(scene);
-    m_engine->addView(view);
-
     if (setupCallback) {
-      setupCallback(*m_engine, view, scene);
+      setupCallback(*m_engine);
     }
 
     while (!m_window->windowShouldClose()) {
@@ -56,7 +50,7 @@ void Application::run(const Config& config, SetupCallback setupCallback,
     }
 
     if (cleanupCallback) {
-      cleanupCallback(*m_engine, view, scene);
+      cleanupCallback(*m_engine);
     }
 
     Engine::destroy(m_engine);

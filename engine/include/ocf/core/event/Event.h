@@ -7,6 +7,7 @@ enum class EventType {
     KeyboardEvent,
     MouseEvent,
     WindowResizeEvent,
+    Custom, //!< Events defined by the application
 };
 
 class Event {

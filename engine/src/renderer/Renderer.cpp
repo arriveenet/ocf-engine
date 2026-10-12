@@ -3,27 +3,19 @@
 #include "ocf/renderer/Renderer.h"
 
 #include "ocf/core/Engine.h"
-#include "ocf/math/constants.h"
 #include "ocf/math/geometric.h"
-#include "ocf/math/matrix_transform.h"
-#include "ocf/platform/FileSystem.h"
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/MaterialInstance.h"
-#include "ocf/renderer/Texture.h"
-#include "ocf/renderer/TextureSampler.h"
+#include "ocf/renderer/RenderQueue.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
-#include "ocf/scene/View.h"
 #include "ocf/scene/Camera.h"
-#include "ocf/scene/Scene.h"
 #include "ocf/scene/Node.h"
+#include "ocf/scene/SceneGraph.h"
+#include "ocf/scene/View.h"
 
-#include <stb_image.h>
-
-#include <cmath>
-#include <cstddef>
 #include <vector>
 
 namespace ocf {
@@ -44,17 +36,15 @@ bool Renderer::init()
 {
     m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
 
+    // The model matrix is not here: it changes per draw and is a push constant
     m_material = Material::Builder()
-                .uniformBlock(0, "UBO", 224)
+                .uniformBlock(0, "UBO", 160)
                 .uniformMember("UBO", "projection", rhi::UniformType::Mat4, 0, 64)
                 .uniformMember("UBO", "view", rhi::UniformType::Mat4, 64, 64)
-                .uniformMember("UBO", "model", rhi::UniformType::Mat4, 128, 64)
-                .uniformMember("UBO", "lightDirection", rhi::UniformType::Float4, 192, 16)
-                .uniformMember("UBO", "eyePosition", rhi::UniformType::Float3, 208, 12)
-                .uniformMember("UBO", "exposure", rhi::UniformType::Float, 220, 4)
+                .uniformMember("UBO", "lightDirection", rhi::UniformType::Float4, 128, 16)
+                .uniformMember("UBO", "eyePosition", rhi::UniformType::Float3, 144, 12)
+                .uniformMember("UBO", "exposure", rhi::UniformType::Float, 156, 4)
                 .build(m_engine);
-
-    m_materialInstance = m_material->createInstance();
 
     return true;
 }
@@ -62,30 +52,60 @@ bool Renderer::init()
 void Renderer::beginFrame()
 {
     m_device->beginFrame();
+
+    m_viewCount = 0;
+
+    m_commandBuffer = m_device->getCommandBuffer();
+    m_commandBuffer->begin();
+    // Change to color layout
+    m_commandBuffer->transitionLayout(rhi::ResourceState::Undefined,
+                                      rhi::ResourceState::ColorAttachment);
+    m_commandBuffer->transitionLayout(m_depthTexture, rhi::ResourceState::Undefined,
+                                      rhi::ResourceState::DepthStencilAttachment);
 }
 
 void Renderer::endFrame()
 {
+    // Never present an undefined image when no view was drawn
+    if (m_viewCount == 0) {
+        rhi::RenderingInfo info;
+        info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+        m_commandBuffer->beginRendering(info);
+        m_commandBuffer->endRendering();
+    }
+
+    // Change to present layout
+    m_commandBuffer->transitionLayout(rhi::ResourceState::ColorAttachment,
+                                      rhi::ResourceState::Present);
+    m_commandBuffer->end();
+    m_commandBuffer.reset();
+
     m_device->endFrame();
+}
+
+MaterialInstance* Renderer::acquireViewUniforms()
+{
+    if (m_viewCount == m_viewUniforms.size()) {
+        m_viewUniforms.push_back(m_material->createInstance());
+    }
+    return m_viewUniforms[m_viewCount++];
 }
 
 void Renderer::render(const View* view)
 {
-    if (view == nullptr || view->getScene() == nullptr || !view->hasCamera()) {
+    if (view == nullptr || !view->hasCamera()) {
         return;
     }
 
-    Scene* scene = view->getScene();
+    const Camera* camera = view->getCamera();
 
     m_renderQueue.clear();
 
-    const math::vec3 cameraPosition = view->getCamera()->getPosition();
+    const math::vec3 cameraPosition = camera->getPosition();
 
-    // Collect renderable objects from the scene
-    scene->traverseNodes(scene->getRoot(), [this, &cameraPosition](Node* node) {
+    const auto collect = [this, &cameraPosition](Node* node) {
         for (const auto& component : node->getComponents()) {
-            auto renderables = component->getRenderables();
-            for (const auto& renderable : renderables) {
+            for (const auto& renderable : component->getRenderables()) {
                 RenderCommand cmd;
                 cmd.vertexBuffer = renderable->getVertexBuffer();
                 cmd.indexBuffer = renderable->getIndexBuffer();
@@ -110,61 +130,62 @@ void Renderer::render(const View* view)
                 m_renderQueue.addCommand(cmd);
             }
         }
-    });
+    };
 
-    m_renderQueue.sort();
+    // Collect renderable objects from the scene graphs
+    for (SceneGraph* sceneGraph : view->getSceneGraphs()) {
+        sceneGraph->traverseNodes(sceneGraph->getRoot(), collect);
+    }
 
-    const uint32_t frameIndex = m_device->getCurrentFrameIndex();
+    // SubmitOrder keeps the traversal order, so that UI elements later in the tree are on top
+    if (view->getSortMode() == View::SortMode::Distance) {
+        m_renderQueue.sort();
+    }
 
-    auto commandBuffer = m_device->getCommandBuffer();
-    commandBuffer->begin();
-    // Change to color layout
-    commandBuffer->transitionLayout(rhi::ResourceState::Undefined,
-                                    rhi::ResourceState::ColorAttachment);
-    commandBuffer->transitionLayout(m_depthTexture, rhi::ResourceState::Undefined,
-                                    rhi::ResourceState::DepthStencilAttachment);
+    // The camera uniforms are written once per view; each view has its own buffer so that
+    // views drawn later in the frame do not overwrite them
+    const bool isFirstView = (m_viewCount == 0);
+    MaterialInstance* viewUniforms = acquireViewUniforms();
+    viewUniforms->setFrameIndex(m_device->getCurrentFrameIndex());
+    viewUniforms->setParameter("view", camera->getView());
+    viewUniforms->setParameter("projection", camera->getProjection());
+    viewUniforms->setParameter("eyePosition", camera->getPosition());
+    viewUniforms->setParameter("lightDirection", math::vec4(0.0f, 1.0f, 1.0f, 0.0f));
+    viewUniforms->setParameter("exposure", 1.0f);
+    viewUniforms->commit(m_engine);
+    const rhi::DescriptorSetHandle viewDescriptorSet = viewUniforms->getDescriptorSetHandle();
 
+    // The attachments are undefined at the start of a frame, so the first view always clears
+    const View::ClearFlags clearFlags = view->getClearFlags();
     rhi::RenderingInfo info;
-    info.clearColor = {0.0f, 0.0f, 1.0f, 1.0f};
-    commandBuffer->beginRendering(info);
+    info.clearColor = view->getClearColor();
+    info.clearColorBuffer = isFirstView || hasFlag(clearFlags, View::ClearFlags::Color);
+    info.clearDepthBuffer = isFirstView || hasFlag(clearFlags, View::ClearFlags::Depth);
+    m_commandBuffer->beginRendering(info);
 
-    for (auto& cmd : m_renderQueue.getRenderCommands()) {
-        m_materialInstance->setFrameIndex(frameIndex);
-
-        m_materialInstance->setParameter("model", cmd.matWorld);
-        m_materialInstance->setParameter("view", view->getCamera()->getView());
-        m_materialInstance->setParameter("projection", view->getCamera()->getProjection());
-        m_materialInstance->setParameter("eyePosition", view->getCamera()->getPosition());
-        m_materialInstance->setParameter("lightDirection", math::vec4(0.0f, 1.0f, 1.0f, 0.0f));
-        m_materialInstance->setParameter("exposure", 1.0f);
-
-        m_materialInstance->commit(m_engine);
-
+    for (const auto& cmd : m_renderQueue.getRenderCommands()) {
         // Bind pipeline, descriptor sets, vertex/index buffers, and draw
-        commandBuffer->bindPipeline(cmd.pipelineHandle);
-        commandBuffer->bindDescriptorSets(cmd.pipelineHandle,
-                                          m_materialInstance->getDescriptorSetHandle(), 0, 1);
-        commandBuffer->bindDescriptorSets(cmd.pipelineHandle,
-                                          cmd.materialInstance->getDescriptorSetHandle(), 1, 1);
+        m_commandBuffer->bindPipeline(cmd.pipelineHandle);
+        m_commandBuffer->bindDescriptorSets(cmd.pipelineHandle, viewDescriptorSet, 0, 1);
+        m_commandBuffer->bindDescriptorSets(cmd.pipelineHandle,
+                                            cmd.materialInstance->getDescriptorSetHandle(), 1, 1);
+        m_commandBuffer->pushConstants(cmd.pipelineHandle, OBJECT_PUSH_CONSTANT_RANGE.stages, 0,
+                                       OBJECT_PUSH_CONSTANT_RANGE.size, &cmd.matWorld);
 
         // Draw Indexed
         if (cmd.indexBuffer != nullptr) {
-            commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
-            commandBuffer->bindIndexBuffer(cmd.indexBuffer->getHandle(), 0);
-            commandBuffer->drawIndexed(cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+            m_commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
+            m_commandBuffer->bindIndexBuffer(cmd.indexBuffer->getHandle(), 0);
+            m_commandBuffer->drawIndexed(cmd.indexCount, 1, cmd.indexOffset, 0, 0);
         }
         // Draw Arrays
         else {
-            commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
-            commandBuffer->draw(cmd.vertexCount, 1, cmd.vertexOffset, 0);
+            m_commandBuffer->bindVertexBuffers(0, 1, cmd.vertexBuffer->getHandle());
+            m_commandBuffer->draw(cmd.vertexCount, 1, cmd.vertexOffset, 0);
         }
     }
 
-    commandBuffer->endRendering();
-    // Change to present layout
-    commandBuffer->transitionLayout(rhi::ResourceState::ColorAttachment,
-                                    rhi::ResourceState::Present);
-    commandBuffer->end();
+    m_commandBuffer->endRendering();
 }
 
 } // namespace ocf

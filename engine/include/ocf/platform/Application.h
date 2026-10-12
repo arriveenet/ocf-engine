@@ -13,13 +13,13 @@ namespace ocf {
 
 class Engine;
 class Window;
-class View;
-class Scene;
 
 class OCF_API Application {
 public:
-    using SetupCallback = std::function<void(Engine& engine, View* view, Scene* scene)>;
-    using CleanupCallback = std::function<void(Engine& engine, View* view, Scene* scene)>;
+    /** @brief Called once the engine is ready; typically adds the first scene. */
+    using SetupCallback = std::function<void(Engine& engine)>;
+    /** @brief Called before the engine is destroyed, while the scenes are still alive. */
+    using CleanupCallback = std::function<void(Engine& engine)>;
 
     struct Config {
         std::string title;

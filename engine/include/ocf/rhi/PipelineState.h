@@ -13,9 +13,15 @@ struct RHIShaderModule;
 struct RHIVertexBufferInfo;
 struct RHIDescriptorSetLayout;
 
+struct PushConstantRange {
+    ShaderStageFlags stages = ShaderStageFlags::Vertex;
+    uint32_t size = 0; ///< 0 means the pipeline has no push constants
+};
+
 struct PipelineLayout {
     using SetLayout = std::array<Handle<RHIDescriptorSetLayout>, DESCRIPTOR_SET_COUNT_MAX>;
     SetLayout setLayout;
+    PushConstantRange pushConstant;
 };
 
 struct PipelineState {

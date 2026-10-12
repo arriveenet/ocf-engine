@@ -32,6 +32,9 @@ public:
     void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh, uint32_t firstSet,
                             uint32_t descriptorSetCount) override;
 
+    void pushConstants(PipelineHandle ph, ShaderStageFlags stages, uint32_t offset, uint32_t size,
+                       const void* data) override;
+
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                            VertexBufferHandle vbh) override;
 
@@ -56,6 +59,7 @@ public:
 private:
     VulkanDevice& m_device;
     VkCommandBuffer m_commandBuffer;
+    uint32_t m_renderingCount = 0; // Rendering passes recorded since begin()
 };
 
 } // namespace ocf::rhi

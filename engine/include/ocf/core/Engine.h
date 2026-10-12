@@ -8,6 +8,7 @@
 
 #include <chrono>
 #include <memory>
+#include <vector>
 
 namespace ocf {
 
@@ -20,7 +21,7 @@ class Device;
 }
 
 class Window;
-class Scene;
+class SceneManager;
 class Renderer;
 class EventDispatcher;
 class View;
@@ -65,7 +66,7 @@ public:
     static void destroy(Engine* engine);
 
     /**
-     * @brief Updates the engine and current scene for the current frame.
+     * @brief Updates the engine and the active scenes for the current frame.
      *
      * This method should be called once per frame to update game logic,
      * physics, and other time-dependent operations.
@@ -73,7 +74,7 @@ public:
     void update();
 
     /**
-     * @brief Renders the current scene to the window.
+     * @brief Renders the views of the active scenes to the window.
      *
      * This method should be called once per frame after update() to draw
      * all scene objects using the renderer.
@@ -89,23 +90,11 @@ public:
     void mainLoop();
 
     /**
-     * @brief Creates a new scene and sets it as the current active scene.
+     * @brief Retrieves the scene manager, which runs the scenes of the application.
      *
-     * @return Pointer to the newly created Scene instance
+     * @return Reference to the SceneManager instance
      */
-    Scene* createScene();
-
-    /**
-     * @brief Creates a new view and adds it to the engine's view list.
-     * @return Pointer to the newly created View instance
-     */
-    View* createView();
-
-    /**
-     * @brief 
-     * @param view 
-     */
-    void addView(View* view);
+    SceneManager& getSceneManager() const;
 
     /**
      * @brief Retrieves the rendering device.
@@ -184,13 +173,13 @@ private:
 
 private:
     std::shared_ptr<Window> m_window;      //!< Shared pointer to the application window
-    std::unique_ptr<Scene> m_currentScene; //!< Unique pointer to the active scene
+    std::unique_ptr<SceneManager> m_sceneManager; //!< Unique pointer to the scene manager
     std::unique_ptr<Renderer> m_renderer;  //!< Unique pointer to the renderer instance
     std::unique_ptr<rhi::Device> m_device; //!< Unique pointer to the rendering device
     std::unique_ptr<TextureManager> m_textureManager; //!< Unique pointer to the texture manager
     std::unique_ptr<FontManager> m_fontManager;       //!< Unique pointer to the font manager
     std::unique_ptr<audio::AudioSystem> m_audioSystem; ///< Unique pointer to the audio system
-    std::vector<View*> m_views;            //!< Vector of view pointers
+    std::vector<View*> m_frameViews;       //!< Views drawn this frame, in drawing order
     FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
     EventDispatcher& m_eventDispatcher;    //!< Reference to the event dispatcher
 };

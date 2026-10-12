@@ -103,6 +103,7 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
         pipeline.vertexBufferInfo = subMesh.vertexBuffer->getVertexBufferInfoHandle();
         pipeline.pipelineLayout.setLayout[0] = uboMaterial->getDescriptorSetLayout().getHandle();
         pipeline.pipelineLayout.setLayout[1] = m_material->getDescriptorSetLayout().getHandle();
+        pipeline.pipelineLayout.pushConstant = Renderer::OBJECT_PUSH_CONSTANT_RANGE;
         pipeline.rasterState = subMesh.materialParams.rasterState;
 
         auto pipelineHandle = m_engine.getDevice().createPipeline(pipeline);
