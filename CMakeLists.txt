@@ -36,4 +36,6 @@ add_subdirectory(third-party/xxHash)
 
 add_subdirectory(engine)
 
+add_subdirectory(tools)
+
 add_subdirectory(tests)
