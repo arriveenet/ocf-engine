@@ -33,6 +33,7 @@ add_subdirectory(third-party/miniaudio/ocf)
 add_subdirectory(third-party/stb/ocf)
 add_subdirectory(third-party/tinyobjloader)
 add_subdirectory(third-party/xxHash)
+add_subdirectory(third-party/yyjson/ocf)
 
 add_subdirectory(engine)
 
