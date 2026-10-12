@@ -3,6 +3,7 @@
 # ==================================================================================================
 add_executable(test_${TARGET}
     test_allocator.cpp
+    test_event_dispatcher.cpp
     test_geometric.cpp
     test_jobsystem.cpp
     test_main.cpp
@@ -14,6 +15,7 @@ add_executable(test_${TARGET}
     test_rect.cpp
     test_reference.cpp
     test_result.cpp
+    test_scene_manager.cpp
     test_vec.cpp
     test_texture_sampler.cpp
     test_text_layout.cpp

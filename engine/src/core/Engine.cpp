@@ -13,7 +13,7 @@
 #include "ocf/resource/TextureManager.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/DeviceFactory.h"
-#include "ocf/scene/Scene.h"
+#include "ocf/scene/SceneManager.h"
 #include "ocf/scene/View.h"
 
 namespace ocf {
@@ -31,11 +31,9 @@ Engine::Engine(const Config& config)
 
 Engine::~Engine()
 {
-    for (auto& view : m_views) {
-        delete view;
-    }
-
-    m_currentScene.reset();
+    // Scenes own GPU resources and may still be loading on a worker thread, so they go
+    // before the managers, the job system and the device
+    m_sceneManager.reset();
 
     // Fonts own atlas textures, so release them while the device is still alive
     m_fontManager->clear();
@@ -84,6 +82,9 @@ bool Engine::init()
     m_audioSystem = std::make_unique<audio::AudioSystem>();
     m_audioSystem->initialize();
 
+    // Initialize Scene Manager
+    m_sceneManager = std::make_unique<SceneManager>(this);
+
     return true;
 }
 
@@ -108,14 +109,16 @@ void Engine::update()
 {
     m_frameCounter.update();
     m_audioSystem->update();
-    m_currentScene->update(m_frameCounter.getDeltaTime());
+    m_sceneManager->update(m_frameCounter.getDeltaTime());
 }
 
 void Engine::draw()
 {
+    m_sceneManager->collectViews(m_frameViews);
+
     m_renderer->beginFrame();
 
-    for (auto view : m_views) {
+    for (auto view : m_frameViews) {
         m_renderer->render(view);
     }
 
@@ -131,20 +134,9 @@ void Engine::mainLoop()
     draw();
 }
 
-Scene* Engine::createScene()
+SceneManager& Engine::getSceneManager() const
 {
-    m_currentScene = std::make_unique<Scene>();
-    return m_currentScene.get();
-}
-
-View* Engine::createView()
-{
-    return new View();
-}
-
-void Engine::addView(View* view)
-{
-    m_views.push_back(view);
+    return *m_sceneManager.get();
 }
 
 Device& Engine::getDevice() const

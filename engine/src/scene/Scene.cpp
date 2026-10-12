@@ -1,43 +1,44 @@
 // SPDX-License-Identifier: MIT
-
-#include "ocf/scene/Node.h"
 #include "ocf/scene/Scene.h"
+
+#include "ocf/scene/SceneGraph.h"
+#include "ocf/scene/SceneManager.h"
+#include "ocf/scene/View.h"
 
 namespace ocf {
 
 Scene::Scene()
 {
-    m_root = new Node();
 }
 
 Scene::~Scene()
 {
-    delete m_root;
-    m_root = nullptr;
+    m_views.clear();
+    m_sceneGraphs.clear();
 }
 
-void Scene::update(float deltaTime)
+void Scene::close()
 {
-    if (m_updateCallback) {
-        m_updateCallback(deltaTime);
+    if (m_sceneManager != nullptr) {
+        m_sceneManager->remove(this);
     }
-
-    m_root->update(deltaTime);
-
-    m_root->updateTransform(math::mat4(1.0f), true);
 }
 
-void Scene::traverseNodes(Node* node, const std::function<void(Node*)>& callback)
+SceneGraph* Scene::createSceneGraph()
 {
-    if (node == nullptr) {
-        return;
-    }
+    m_sceneGraphs.push_back(std::make_unique<SceneGraph>());
+    return m_sceneGraphs.back().get();
+}
 
-    callback(node);
+View* Scene::createView()
+{
+    m_views.push_back(std::make_unique<View>());
+    return m_views.back().get();
+}
 
-    for (const auto& child : node->getChildren()) {
-        traverseNodes(child.get(), callback);
-    }
+void Scene::addChildScene(int layer, std::unique_ptr<Scene> child)
+{
+    m_sceneManager->enqueue(std::move(child), layer, this, false);
 }
 
 } // namespace ocf

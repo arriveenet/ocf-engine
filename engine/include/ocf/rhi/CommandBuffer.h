@@ -28,6 +28,9 @@ public:
     virtual void bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh, uint32_t firstSet,
                                     uint32_t descriptorSetCount) = 0;
 
+    virtual void pushConstants(PipelineHandle ph, ShaderStageFlags stages, uint32_t offset,
+                               uint32_t size, const void* data) = 0;
+
     virtual void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                                    VertexBufferHandle vbh) = 0;
 

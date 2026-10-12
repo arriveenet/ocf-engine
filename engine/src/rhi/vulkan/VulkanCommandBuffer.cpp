@@ -29,6 +29,7 @@ void VulkanCommandBuffer::begin()
         .flags = 0,
     };
     vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+    m_renderingCount = 0;
 }
 
 void VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
@@ -38,6 +39,7 @@ void VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
         .flags = flags,
     };
     vkBeginCommandBuffer(m_commandBuffer, &beginInfo);
+    m_renderingCount = 0;
 }
 
 void VulkanCommandBuffer::end()
@@ -55,6 +57,34 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
     auto swapchain = m_device.getSwapchain();
     auto depthBuffer = m_device.getDepthBuffer();
 
+    // A previous pass in this command buffer wrote the same attachments, so its writes must
+    // finish before this pass loads or clears them
+    if (m_renderingCount > 0) {
+        constexpr VkPipelineStageFlags2 attachmentStages =
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+            VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+            VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+
+        VkMemoryBarrier2 memoryBarrier{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .srcStageMask = attachmentStages,
+            .srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .dstStageMask = attachmentStages,
+            .dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        };
+        VkDependencyInfo dependencyInfo{
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .memoryBarrierCount = 1,
+            .pMemoryBarriers = &memoryBarrier,
+        };
+        vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
+    }
+    m_renderingCount++;
+
     const math::vec4 color = info.clearColor;
 
     // Color
@@ -62,7 +92,7 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = swapchain->getCurrentImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .loadOp = info.clearColorBuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = VkClearValue{.color = {color.x, color.y, color.z, color.w}},
     };
@@ -71,7 +101,7 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .imageView = depthBuffer->getImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .loadOp = info.clearDepthBuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = {.depthStencil{1.0f, 0}}
     };
@@ -109,6 +139,15 @@ void VulkanCommandBuffer::bindDescriptorSets(PipelineHandle ph, DescriptorSetHan
 
     vkCmdBindDescriptorSets(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.layout,
                             firstSet, descriptorSetCount, &descriptorSet->vk.id, 0, nullptr);
+}
+
+void VulkanCommandBuffer::pushConstants(PipelineHandle ph, ShaderStageFlags stages,
+                                        uint32_t offset, uint32_t size, const void* data)
+{
+    VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
+
+    vkCmdPushConstants(m_commandBuffer, pipeline->vk.layout,
+                       VulkanUtility::getShaderStageFlagBits(stages), offset, size, data);
 }
 
 void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,

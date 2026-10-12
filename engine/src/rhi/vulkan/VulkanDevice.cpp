@@ -319,13 +319,20 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
         }
     }
 
+    const PushConstantRange& pushConstant = state.pipelineLayout.pushConstant;
+    VkPushConstantRange pushConstantRange{
+        .stageFlags = VulkanUtility::getShaderStageFlagBits(pushConstant.stages),
+        .offset = 0,
+        .size = pushConstant.size,
+    };
+
     // Create pipeline layout
     VkPipelineLayoutCreateInfo layoutInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount = setLayoutCount,
         .pSetLayouts = setLayouts,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = pushConstant.size > 0 ? 1u : 0u,
+        .pPushConstantRanges = pushConstant.size > 0 ? &pushConstantRange : nullptr,
     };
     VkPipelineLayout pipelineLayout;
     auto result = vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &pipelineLayout);

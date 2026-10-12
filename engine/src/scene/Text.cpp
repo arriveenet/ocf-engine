@@ -299,6 +299,7 @@ void Text::createPipeline(VertexBuffer* vertexBuffer)
     pipeline.vertexBufferInfo = vertexBuffer->getVertexBufferInfoHandle();
     pipeline.pipelineLayout.setLayout[0] = uboMaterial->getDescriptorSetLayout().getHandle();
     pipeline.pipelineLayout.setLayout[1] = m_material->getDescriptorSetLayout().getHandle();
+    pipeline.pipelineLayout.pushConstant = Renderer::OBJECT_PUSH_CONSTANT_RANGE;
 
     // Straight alpha blending; no depth writes so overlapping glyphs and text behind text
     // blend correctly. Both faces are drawn so the text stays visible from behind.

@@ -209,6 +209,8 @@ enum class ResourceState : uint8_t {
 
 struct RenderingInfo {
     math::vec4 clearColor;
+    bool clearColorBuffer = true; ///< false keeps the color drawn by earlier passes
+    bool clearDepthBuffer = true; ///< false keeps the depth written by earlier passes
 };
 
 /**
