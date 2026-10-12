@@ -21,10 +21,14 @@ add_executable(test_${TARGET}
     test_texture_sampler.cpp
     test_text_layout.cpp
     test_text_utility.cpp
+    test_song_player.cpp
     test_tracker_notation.cpp
     test_tracker_song.cpp
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
+
+# For tests of internal classes (e.g. audio/tracker/SongPlayer.h)
+target_include_directories(test_${TARGET} PRIVATE ${ocfengine_SOURCE_DIR}/src)
 
 set_target_properties(test_${TARGET} PROPERTIES FOLDER Tests)
 
