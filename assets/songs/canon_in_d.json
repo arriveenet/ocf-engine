@@ -1,0 +1,264 @@
+{
+  "format": "ocf-tracker-song",
+  "version": 1,
+  "title": "Canon in D",
+  "author": "Johann Pachelbel (arranged for the ocf tracker)",
+  "speed": 7,
+  "tempo": 150,
+  "rowsPerPattern": 64,
+  "channels": [
+    { "type": "pulse1", "effectColumns": 1 },
+    { "type": "pulse2", "effectColumns": 1 },
+    { "type": "triangle", "effectColumns": 1 },
+    { "type": "noise", "effectColumns": 1 },
+    { "type": "dpcm", "effectColumns": 1 }
+  ],
+  "instruments": [
+    {
+      "index": 0,
+      "name": "Violin I",
+      "sequences": {
+        "volume": { "values": [10, 13, 15, 14, 13, 12, 12, 11, 11, 11, 10, 10, 10, 10, 9], "loop": -1, "release": -1 },
+        "duty": { "values": [1], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 1,
+      "name": "Violin II",
+      "sequences": {
+        "volume": { "values": [8, 11, 12, 11, 10, 10, 9, 9, 9, 8, 8, 8, 8, 7], "loop": -1, "release": -1 },
+        "duty": { "values": [2], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 2,
+      "name": "Bass",
+      "sequences": {
+        "volume": { "values": [15], "loop": -1, "release": -1 }
+      }
+    }
+  ],
+  "frames": [
+    [0, 0, 0, 0, 0],
+    [1, 0, 0, 0, 0],
+    [2, 1, 0, 0, 0],
+    [3, 2, 1, 0, 0],
+    [4, 3, 1, 0, 0],
+    [1, 4, 1, 0, 0]
+  ],
+  "patterns": [
+    {
+      "channel": 0,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "F#5", "instrument": 0 },
+        { "row": 8, "note": "E-5" },
+        { "row": 16, "note": "D-5" },
+        { "row": 24, "note": "C#5" },
+        { "row": 32, "note": "B-4" },
+        { "row": 40, "note": "A-4" },
+        { "row": 48, "note": "B-4" },
+        { "row": 56, "note": "C#5" }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "D-5", "instrument": 0 },
+        { "row": 8, "note": "C#5" },
+        { "row": 16, "note": "B-4" },
+        { "row": 24, "note": "A-4" },
+        { "row": 32, "note": "G-4" },
+        { "row": 40, "note": "F#4" },
+        { "row": 48, "note": "G-4" },
+        { "row": 56, "note": "E-4" }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "D-4", "instrument": 0 },
+        { "row": 4, "note": "F#4" },
+        { "row": 8, "note": "A-4" },
+        { "row": 12, "note": "G-4" },
+        { "row": 16, "note": "F#4" },
+        { "row": 20, "note": "D-4" },
+        { "row": 24, "note": "F#4" },
+        { "row": 28, "note": "E-4" },
+        { "row": 32, "note": "D-4" },
+        { "row": 36, "note": "B-3" },
+        { "row": 40, "note": "D-4" },
+        { "row": 44, "note": "A-4" },
+        { "row": 48, "note": "G-4" },
+        { "row": 52, "note": "B-4" },
+        { "row": 56, "note": "A-4" },
+        { "row": 60, "note": "G-4" }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "D-5", "instrument": 0 },
+        { "row": 2, "note": "C#5" },
+        { "row": 4, "note": "D-5" },
+        { "row": 6, "note": "D-4" },
+        { "row": 8, "note": "C#4" },
+        { "row": 10, "note": "A-3" },
+        { "row": 12, "note": "E-4" },
+        { "row": 14, "note": "F#4" },
+        { "row": 16, "note": "D-4" },
+        { "row": 18, "note": "D-5" },
+        { "row": 20, "note": "C#5" },
+        { "row": 22, "note": "B-4" },
+        { "row": 24, "note": "C#5" },
+        { "row": 26, "note": "F#5" },
+        { "row": 28, "note": "A-5" },
+        { "row": 30, "note": "B-5" },
+        { "row": 32, "note": "G-5" },
+        { "row": 34, "note": "F#5" },
+        { "row": 36, "note": "E-5" },
+        { "row": 38, "note": "G-5" },
+        { "row": 40, "note": "F#5" },
+        { "row": 42, "note": "E-5" },
+        { "row": 44, "note": "D-5" },
+        { "row": 46, "note": "C#5" },
+        { "row": 48, "note": "B-4" },
+        { "row": 50, "note": "A-4" },
+        { "row": 52, "note": "G-4" },
+        { "row": 54, "note": "F#4" },
+        { "row": 56, "note": "E-4" },
+        { "row": 58, "note": "G-4" },
+        { "row": 60, "note": "F#4" },
+        { "row": 62, "note": "E-4" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "F#5", "instrument": 1 },
+        { "row": 8, "note": "E-5" },
+        { "row": 16, "note": "D-5" },
+        { "row": 24, "note": "C#5" },
+        { "row": 32, "note": "B-4" },
+        { "row": 40, "note": "A-4" },
+        { "row": 48, "note": "B-4" },
+        { "row": 56, "note": "C#5" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "D-5", "instrument": 1 },
+        { "row": 8, "note": "C#5" },
+        { "row": 16, "note": "B-4" },
+        { "row": 24, "note": "A-4" },
+        { "row": 32, "note": "G-4" },
+        { "row": 40, "note": "F#4" },
+        { "row": 48, "note": "G-4" },
+        { "row": 56, "note": "E-4" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "D-4", "instrument": 1 },
+        { "row": 4, "note": "F#4" },
+        { "row": 8, "note": "A-4" },
+        { "row": 12, "note": "G-4" },
+        { "row": 16, "note": "F#4" },
+        { "row": 20, "note": "D-4" },
+        { "row": 24, "note": "F#4" },
+        { "row": 28, "note": "E-4" },
+        { "row": 32, "note": "D-4" },
+        { "row": 36, "note": "B-3" },
+        { "row": 40, "note": "D-4" },
+        { "row": 44, "note": "A-4" },
+        { "row": 48, "note": "G-4" },
+        { "row": 52, "note": "B-4" },
+        { "row": 56, "note": "A-4" },
+        { "row": 60, "note": "G-4" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "D-5", "instrument": 1 },
+        { "row": 2, "note": "C#5" },
+        { "row": 4, "note": "D-5" },
+        { "row": 6, "note": "D-4" },
+        { "row": 8, "note": "C#4" },
+        { "row": 10, "note": "A-3" },
+        { "row": 12, "note": "E-4" },
+        { "row": 14, "note": "F#4" },
+        { "row": 16, "note": "D-4" },
+        { "row": 18, "note": "D-5" },
+        { "row": 20, "note": "C#5" },
+        { "row": 22, "note": "B-4" },
+        { "row": 24, "note": "C#5" },
+        { "row": 26, "note": "F#5" },
+        { "row": 28, "note": "A-5" },
+        { "row": 30, "note": "B-5" },
+        { "row": 32, "note": "G-5" },
+        { "row": 34, "note": "F#5" },
+        { "row": 36, "note": "E-5" },
+        { "row": 38, "note": "G-5" },
+        { "row": 40, "note": "F#5" },
+        { "row": 42, "note": "E-5" },
+        { "row": 44, "note": "D-5" },
+        { "row": 46, "note": "C#5" },
+        { "row": 48, "note": "B-4" },
+        { "row": 50, "note": "A-4" },
+        { "row": 52, "note": "G-4" },
+        { "row": 54, "note": "F#4" },
+        { "row": 56, "note": "E-4" },
+        { "row": 58, "note": "G-4" },
+        { "row": 60, "note": "F#4" },
+        { "row": 62, "note": "E-4" },
+        { "row": 63, "effects": ["B02"] }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 0,
+      "rows": [
+        { "row": 0, "note": "D-3", "instrument": 2 },
+        { "row": 8, "note": "A-2" },
+        { "row": 16, "note": "B-2" },
+        { "row": 24, "note": "F#2" },
+        { "row": 32, "note": "G-2" },
+        { "row": 40, "note": "D-2" },
+        { "row": 48, "note": "G-2" },
+        { "row": 56, "note": "A-2" }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "D-2", "instrument": 2 },
+        { "row": 4, "note": "D-3" },
+        { "row": 8, "note": "A-1" },
+        { "row": 12, "note": "A-2" },
+        { "row": 16, "note": "B-1" },
+        { "row": 20, "note": "B-2" },
+        { "row": 24, "note": "F#1" },
+        { "row": 28, "note": "F#2" },
+        { "row": 32, "note": "G-1" },
+        { "row": 36, "note": "G-2" },
+        { "row": 40, "note": "D-2" },
+        { "row": 44, "note": "D-3" },
+        { "row": 48, "note": "G-1" },
+        { "row": 52, "note": "G-2" },
+        { "row": 56, "note": "A-1" },
+        { "row": 60, "note": "A-2" }
+      ]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ build/tools/tracker/Debug/ocf_tracker.exe
 
 ImGuiを使うので、`OCF_ENABLE_IMGUI=OFF` のときはビルドされません。
 起動するとデモ曲が読み込まれた状態になります（`File` → `Open Demo Song` でも開けます）。F5で再生できます。
+サンプル曲として、パッヘルベルの「カノン」（`assets/songs/canon_in_d.json`）もあります。`File` → `Open...` で開けます。
 
 ## 画面
 
@@ -211,5 +212,6 @@ AudioSystem::update()
 | `engine/test/test_audio_tracker_source.cpp` | APUを通した出力（音が出るか、音程、停止後の無音、古い曲の解放） |
 | `engine/test/test_apu.cpp` | APUの矩形波・三角波・スイープ（周期、`$4002` だけでの周期変更、ミュート条件） |
 | `engine/test/test_song_serializer.cpp` | JSONの読み書き（設計書の例と同じ文字列になるか、往復、検証エラーとメッセージ、ファイル） |
+| `engine/test/test_sample_songs.cpp` | `assets/songs` のサンプル曲（読み込めるか、書き出し形式のままか、ループの流れ） |
 
 `SongPlayer` などの内部クラスをテストするため、テストのターゲットには `engine/src` もインクルードパスに入れています。
