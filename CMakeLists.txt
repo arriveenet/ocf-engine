@@ -7,6 +7,14 @@ project(ocf-engine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ==================================================================================================
+#  Options
+# ==================================================================================================
+option(OCF_ENABLE_IMGUI "Enable Dear ImGui debug UI" ON)
+
+# ==================================================================================================
+#  Compiler Settings
+# ==================================================================================================
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STANDARD} /W0 /Zc:__cplusplus")
 else()
@@ -23,6 +31,9 @@ add_subdirectory(third-party/miniaudio/ocf)
 add_subdirectory(third-party/stb/ocf)
 add_subdirectory(third-party/tinyobjloader)
 add_subdirectory(third-party/xxHash)
+if (OCF_ENABLE_IMGUI)
+    add_subdirectory(third-party/imgui/ocf)
+endif()
 
 add_subdirectory(engine)
 

@@ -23,6 +23,10 @@ add_executable(test_${TARGET}
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
 
+if (OCF_ENABLE_IMGUI)
+    target_sources(test_${TARGET} PRIVATE test_imgui.cpp)
+endif()
+
 set_target_properties(test_${TARGET} PROPERTIES FOLDER Tests)
 
 # ==================================================================================================

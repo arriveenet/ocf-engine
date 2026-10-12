@@ -378,3 +378,6 @@ build_*/
 # ctags
 tags
 TAGS
+
+# Dear ImGui
+imgui.ini

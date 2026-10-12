@@ -132,6 +132,14 @@ target_link_libraries(${TARGET} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET} PRIVATE xxHash)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
+if (OCF_ENABLE_IMGUI)
+    target_link_libraries(${TARGET} PUBLIC imgui)
+    target_link_libraries(${TARGET} PRIVATE imgui_backend)
+    target_compile_definitions(${TARGET} PUBLIC OCF_ENABLE_IMGUI=1)
+else()
+    target_compile_definitions(${TARGET} PUBLIC OCF_ENABLE_IMGUI=0)
+endif()
+
 # ==================================================================================================
 #  Compiler flags
 # ==================================================================================================
