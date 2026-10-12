@@ -4,6 +4,10 @@
 
 #include "VulkanDevice.h"
 
+#include "ocf/core/Logger.h"
+
+#include <algorithm>
+
 namespace ocf {
 namespace rhi {
 
@@ -16,7 +20,7 @@ VulkanSwapchain::~VulkanSwapchain()
 {
 }
 
-VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
+VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height, bool vsync)
 {
     VkPhysicalDevice physicalDevice = m_device.getContext().getPhysicalDevice();
     VkDevice device = m_device.getDevice();
@@ -49,6 +53,26 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
         }
     }
 
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, nullptr);
+    std::vector<VkPresentModeKHR> presentModes(count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count,
+                                              presentModes.data());
+
+    // Select present mode. FIFO waits for the vertical blank and is always supported.
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    if (!vsync) {
+        auto isSupported = [&presentModes](VkPresentModeKHR mode) {
+            return std::find(presentModes.begin(), presentModes.end(), mode) !=
+                   presentModes.end();
+        };
+        if (isSupported(VK_PRESENT_MODE_MAILBOX_KHR)) {
+            presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+        }
+        else if (isSupported(VK_PRESENT_MODE_IMMEDIATE_KHR)) {
+            presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+        }
+    }
+
     auto imageCount = std::max(3u, caps.minImageCount);
 
     VkSwapchainCreateInfoKHR createInfo{};
@@ -63,7 +87,7 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = m_swapchain;
 
@@ -112,6 +136,9 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height)
 
     createFrameContext();
 
+    OCF_LOG_INFO("Swapchain: {}x{}, {} images, present mode {}", extent.width, extent.height,
+                 count, VulkanUtility::getPresentModeString(presentMode));
+
     return VulkanResult::Ok();
 }
 
@@ -141,7 +168,10 @@ VulkanResult VulkanSwapchain::acquireNextImage()
 
     VkResult result = vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX, acquireSemaphore,
                                             VK_NULL_HANDLE, &m_currentIndex);
-    if (result != VK_SUCCESS) {
+    // VK_SUBOPTIMAL_KHR still acquires the image and signals the semaphore
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        // The semaphore was not used, so it can be reused for the next acquire
+        m_presentSemaphoreList.push_back(acquireSemaphore);
         return VulkanResult::Err(VK_ERROR(result, "Failed to acquire next image"));
     }
 
@@ -164,7 +194,7 @@ VulkanResult VulkanSwapchain::queuePresent(VkQueue queuePresent)
     presentInfo.pWaitSemaphores = &m_frames[m_currentIndex].renderComplete;
 
     VkResult result = vkQueuePresentKHR(queuePresent, &presentInfo);
-    if (result != VK_SUCCESS) {
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         return VulkanResult::Err(VK_ERROR(result, "Failed to queuePresent"));
     }
 

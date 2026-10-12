@@ -105,6 +105,11 @@ void ImGuiLayer::render(CommandBuffer& commandBuffer)
                                     static_cast<VulkanCommandBuffer&>(commandBuffer).getHandle());
 }
 
+void ImGuiLayer::endFrame()
+{
+    ImGui::EndFrame();
+}
+
 } // namespace ocf
 
 #endif // OCF_ENABLE_IMGUI

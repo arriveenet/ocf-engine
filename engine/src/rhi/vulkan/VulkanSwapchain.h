@@ -18,7 +18,8 @@ public:
     explicit VulkanSwapchain(VulkanDevice& device);
     ~VulkanSwapchain();
 
-    VulkanResult create(uint32_t width, uint32_t height);
+    /** @param vsync FIFO if true, otherwise MAILBOX or IMMEDIATE when the surface supports it */
+    VulkanResult create(uint32_t width, uint32_t height, bool vsync);
     void destroy();
 
     VulkanResult acquireNextImage();

@@ -210,7 +210,7 @@ GLFWWindow::~GLFWWindow()
     glfwTerminate();
 }
 
-bool GLFWWindow::create(const Application::Config& config, std::string_view title,
+bool GLFWWindow::create(const Application::Config& /*config*/, std::string_view title,
                         int width, int height)
 {
     m_width = width;
@@ -240,8 +240,6 @@ bool GLFWWindow::create(const Application::Config& config, std::string_view titl
     glfwSetScrollCallback(m_pMainWindow, GLFWEventHandler::onGLFWScrollCallback);
     glfwSetKeyCallback(m_pMainWindow, GLFWEventHandler::onGLFWKeyCallback);
     glfwSetWindowSizeCallback(m_pMainWindow, GLFWEventHandler::onGLFWWindowSizeCallback);
-
-    glfwSwapInterval(config.vsync ? 1 : 0);
 
     return true;
 }

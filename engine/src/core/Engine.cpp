@@ -30,6 +30,7 @@ using namespace job;
 Engine::Engine(const Config& config)
     : m_window(config.window)
     , m_eventDispatcher(config.eventDispatcher)
+    , m_vsync(config.vsync)
 {
 }
 
@@ -75,7 +76,8 @@ bool Engine::init()
 
     // Create RHI Device
     m_device = DeviceFactory::getInstance().create();
-    m_device->createSwapchain(m_window.get(), m_window->getWidth(), m_window->getHeight());
+    m_device->createSwapchain(m_window.get(), m_window->getWidth(), m_window->getHeight(),
+                              m_vsync);
 
     // Initialize Renderer
     m_renderer = std::make_unique<Renderer>(*this, m_device.get());
@@ -136,7 +138,14 @@ void Engine::draw()
 {
     m_sceneManager->collectViews(m_frameViews);
 
-    m_renderer->beginFrame();
+    // No swapchain image this frame (e.g. the window is minimized), so nothing is drawn
+    if (!m_renderer->beginFrame()) {
+#if OCF_ENABLE_IMGUI
+        // update() already started the ImGui frame
+        m_imGuiLayer->endFrame();
+#endif
+        return;
+    }
 
     for (auto view : m_frameViews) {
         m_renderer->render(view);

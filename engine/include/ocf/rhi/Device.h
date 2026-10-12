@@ -131,7 +131,8 @@ public:
 
     virtual PipelineHandle createPipeline(const PipelineState& pipeline) = 0;
 
-    virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) = 0;
+    virtual SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height,
+                                            bool vsync) = 0;
 
     virtual TextureHandle createDepthBuffer(uint32_t width, uint32_t height) = 0;
 
@@ -180,7 +181,8 @@ public:
     // @TODO
     virtual uint32_t getCurrentFrameIndex() = 0;
 
-    virtual void beginFrame() = 0;
+    /** @return false if the frame cannot be rendered (no swapchain image was acquired) */
+    virtual bool beginFrame() = 0;
 
     virtual void endFrame() = 0;
 

@@ -18,6 +18,9 @@ set(SRCS
 # ==================================================================================================
 add_executable(${TARGET} ${HDRS} ${SRCS})
 
+# The AMD driver disables VSync for an executable named sandbox.exe (a per-application profile)
+set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ocf_sandbox)
+
 target_link_libraries(${TARGET} PRIVATE ocfengine)
 
 # ==================================================================================================
