@@ -29,8 +29,8 @@ struct SequenceInfo {
 SequenceInfo getSequenceInfo(SequenceType type)
 {
     switch (type) {
-    case SequenceType::Volume: return {"音量 (0-15)", "空: 常に15", MAX_VOLUME};
-    default:                   return {"デューティ (0-3)", "空: 常に0 (12.5%)", 3};
+    case SequenceType::Volume: return {"Volume (0-15)", "Empty: always 15", MAX_VOLUME};
+    default:                   return {"Duty (0-3)", "Empty: always 0 (12.5%)", 3};
     }
 }
 
@@ -55,18 +55,18 @@ void removeInstrument(Song& song, int index)
 
 void InstrumentEditor::draw(EditorState& state, TrackerAudio& audio)
 {
-    if (ImGui::Begin("インストゥルメント")) {
+    if (ImGui::Begin("Instruments")) {
         drawList(state);
         ImGui::Separator();
 
         const uint8_t current = state.getCurrentInstrument();
         if (current == VALUE_NONE) {
-            ImGui::TextDisabled("インストゥルメントがありません");
+            ImGui::TextDisabled("No instruments");
         }
         else {
             syncText(state);
             Instrument& instrument = state.song.instruments[current];
-            if (ImGui::InputText("名前", &instrument.name)) {
+            if (ImGui::InputText("Name", &instrument.name)) {
                 state.markModified();
             }
             for (size_t type = 0; type < SEQUENCE_TYPE_COUNT; type++) {
@@ -74,14 +74,14 @@ void InstrumentEditor::draw(EditorState& state, TrackerAudio& audio)
             }
 
             ImGui::Spacing();
-            ImGui::Button("試聴 (C-4)");
+            ImGui::Button("Preview (C-4)");
             if (ImGui::IsItemActivated()) {
                 audio.playNote(PREVIEW_CHANNEL, PREVIEW_NOTE, current);
             }
             if (ImGui::IsItemDeactivated()) {
                 audio.stopNote(PREVIEW_CHANNEL);
             }
-            ImGui::SetItemTooltip("押している間、Pulse 1 で鳴らします");
+            ImGui::SetItemTooltip("Plays on Pulse 1 while held");
         }
     }
     ImGui::End();
@@ -93,7 +93,7 @@ void InstrumentEditor::drawList(EditorState& state)
     const uint8_t current = state.getCurrentInstrument();
 
     ImGui::BeginDisabled(instruments.size() >= MAX_INSTRUMENTS);
-    if (ImGui::Button("追加")) {
+    if (ImGui::Button("Add")) {
         Instrument instrument;
         instrument.name = "Instrument";
         instruments.push_back(instrument);
@@ -102,7 +102,7 @@ void InstrumentEditor::drawList(EditorState& state)
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(current == VALUE_NONE);
-    if (ImGui::Button("複製")) {
+    if (ImGui::Button("Duplicate")) {
         Instrument copy = instruments[current];
         instruments.push_back(std::move(copy));
         state.currentInstrument = static_cast<int>(instruments.size()) - 1;
@@ -113,7 +113,7 @@ void InstrumentEditor::drawList(EditorState& state)
 
     ImGui::SameLine();
     ImGui::BeginDisabled(current == VALUE_NONE);
-    if (ImGui::Button("削除")) {
+    if (ImGui::Button("Remove")) {
         removeInstrument(state.song, current);
         state.currentInstrument =
             std::min(state.currentInstrument, static_cast<int>(instruments.size()) - 1);
@@ -121,7 +121,7 @@ void InstrumentEditor::drawList(EditorState& state)
         state.markModified();
     }
     ImGui::EndDisabled();
-    ImGui::SetItemTooltip("パターン中の番号も詰め直します");
+    ImGui::SetItemTooltip("Also renumbers the instruments used in the patterns");
 
     const ImVec2 size(-FLT_MIN, 6.0f * ImGui::GetTextLineHeightWithSpacing());
     if (ImGui::BeginListBox("##instruments", size)) {
@@ -144,7 +144,7 @@ void InstrumentEditor::drawSequence(EditorState& state, Instrument& instrument, 
     ImGui::SeparatorText(info.label);
 
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::InputTextWithHint("##mml", "例: 15 12 | 10 8 / 4 0", &m_mmlText[index])) {
+    if (ImGui::InputTextWithHint("##mml", "e.g. 15 12 | 10 8 / 4 0", &m_mmlText[index])) {
         std::optional<Sequence> sequence = sequenceFromMml(m_mmlText[index]);
         m_mmlValid[index] = sequence.has_value();
         if (sequence) {
@@ -155,9 +155,9 @@ void InstrumentEditor::drawSequence(EditorState& state, Instrument& instrument, 
             state.markModified();
         }
     }
-    ImGui::SetItemTooltip("1tickごとの値。| の後ろがループ、/ の後ろがリリース点");
+    ImGui::SetItemTooltip("One value per tick. The loop point follows |, the release point follows /");
     if (!m_mmlValid[index]) {
-        ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "書式が正しくありません");
+        ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Invalid sequence");
     }
 
     const Sequence& sequence = instrument.getSequence(type);
@@ -172,7 +172,7 @@ void InstrumentEditor::drawSequence(EditorState& state, Instrument& instrument, 
             sequence.loopPoint >= 0 ? std::to_string(sequence.loopPoint) : std::string("-");
         const std::string release =
             sequence.releasePoint >= 0 ? std::to_string(sequence.releasePoint) : std::string("-");
-        ImGui::TextDisabled("長さ: %zu  ループ: %s  リリース: %s", sequence.values.size(),
+        ImGui::TextDisabled("Length: %zu  Loop: %s  Release: %s", sequence.values.size(),
                             loop.c_str(), release.c_str());
     }
     ImGui::PopID();

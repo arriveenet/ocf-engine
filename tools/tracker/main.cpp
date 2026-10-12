@@ -24,7 +24,8 @@ int main()
         [](Engine& engine) {
             ImFont* monospaceFont = nullptr;
             engine.configureImGui([&monospaceFont](ImGuiIO& io) {
-                // The built-in ImGui font has no Japanese glyphs
+                // The UI is in English, but song titles and instrument names may be in
+                // Japanese, which the built-in ImGui font has no glyphs for
                 const std::string fontPath =
                     FileSystem::getInstance()->getAssetFullPath("fonts/NotoSansJP-Regular.ttf");
                 if (!fontPath.empty()) {

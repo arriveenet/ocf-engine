@@ -21,7 +21,7 @@ constexpr float LEFT_PANEL_WIDTH = 340.0f;
 constexpr float SONG_WINDOW_HEIGHT = 215.0f;
 constexpr float FRAME_WINDOW_HEIGHT = 210.0f;
 
-constexpr const char* CONFIRM_POPUP = "確認";
+constexpr const char* CONFIRM_POPUP = "Confirm";
 
 struct KeyHelp {
     const char* keys;
@@ -29,24 +29,24 @@ struct KeyHelp {
 };
 
 constexpr KeyHelp KEY_HELP[] = {
-    {"Z S X D C V G B H N J M , L .", "ノート入力（現在のオクターブ）"},
-    {"Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P", "ノート入力（1オクターブ上）"},
-    {"1", "ノートオフ (---)"},
-    {"-", "ノートリリース (===)"},
-    {"0-9 A-F", "インストゥルメント・音量・エフェクト値の入力（16進）"},
-    {"F B D C", "エフェクトの種類（エフェクト列）"},
-    {"Delete", "カーソル位置を消去"},
-    {"矢印キー", "カーソル移動"},
-    {"PageUp / PageDown", "16行移動"},
-    {"Home / End", "先頭 / 末尾の行"},
-    {"Tab / Shift+Tab", "次 / 前のチャンネル"},
-    {"Space", "編集モードの切り替え（オフのときは試聴のみ）"},
-    {"テンキー / *", "オクターブを下げる / 上げる"},
-    {"Enter", "再生 / 停止（カーソルのフレームから）"},
-    {"F5", "最初から再生"},
-    {"F6", "カーソルのフレームの先頭から再生"},
-    {"F7", "カーソル位置から再生"},
-    {"F8", "停止"},
+    {"Z S X D C V G B H N J M , L . ; /", "Note (current octave)"},
+    {"Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P", "Note (one octave up)"},
+    {"1", "Note off (---)"},
+    {"-", "Note release (===)"},
+    {"0-9 A-F", "Instrument, volume and effect parameter (hexadecimal)"},
+    {"F B D C", "Effect (effect column)"},
+    {"Delete", "Clear the field under the cursor"},
+    {"Arrow keys", "Move the cursor"},
+    {"PageUp / PageDown", "Move 16 rows"},
+    {"Home / End", "First / last row"},
+    {"Tab / Shift+Tab", "Next / previous channel"},
+    {"Space", "Toggle edit mode (when off, note keys only preview)"},
+    {"Keypad / *", "Octave down / up"},
+    {"Enter", "Play from the cursor's frame / stop"},
+    {"F5", "Play from the start"},
+    {"F6", "Play from the start of the cursor's frame"},
+    {"F7", "Play from the cursor"},
+    {"F8", "Stop"},
 };
 
 } // namespace
@@ -155,52 +155,52 @@ void TrackerScene::drawMenuBar()
         return;
     }
 
-    if (ImGui::BeginMenu("ファイル")) {
-        if (ImGui::MenuItem("新規")) {
+    if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("New")) {
             requestAction(PendingAction::NewSong);
         }
-        if (ImGui::MenuItem("デモ曲を開く")) {
+        if (ImGui::MenuItem("Open Demo Song")) {
             requestAction(PendingAction::DemoSong);
         }
         ImGui::Separator();
         // Waiting for the JSON serializer (docs/tracker-format.md)
-        for (const char* label : {"開く...", "保存", "名前を付けて保存..."}) {
+        for (const char* label : {"Open...", "Save", "Save As..."}) {
             ImGui::MenuItem(label, nullptr, false, false);
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-                ImGui::SetTooltip("JSONの読み書きはまだ実装されていません");
+                ImGui::SetTooltip("Reading and writing JSON is not implemented yet");
             }
         }
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("再生")) {
-        if (ImGui::MenuItem("最初から再生", "F5")) {
+    if (ImGui::BeginMenu("Playback")) {
+        if (ImGui::MenuItem("Play from Start", "F5")) {
             playFromStart();
         }
-        if (ImGui::MenuItem("フレームの先頭から再生", "F6")) {
+        if (ImGui::MenuItem("Play from Frame", "F6")) {
             playFromFrame();
         }
-        if (ImGui::MenuItem("カーソル位置から再生", "F7")) {
+        if (ImGui::MenuItem("Play from Cursor", "F7")) {
             playFromRow();
         }
-        if (ImGui::MenuItem("停止", "F8")) {
+        if (ImGui::MenuItem("Stop", "F8")) {
             stop();
         }
         ImGui::Separator();
-        ImGui::MenuItem("再生位置に追従", nullptr, &m_state.followPlayback);
+        ImGui::MenuItem("Follow Playback", nullptr, &m_state.followPlayback);
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("ヘルプ")) {
-        ImGui::MenuItem("キー操作", nullptr, &m_showHelp);
+    if (ImGui::BeginMenu("Help")) {
+        ImGui::MenuItem("Keyboard Shortcuts", nullptr, &m_showHelp);
         ImGui::EndMenu();
     }
 
     const std::string status =
         m_state.playback.playing
-            ? std::format("再生中  フレーム {:02X}  行 {:02X}", m_state.playback.frame,
+            ? std::format("Playing  Frame {:02X}  Row {:02X}", m_state.playback.frame,
                           m_state.playback.row)
-            : std::string("停止中");
+            : std::string("Stopped");
     const float statusWidth = ImGui::CalcTextSize(status.c_str()).x;
     ImGui::SameLine(ImGui::GetWindowWidth() - statusWidth - ImGui::GetStyle().ItemSpacing.x * 2);
     ImGui::TextUnformatted(status.c_str());
@@ -210,45 +210,45 @@ void TrackerScene::drawMenuBar()
 
 void TrackerScene::drawSongWindow()
 {
-    if (ImGui::Begin("曲")) {
+    if (ImGui::Begin("Song")) {
         Song& song = m_state.song;
-        if (ImGui::InputText("タイトル", &song.title)) {
+        if (ImGui::InputText("Title", &song.title)) {
             m_state.markModified();
         }
-        if (ImGui::InputText("作者", &song.author)) {
+        if (ImGui::InputText("Author", &song.author)) {
             m_state.markModified();
         }
 
         int speed = song.speed;
-        if (ImGui::InputInt("スピード", &speed)) {
+        if (ImGui::InputInt("Speed", &speed)) {
             song.speed = static_cast<uint8_t>(std::clamp<int>(speed, MIN_SPEED, MAX_SPEED));
             m_state.markModified();
         }
-        ImGui::SetItemTooltip("1行あたりのtick数（%d-%d）。Fxx の 01-1F でも変わります", MIN_SPEED,
+        ImGui::SetItemTooltip("Ticks per row (%d-%d). Also set by Fxx with 01-1F", MIN_SPEED,
                               MAX_SPEED);
 
         int tempo = song.tempo;
-        if (ImGui::InputInt("テンポ", &tempo)) {
+        if (ImGui::InputInt("Tempo", &tempo)) {
             song.tempo = static_cast<uint8_t>(std::clamp<int>(tempo, MIN_TEMPO, MAX_TEMPO));
             m_state.markModified();
         }
-        ImGui::SetItemTooltip("%d-%d。Fxx の 20-FF でも変わります", MIN_TEMPO, MAX_TEMPO);
+        ImGui::SetItemTooltip("%d-%d. Also set by Fxx with 20-FF", MIN_TEMPO, MAX_TEMPO);
 
         // Applied on Enter, since fewer rows remove the rows beyond the end
         if (!m_editingRows) {
             m_rowsInput = song.rowsPerPattern;
         }
-        if (ImGui::InputInt("行数", &m_rowsInput, 1, 16, ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (ImGui::InputInt("Rows", &m_rowsInput, 1, 16, ImGuiInputTextFlags_EnterReturnsTrue)) {
             song.setRowsPerPattern(
                 static_cast<uint16_t>(std::clamp(m_rowsInput, 1, static_cast<int>(MAX_ROWS))));
             m_state.clampCursor();
             m_state.markModified();
         }
         m_editingRows = ImGui::IsItemActive();
-        ImGui::SetItemTooltip("Enterで確定します。減らすと、範囲外の行は消えます");
+        ImGui::SetItemTooltip("Applied with Enter. Fewer rows remove the rows beyond the end");
 
         ImGui::Separator();
-        ImGui::TextDisabled("フレーム: %zu  インストゥルメント: %zu", song.frames.size(),
+        ImGui::TextDisabled("Frames: %zu  Instruments: %zu", song.frames.size(),
                             song.instruments.size());
     }
     ImGui::End();
@@ -262,14 +262,14 @@ void TrackerScene::drawConfirmPopup()
     }
 
     if (ImGui::BeginPopupModal(CONFIRM_POPUP, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextUnformatted("現在の曲の変更は失われます。よろしいですか？");
+        ImGui::TextUnformatted("The changes to the current song will be lost. Continue?");
         if (ImGui::Button("OK", ImVec2(120.0f, 0.0f))) {
             runAction(m_pendingAction);
             m_pendingAction = PendingAction::None;
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
-        if (ImGui::Button("キャンセル", ImVec2(120.0f, 0.0f))) {
+        if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f))) {
             m_pendingAction = PendingAction::None;
             ImGui::CloseCurrentPopup();
         }
@@ -284,10 +284,10 @@ void TrackerScene::drawHelpWindow()
     }
 
     ImGui::SetNextWindowSize(ImVec2(560.0f, 0.0f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("キー操作", &m_showHelp)) {
+    if (ImGui::Begin("Keyboard Shortcuts", &m_showHelp)) {
         if (ImGui::BeginTable("##keys", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
-            ImGui::TableSetupColumn("キー", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("操作");
+            ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Action");
             ImGui::TableHeadersRow();
             for (const KeyHelp& help : KEY_HELP) {
                 ImGui::TableNextRow();
@@ -298,7 +298,7 @@ void TrackerScene::drawHelpWindow()
             }
             ImGui::EndTable();
         }
-        ImGui::TextDisabled("チャンネル名のクリックでミュート、右クリックでエフェクト列の数を変更");
+        ImGui::TextDisabled("Click a channel name to mute it. Right-click it to change the number of effect columns.");
     }
     ImGui::End();
 }

@@ -141,7 +141,7 @@ void PatternEditor::draw(EditorState& state, TrackerAudio& audio, ImFont* font)
         m_scrollToCursor = true;
     }
 
-    if (ImGui::Begin("パターン")) {
+    if (ImGui::Begin("Pattern")) {
         drawToolbar(state, audio);
         ImGui::Separator();
 
@@ -154,35 +154,35 @@ void PatternEditor::draw(EditorState& state, TrackerAudio& audio, ImFont* font)
 
 void PatternEditor::drawToolbar(EditorState& state, TrackerAudio& audio)
 {
-    if (ImGui::Button("再生")) {
+    if (ImGui::Button("Play")) {
         audio.playSong(0, 0);
     }
-    ImGui::SetItemTooltip("最初から再生 (F5)");
+    ImGui::SetItemTooltip("Play from the start (F5)");
     ImGui::SameLine();
-    if (ImGui::Button("フレームから再生")) {
+    if (ImGui::Button("Play Frame")) {
         audio.playSong(state.cursor.frame, 0);
     }
-    ImGui::SetItemTooltip("カーソルのフレームの先頭から再生 (F6 / Enter)");
+    ImGui::SetItemTooltip("Play from the start of the cursor's frame (F6 / Enter)");
     ImGui::SameLine();
-    if (ImGui::Button("停止")) {
+    if (ImGui::Button("Stop")) {
         audio.stopSong();
     }
-    ImGui::SetItemTooltip("停止 (F8)");
+    ImGui::SetItemTooltip("Stop (F8)");
 
     ImGui::SameLine(0.0f, 24.0f);
     ImGui::SetNextItemWidth(90.0f);
-    ImGui::SliderInt("オクターブ", &state.octave, 0, MAX_OCTAVE);
-    ImGui::SetItemTooltip("テンキーの / と * でも変更できます");
+    ImGui::SliderInt("Octave", &state.octave, 0, MAX_OCTAVE);
+    ImGui::SetItemTooltip("Also changed with / and * on the keypad");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(90.0f);
-    ImGui::SliderInt("ステップ", &state.editStep, 0, MAX_EDIT_STEP);
-    ImGui::SetItemTooltip("入力後にカーソルを進める行数");
+    ImGui::SliderInt("Step", &state.editStep, 0, MAX_EDIT_STEP);
+    ImGui::SetItemTooltip("Rows the cursor moves after an entry");
     ImGui::SameLine();
-    ImGui::Checkbox("編集モード", &state.editMode);
-    ImGui::SetItemTooltip("オフのときは試聴だけ行います (Space)");
+    ImGui::Checkbox("Edit Mode", &state.editMode);
+    ImGui::SetItemTooltip("When off, note keys only preview (Space)");
     ImGui::SameLine();
-    ImGui::Checkbox("追従", &state.followPlayback);
-    ImGui::SetItemTooltip("再生位置にカーソルを合わせます");
+    ImGui::Checkbox("Follow", &state.followPlayback);
+    ImGui::SetItemTooltip("Moves the cursor with the playback position");
 }
 
 void PatternEditor::drawGrid(EditorState& state, TrackerAudio& audio)
@@ -264,19 +264,19 @@ void PatternEditor::drawChannelHeader(EditorState& state, TrackerAudio& audio, i
         toggleMute(state, audio, channel);
     }
     if (type == ChannelType::Dpcm) {
-        ImGui::SetItemTooltip("DPCMはまだ再生されません\nクリック: ミュート / 右クリック: メニュー");
+        ImGui::SetItemTooltip("DPCM is not played yet\nClick: mute / Right-click: menu");
     }
     else {
-        ImGui::SetItemTooltip("クリック: ミュート / 右クリック: メニュー");
+        ImGui::SetItemTooltip("Click: mute / Right-click: menu");
     }
 
     if (ImGui::BeginPopupContextItem("##header_menu")) {
-        if (ImGui::MenuItem("ミュート", nullptr, state.muted[channel])) {
+        if (ImGui::MenuItem("Mute", nullptr, state.muted[channel])) {
             toggleMute(state, audio, channel);
         }
         int columns = state.song.effectColumns[channel];
         ImGui::SetNextItemWidth(120.0f);
-        if (ImGui::SliderInt("エフェクト列", &columns, 1, static_cast<int>(MAX_EFFECT_COLUMNS))) {
+        if (ImGui::SliderInt("Effect Columns", &columns, 1, static_cast<int>(MAX_EFFECT_COLUMNS))) {
             state.song.effectColumns[channel] = static_cast<uint8_t>(columns);
             state.clampCursor();
             state.markModified();

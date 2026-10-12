@@ -108,7 +108,7 @@ void changePattern(EditorState& state, int delta)
 void FrameEditor::draw(EditorState& state)
 {
     state.clampCursor();
-    if (ImGui::Begin("フレーム")) {
+    if (ImGui::Begin("Frames")) {
         drawButtons(state);
         drawTable(state);
     }
@@ -117,23 +117,23 @@ void FrameEditor::draw(EditorState& state)
 
 void FrameEditor::drawButtons(EditorState& state)
 {
-    if (ImGui::Button("追加")) {
+    if (ImGui::Button("Add")) {
         addFrame(state);
     }
-    ImGui::SetItemTooltip("新しい空のパターンを使うフレームを、選択中のフレームの後に追加します");
+    ImGui::SetItemTooltip("Adds a frame of new, empty patterns after the selected frame");
     ImGui::SameLine();
-    if (ImGui::Button("複製")) {
+    if (ImGui::Button("Duplicate")) {
         duplicateFrame(state);
     }
-    ImGui::SetItemTooltip("同じパターンを使うフレームを追加します");
+    ImGui::SetItemTooltip("Adds a frame that plays the same patterns");
     ImGui::SameLine();
-    if (ImGui::Button("クローン")) {
+    if (ImGui::Button("Clone")) {
         cloneFrame(state);
     }
-    ImGui::SetItemTooltip("パターンをコピーして、新しいパターンを使うフレームを追加します");
+    ImGui::SetItemTooltip("Adds a frame that plays copies of the patterns");
     ImGui::SameLine();
     ImGui::BeginDisabled(state.song.frames.size() <= 1);
-    if (ImGui::Button("削除")) {
+    if (ImGui::Button("Remove")) {
         removeFrame(state);
     }
     ImGui::EndDisabled();
@@ -146,7 +146,7 @@ void FrameEditor::drawButtons(EditorState& state)
         moveFrame(state, 1);
     }
 
-    ImGui::Text("パターン番号 (%s):", SHORT_CHANNEL_NAMES[state.cursor.channel]);
+    ImGui::Text("Pattern (%s):", SHORT_CHANNEL_NAMES[state.cursor.channel]);
     ImGui::SameLine();
     if (ImGui::SmallButton("-")) {
         changePattern(state, -1);
