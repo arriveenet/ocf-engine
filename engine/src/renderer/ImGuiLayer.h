@@ -41,6 +41,9 @@ public:
     /** @brief End the ImGui frame and record its draw commands into the current pass. */
     void render(rhi::CommandBuffer& commandBuffer);
 
+    /** @brief End the ImGui frame without drawing it, for a frame that is not rendered. */
+    void endFrame();
+
 private:
     rhi::VulkanDevice& m_device;
     Subscription m_keyboardSubscription;

@@ -313,6 +313,17 @@ constexpr const char* getPhysicalDeviceTypeString(VkPhysicalDeviceType type)
     }
 }
 
+constexpr const char* getPresentModeString(VkPresentModeKHR mode)
+{
+    switch (mode) {
+    case VK_PRESENT_MODE_IMMEDIATE_KHR:     return "IMMEDIATE";
+    case VK_PRESENT_MODE_MAILBOX_KHR:       return "MAILBOX";
+    case VK_PRESENT_MODE_FIFO_KHR:          return "FIFO";
+    case VK_PRESENT_MODE_FIFO_RELAXED_KHR:  return "FIFO_RELAXED";
+    default:                                return "Unknown";
+    }
+}
+
 } // namespace VulkanUtility
 
 } // namespace rhi

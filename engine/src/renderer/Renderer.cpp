@@ -51,9 +51,11 @@ bool Renderer::init()
     return true;
 }
 
-void Renderer::beginFrame()
+bool Renderer::beginFrame()
 {
-    m_device->beginFrame();
+    if (!m_device->beginFrame()) {
+        return false;
+    }
 
     m_viewCount = 0;
     m_passCount = 0;
@@ -65,6 +67,7 @@ void Renderer::beginFrame()
                                       rhi::ResourceState::ColorAttachment);
     m_commandBuffer->transitionLayout(m_depthTexture, rhi::ResourceState::Undefined,
                                       rhi::ResourceState::DepthStencilAttachment);
+    return true;
 }
 
 void Renderer::endFrame()

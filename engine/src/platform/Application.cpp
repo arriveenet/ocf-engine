@@ -34,7 +34,8 @@ void Application::run(const Config& config, SetupCallback setupCallback,
 
     Engine::Config engineConfig{
         .window = m_window,
-        .eventDispatcher = m_eventDispatcher
+        .eventDispatcher = m_eventDispatcher,
+        .vsync = config.vsync
     };
 
     m_engine = Engine::create(engineConfig);

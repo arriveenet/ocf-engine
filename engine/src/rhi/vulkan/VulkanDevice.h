@@ -63,7 +63,8 @@ public:
 
     PipelineHandle createPipeline(const PipelineState& pipeline) override;
 
-    SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height) override;
+    SwapchainHandle createSwapchain(Window* window, uint32_t width, uint32_t height,
+                                    bool vsync) override;
 
     TextureHandle createDepthBuffer(uint32_t width, uint32_t height) override;
 
@@ -110,7 +111,7 @@ public:
 
     uint32_t getCurrentFrameIndex() override  { return m_currentFrameIndex; }
 
-    void beginFrame() override;
+    bool beginFrame() override;
 
     void endFrame() override;
 

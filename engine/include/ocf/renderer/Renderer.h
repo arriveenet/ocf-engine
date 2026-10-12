@@ -57,8 +57,11 @@ public:
 
     bool init();
 
-    /** @brief Start recording a frame. Call render() for each view, then endFrame(). */
-    void beginFrame();
+    /**
+     * @brief Start recording a frame. Call render() for each view, then endFrame().
+     * @return false if no swapchain image could be acquired; the frame must then be skipped
+     */
+    bool beginFrame();
 
     /** @brief Finish recording and present the frame. */
     void endFrame();

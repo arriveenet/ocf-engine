@@ -50,6 +50,7 @@ public:
     struct Config {
         std::shared_ptr<Window> window; ///< Shared pointer to the application window
         EventDispatcher& eventDispatcher; ///< Reference to the event dispatcher
+        bool vsync = true; ///< Synchronize presentation with the display refresh
     };
 
     /**
@@ -199,6 +200,7 @@ private:
     std::vector<View*> m_frameViews;       //!< Views drawn this frame, in drawing order
     FrameCounter m_frameCounter;           //!< Frame counter for tracking FPS
     EventDispatcher& m_eventDispatcher;    //!< Reference to the event dispatcher
+    bool m_vsync = true;                   //!< Synchronize presentation with the display refresh
 };
 
 } // namespace ocf

@@ -431,7 +431,8 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     return Handle<RHIPipeline>{handle.getId()};
 }
 
-SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height)
+SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height,
+                                              bool vsync)
 {
     Handle<VulkanSwapchain> handle = initHandle<VulkanSwapchain>(*this);
     VulkanSwapchain* swapchain = handle_cast<VulkanSwapchain*>(handle);
@@ -447,7 +448,7 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
         }
     }
 
-    swapchain->create(width, height);
+    swapchain->create(width, height, vsync);
 
     destroyFrameContexts();
     createFrameContexts();
@@ -910,14 +911,16 @@ std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
     return frameContext->commandBuffer;
 }
 
-void VulkanDevice::beginFrame()
+bool VulkanDevice::beginFrame()
 {
     if (acquireNextImage().isErr()) {
+        // Avoid spinning while no image can be acquired (e.g. the window is minimized)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        return;
+        return false;
     }
 
     m_resourceUploader->submitAndWait();
+    return true;
 }
 
 void VulkanDevice::endFrame()
@@ -1062,7 +1065,8 @@ VulkanResult VulkanDevice::acquireNextImage()
         assert(error.result != VK_ERROR_DEVICE_LOST);
     }
 
-    return VulkanResult::Ok();
+    // On failure the fence stays signaled, so the frame can be retried
+    return result;
 }
 
 void VulkanDevice::submitPresent()
