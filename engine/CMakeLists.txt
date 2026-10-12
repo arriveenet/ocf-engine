@@ -131,6 +131,7 @@ target_link_libraries(${TARGET} PRIVATE miniaudio)
 target_link_libraries(${TARGET} PRIVATE stb)
 target_link_libraries(${TARGET} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET} PRIVATE xxHash)
+target_link_libraries(${TARGET} PRIVATE yyjson)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
 # Always linked, so that games can use ImGui without checking OCF_ENABLE_IMGUI

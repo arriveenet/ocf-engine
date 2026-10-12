@@ -25,6 +25,7 @@ add_executable(test_${TARGET}
     test_text_layout.cpp
     test_text_utility.cpp
     test_song_player.cpp
+    test_song_serializer.cpp
     test_tracker_notation.cpp
     test_tracker_song.cpp
 )

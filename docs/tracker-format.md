@@ -3,11 +3,10 @@
 ## 概要
 
 トラッカー（`tools/tracker`）で作る楽曲（`ocf::audio::tracker::Song`）を保存するためのJSONフォーマットです。
-拡張子は `.json` とし、文字コードはUTF-8（BOMなし）です。
+拡張子は `.json` とし、文字コードはUTF-8（BOMなし）です。読み込みでは、BOMが付いていても受け付けます。
 
-> **状態:** このドキュメントはフォーマットの設計です。読み書きの実装（シリアライザ）はまだありません。
-> JSONライブラリ（nlohmann/json または rapidjson）が決まってから実装します。
-> ノートやエフェクトなどの文字列表記は、ライブラリに依存しない形で実装済みです（`ocf/audio/tracker/SongNotation.h`）。
+読み書きは `ocf/audio/tracker/SongSerializer.h` に実装しています（[API](#api)）。JSONの解析と文字列のエスケープには [yyjson](https://github.com/ibireme/yyjson) を使います。
+ノートやエフェクトなどの文字列表記は `ocf/audio/tracker/SongNotation.h` にあり、エディタと共通です。
 
 ### 方針
 
@@ -58,11 +57,11 @@
 
 ```json
 "channels": [
-  { "type": "pulse1",   "effectColumns": 1 },
-  { "type": "pulse2",   "effectColumns": 1 },
+  { "type": "pulse1", "effectColumns": 1 },
+  { "type": "pulse2", "effectColumns": 1 },
   { "type": "triangle", "effectColumns": 1 },
-  { "type": "noise",    "effectColumns": 1 },
-  { "type": "dpcm",     "effectColumns": 1 }
+  { "type": "noise", "effectColumns": 1 },
+  { "type": "dpcm", "effectColumns": 1 }
 ]
 ```
 
@@ -86,7 +85,7 @@
     "name": "Lead",
     "sequences": {
       "volume": { "values": [15, 13, 11, 10, 9], "loop": 4, "release": -1 },
-      "duty":   { "values": [2] }
+      "duty": { "values": [2], "loop": -1, "release": -1 }
     }
   }
 ]
@@ -114,7 +113,7 @@
 
 | キー | 型 | 必須 | 内容 |
 | --- | --- | --- | --- |
-| `values` | 整数の配列 | ○ | 1tickごとの値（-128〜127、要素数は256以下） |
+| `values` | 整数の配列 | ○ | 1tickごとの値。範囲はシーケンスの種類ごと（上の表）。要素数は256以下 |
 | `loop` | 整数 | | ループ点のインデックス。`-1` または省略でなし |
 | `release` | 整数 | | リリース点のインデックス。`-1` または省略でなし |
 
@@ -152,9 +151,9 @@
     "channel": 0,
     "index": 0,
     "rows": [
-      { "row": 0,  "note": "C-4", "instrument": 0, "volume": 15, "effects": ["F06"] },
-      { "row": 4,  "note": "E-4" },
-      { "row": 8,  "note": "---" },
+      { "row": 0, "note": "C-4", "instrument": 0, "volume": 15, "effects": ["F06"] },
+      { "row": 4, "note": "E-4" },
+      { "row": 8, "note": "---" },
       { "row": 12, "effects": ["...", "B01"] }
     ]
   }
@@ -202,7 +201,14 @@
 
 ## 読み込み時の検証
 
-次の場合は読み込みをエラーにします。エラーメッセージには、問題の場所（JSONポインタ形式。例: `/patterns/3/rows/7/note`）を含めます。
+次の場合は読み込みをエラーにします。エラーメッセージは、問題の場所（JSONポインタ形式）で始まります。
+
+```
+/patterns/3/rows/7/note: invalid note "H-4"
+/speed: must be between 1 and 31
+/instruments/1/index: duplicate instrument 0
+invalid JSON at line 12, column 5: unexpected character, expected a string key
+```
 
 - JSONとして不正
 - `format` が `"ocf-tracker-song"` でない
@@ -214,12 +220,25 @@
 
 範囲外の値を丸めて読み込むことはしません。手で編集したファイルの誤りに気付けるようにするためです。
 
-## 実装予定のAPI
+## 書き出しのレイアウト
 
-実装はまだありません。JSONライブラリを決めたあと、次の形で追加する予定です。
+差分を見やすくするため、書き出す内容とレイアウトは常に同じになるようにしています。
+
+- キーは、この文書の表の順に並べます。`title` `author` `speed` `tempo` は、既定値でも省略せずに書きます。シーケンスの `loop` `release` も、`-1` のときも書きます。
+- インデントは2スペースです。
+- 次の値は1行に書きます。それ以外は、1要素を1行に書きます。
+  - スカラー値だけを持つ配列・オブジェクト（チャンネル、フレーム、`effects`）
+  - スカラー値と「スカラー値だけの配列」を持つオブジェクト（行、シーケンス）
+- 1行に書くオブジェクトは `{ "key": value, ... }`、配列は `[1, 2, 3]` の形です。
+- 末尾は改行で終わります。
+
+書き出したものを読み込んで、もう一度書き出すと、同じ文字列になります。
+
+## API
 
 ```cpp
-// ocf/audio/tracker/SongSerializer.h
+#include <ocf/audio/tracker/SongSerializer.h>
+
 namespace ocf::audio::tracker {
 
 std::string saveSongToString(const Song& song);
@@ -231,12 +250,25 @@ Result<Song, std::string> loadSong(const std::filesystem::path& path);
 } // namespace ocf::audio::tracker
 ```
 
-- 実装は `engine/src/audio/tracker/SongSerializer.cpp` に置き、JSONライブラリはエンジンに `PRIVATE` でリンクします。公開ヘッダにはJSONライブラリの型を出しません。
-- 書き出しは、キーをこの文書の表の順に並べ、2スペースでインデントします（差分を見やすくするため）。
+- エラーは `Result` の `Err` で、[読み込み時の検証](#読み込み時の検証)のメッセージを返します。例外は使いません。
+- `saveSong()` は、親ディレクトリが無ければ作ります。いったん `<ファイル名>.tmp` に書き出してから置き換えるので、書き込みに失敗しても元のファイルは壊れません。
+- 実装は `engine/src/audio/tracker/SongSerializer.cpp` です。yyjsonはエンジンに `PRIVATE` でリンクし、公開ヘッダにはyyjsonの型を出しません。
+
+ゲームから読み込む例:
+
+```cpp
+auto result = audio::tracker::loadSong(FileSystem::getInstance()->getAssetFullPath("songs/stage1.json"));
+if (result.isErr()) {
+    OCF_LOG_ERROR("{}", result.unwrapErr());
+    return;
+}
+audioSystem.tracker_setSong(bgm, std::make_shared<const audio::tracker::Song>(std::move(result).unwrap()));
+```
 
 ## 完全な例
 
 Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲です。
+`saveSongToString()` はこの曲をこの通りの文字列で書き出します（`engine/test/test_song_serializer.cpp` で確認しています）。
 
 ```json
 {
@@ -248,11 +280,11 @@ Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲で�
   "tempo": 150,
   "rowsPerPattern": 16,
   "channels": [
-    { "type": "pulse1",   "effectColumns": 1 },
-    { "type": "pulse2",   "effectColumns": 1 },
+    { "type": "pulse1", "effectColumns": 1 },
+    { "type": "pulse2", "effectColumns": 1 },
     { "type": "triangle", "effectColumns": 1 },
-    { "type": "noise",    "effectColumns": 1 },
-    { "type": "dpcm",     "effectColumns": 1 }
+    { "type": "noise", "effectColumns": 1 },
+    { "type": "dpcm", "effectColumns": 1 }
   ],
   "instruments": [
     {
@@ -260,7 +292,7 @@ Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲で�
       "name": "Lead",
       "sequences": {
         "volume": { "values": [15, 13, 11, 10, 9, 8], "loop": -1, "release": -1 },
-        "duty":   { "values": [2], "loop": -1, "release": -1 }
+        "duty": { "values": [2], "loop": -1, "release": -1 }
       }
     },
     {
@@ -280,9 +312,9 @@ Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲で�
       "channel": 0,
       "index": 0,
       "rows": [
-        { "row": 0,  "note": "C-4", "instrument": 0 },
-        { "row": 4,  "note": "E-4" },
-        { "row": 8,  "note": "G-4" },
+        { "row": 0, "note": "C-4", "instrument": 0 },
+        { "row": 4, "note": "E-4" },
+        { "row": 8, "note": "G-4" },
         { "row": 12, "note": "---" }
       ]
     },
@@ -290,8 +322,8 @@ Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲で�
       "channel": 0,
       "index": 1,
       "rows": [
-        { "row": 0,  "note": "B-3", "instrument": 0, "volume": 12 },
-        { "row": 8,  "note": "D-4" },
+        { "row": 0, "note": "B-3", "instrument": 0, "volume": 12 },
+        { "row": 8, "note": "D-4" },
         { "row": 15, "effects": ["B00"] }
       ]
     },
