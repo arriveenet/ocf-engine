@@ -3,6 +3,7 @@
 # ==================================================================================================
 add_executable(test_${TARGET}
     test_allocator.cpp
+    test_audio_mixer.cpp
     test_audio_tracker_source.cpp
     test_event_dispatcher.cpp
     test_geometric.cpp
