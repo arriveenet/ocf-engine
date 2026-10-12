@@ -42,7 +42,7 @@ TEST(SampleSongTest, CanonInDIsValidAndCanonical)
     EXPECT_EQ(saveSongToString(result.unwrap()), json);
 }
 
-TEST(SampleSongTest, CanonInDLoopsBackToTheSecondFrame)
+TEST(SampleSongTest, CanonInDPlaysEveryFrameAndStopsAfterTheLastChord)
 {
     auto result = loadSong(CANON_IN_D);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
@@ -52,17 +52,28 @@ TEST(SampleSongTest, CanonInDLoopsBackToTheSecondFrame)
     player.setSong(song);
     player.play(0, 0);
 
-    // Seven frames: the six frames, then the jump back to the second one
-    const int ticksPerRow = 150 * song->speed / song->tempo;
-    const int ticks = 7 * song->rowsPerPattern * ticksPerRow;
     std::vector<int> frames;
-    for (int tick = 0; tick < ticks; tick++) {
+    PlaybackStatus lastPlayed;
+    for (int tick = 0; tick == 0 || player.getStatus().playing; tick++) {
+        ASSERT_LT(tick, 100000) << "the song does not stop";
         player.tick();
         const PlaybackStatus status = player.getStatus();
-        ASSERT_TRUE(status.playing);
+        if (!status.playing) {
+            break;
+        }
+        lastPlayed = status;
         if (frames.empty() || frames.back() != status.frame) {
             frames.push_back(status.frame);
         }
     }
-    EXPECT_EQ(frames, (std::vector<int>{0, 1, 2, 3, 4, 5, 2}));
+
+    std::vector<int> expectedFrames(song->frames.size());
+    for (size_t i = 0; i < expectedFrames.size(); i++) {
+        expectedFrames[i] = static_cast<int>(i);
+    }
+    EXPECT_EQ(frames, expectedFrames);
+
+    // The last frame holds the final half note (16 rows), then the song stops
+    EXPECT_EQ(lastPlayed.frame, song->frames.size() - 1);
+    EXPECT_EQ(lastPlayed.row, 15);
 }
