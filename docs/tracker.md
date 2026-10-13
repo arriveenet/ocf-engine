@@ -6,6 +6,8 @@
 エディタ本体は `tools/tracker`（実行ファイル `ocf_tracker`）で、GUIはDear ImGuiで作っています。画面の表示は英語です。
 作った曲はJSONファイルに保存し（フォーマットは [tracker-format.md](tracker-format.md)）、エンジンの `AudioSystem` からゲーム中でも再生できます。
 
+ツールの使い方は [tools/tracker/README.md](../tools/tracker/README.md) にまとめています。この文書は、主にエンジン側の構成の説明です。
+
 現在は最小構成です。対応している機能と、まだの機能は[機能一覧](#機能一覧)を参照してください。
 
 ```
