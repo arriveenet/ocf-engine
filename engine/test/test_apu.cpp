@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include <gtest/gtest.h>
 
+#include "audio/apu/Apu.h"
+#include "audio/apu/LengthCounter.h"
 #include "audio/apu/PulseChannel.h"
 #include "audio/apu/SweepUnit.h"
 #include "audio/apu/TriangleChannel.h"
@@ -48,6 +50,7 @@ bool isSilent(Channel& channel, int cycles)
 PulseChannel createPulse(uint16_t period, uint8_t sweep = 0x08)
 {
     PulseChannel pulse;
+    pulse.setLengthCounterEnabled(true);
     pulse.setRegister(0, 0xBF);  // 50% duty, length counter halted, constant volume 15
     pulse.setRegister(1, sweep); // By default disabled, negated so that low notes are not muted
     pulse.setRegister(2, period & 0xFF);
@@ -58,6 +61,7 @@ PulseChannel createPulse(uint16_t period, uint8_t sweep = 0x08)
 TriangleChannel createTriangle(uint16_t period)
 {
     TriangleChannel triangle;
+    triangle.setLengthCounterEnabled(true);
     triangle.setRegister(0, 0xFF); // Linear counter halted at its maximum
     triangle.setRegister(2, period & 0xFF);
     triangle.setRegister(3, (period >> 8) & 0x07);
@@ -165,6 +169,50 @@ TEST(ApuSweepTest, KeepsThePeriodWhenDisabledOrMuted)
     EXPECT_EQ(muted.getPeriod(), 0x600);
 }
 
+TEST(ApuLengthCounterTest, LoadsFromTheTable)
+{
+    LengthCounter counter;
+    counter.setEnabled(true);
+    counter.load(0x01); // 254 half frames
+
+    for (int i = 0; i < 253; i++) {
+        counter.clock();
+    }
+    EXPECT_TRUE(counter.isActive());
+    counter.clock();
+    EXPECT_FALSE(counter.isActive());
+}
+
+TEST(ApuLengthCounterTest, HaltStopsCounting)
+{
+    LengthCounter counter;
+    counter.setEnabled(true);
+    counter.load(0x03); // 2 half frames
+    counter.setHalt(true);
+
+    counter.clock();
+    counter.clock();
+    EXPECT_TRUE(counter.isActive());
+}
+
+TEST(ApuLengthCounterTest, IgnoresLoadsWhileDisabled)
+{
+    // Disabled at power-up
+    LengthCounter counter;
+    counter.load(0x01);
+    EXPECT_FALSE(counter.isActive());
+
+    counter.setEnabled(true);
+    counter.load(0x01);
+    EXPECT_TRUE(counter.isActive());
+
+    // Disabling clears the counter and blocks further loads
+    counter.setEnabled(false);
+    EXPECT_FALSE(counter.isActive());
+    counter.load(0x01);
+    EXPECT_FALSE(counter.isActive());
+}
+
 TEST(ApuTriangleTest, PeriodMatchesHardware)
 {
     // 32 * (t + 1) CPU cycles per period: 440.4 Hz for A-4
@@ -188,4 +236,80 @@ TEST(ApuTriangleTest, HoldsItsLevelWhenSilenced)
         triangle.clock();
         ASSERT_EQ(triangle.getOutput(), level);
     }
+}
+
+namespace {
+
+constexpr uint16_t FRAME_COUNTER = 0x4017;
+constexpr uint8_t FRAME_INTERRUPT = 0x40;
+
+void clockApu(Apu& apu, int cycles)
+{
+    for (int cycle = 0; cycle < cycles; cycle++) {
+        apu.clock();
+    }
+}
+
+} // namespace
+
+TEST(ApuFrameCounterTest, RaisesTheInterruptAtTheEndOf4StepSequence)
+{
+    Apu apu;
+    clockApu(apu, 29827);
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, 0);
+
+    clockApu(apu, 1);
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, FRAME_INTERRUPT);
+
+    // Reading the status clears it
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, 0);
+}
+
+TEST(ApuFrameCounterTest, InhibitFlagClearsAndBlocksTheInterrupt)
+{
+    Apu apu;
+    clockApu(apu, 29830);
+    apu.writeRegister(FRAME_COUNTER, 0x40);
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, 0);
+
+    clockApu(apu, 29830);
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, 0);
+}
+
+TEST(ApuFrameCounterTest, NoInterruptIn5StepMode)
+{
+    Apu apu;
+    apu.writeRegister(FRAME_COUNTER, 0x80);
+    clockApu(apu, 37282 * 2);
+    EXPECT_EQ(apu.readStatusRegister() & FRAME_INTERRUPT, 0);
+}
+
+TEST(ApuFrameCounterTest, Writing5StepModeClocksAHalfFrame)
+{
+    Apu apu;
+    apu.writeStatusRegister(0x01);
+    apu.writeRegister(0x4000, 0x00);
+    apu.writeRegister(0x4003, 0x18); // Length 2
+
+    apu.writeRegister(FRAME_COUNTER, 0x80);
+    EXPECT_EQ(apu.readStatusRegister() & 0x01, 0x01);
+    apu.writeRegister(FRAME_COUNTER, 0x80);
+    EXPECT_EQ(apu.readStatusRegister() & 0x01, 0x00);
+}
+
+TEST(ApuFrameCounterTest, WritingRestartsTheSequence)
+{
+    Apu apu;
+    apu.writeStatusRegister(0x01);
+    apu.writeRegister(0x4000, 0x00);
+    apu.writeRegister(0x4003, 0x18); // Length 2
+
+    // Half frames at 14913 and 29829 cycles after the write. Without the restart, the second
+    // one would come 29829 cycles after power-up
+    clockApu(apu, 10000);
+    apu.writeRegister(FRAME_COUNTER, 0x00);
+    clockApu(apu, 29828);
+    EXPECT_EQ(apu.readStatusRegister() & 0x01, 0x01);
+    clockApu(apu, 1);
+    EXPECT_EQ(apu.readStatusRegister() & 0x01, 0x00);
 }

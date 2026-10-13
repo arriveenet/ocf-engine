@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "audio/AudioStreamBuffer.h"
 
 #include "audio/AudioUtility.h"

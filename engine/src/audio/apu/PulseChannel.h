@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "EnvelopeUnit.h"
+#include "LengthCounter.h"
 #include "SweepUnit.h"
+
 #include <stdint.h>
 
 namespace ocf::audio {
@@ -22,7 +25,7 @@ struct PulseChannel {
     void setLengthCounterEnabled(bool enabled);
 
 private:
-    uint8_t m_lengthCounter = 0;
+    LengthCounter m_lengthCounter;
 
     uint16_t m_timerCounter = 0;
     uint8_t m_dutyCycle = 0;

@@ -1,7 +1,10 @@
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "FrameSequencer.h"
+#include "NoiseChannel.h"
 #include "PulseChannel.h"
 #include "TriangleChannel.h"
+
 #include <stdint.h>
 
 namespace ocf::audio {
@@ -37,6 +40,7 @@ private:
     // Channels
     PulseChannel m_pulseChannel[2] = {PulseChannel(true), PulseChannel(false)};
     TriangleChannel m_triangleChannel;
+    NoiseChannel m_noiseChannel;
 
     friend FrameSequencer;
 };

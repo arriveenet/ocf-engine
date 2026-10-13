@@ -1,10 +1,6 @@
-﻿#include "TriangleChannel.h"
+// SPDX-License-Identifier: MIT
+#include "TriangleChannel.h"
 #include <iostream>
-
-static constexpr uint8_t LENGTH_COUNTER_TABLE[] = {
-    0x0A, 0xFE, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xA0, 0x08, 0x3C, 0x0A, 0x0E, 0x0C, 0x1A, 0x0E,
-    0x0C, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16, 0xC0, 0x18, 0x48, 0x1A, 0x10, 0x1C, 0x20, 0x1E,
-};
 
 static constexpr uint8_t TRIANGLE_TABLE[32] = {15, 14, 13, 12, 11, 10, 9,  8,  7,  6, 5,
                                                4,  3,  2,  1,  0,  0,  1,  2,  3,  4, 5,
@@ -23,7 +19,7 @@ void TriangleChannel::clock()
         m_timerCounter = m_frequency;
 
         // The sequencer only runs while both counters are non-zero
-        if (m_lengthCounter > 0 && m_linearCounter > 0) {
+        if (m_lengthCounter.isActive() && m_linearCounter > 0) {
             m_sequenceStep = (m_sequenceStep + 1) & 31; // 0–31
         }
     }
@@ -47,9 +43,7 @@ void TriangleChannel::clockFrameCounterQuarterFrame()
 
 void TriangleChannel::clockFrameCounterHalfFrame()
 {
-    if (m_lengthCounter > 0 && !m_linearControlFlag) {
-        m_lengthCounter--;
-    }
+    m_lengthCounter.clock();
 }
 
 uint8_t TriangleChannel::getOutput()
@@ -65,6 +59,9 @@ void TriangleChannel::setRegister(uint8_t registerNumber, uint8_t data)
     if (registerNumber == 0) {
         m_linearReloadValue = data & 0x7F;
         m_linearControlFlag = (data & 0x80) != 0;
+
+        // The control flag also halts the length counter
+        m_lengthCounter.setHalt(m_linearControlFlag);
     }
     // Unused
     else if (registerNumber == 1) {
@@ -82,7 +79,7 @@ void TriangleChannel::setRegister(uint8_t registerNumber, uint8_t data)
         // double freq = 1789773.0 / (32.0 * (m_frequency + 1));
         // std::cout << "Triangle Channel Frequency set to: " << freq << " Hz" << std::endl;
 
-        m_lengthCounter = LENGTH_COUNTER_TABLE[(data & 0xF8) >> 3];
+        m_lengthCounter.load((data & 0xF8) >> 3);
 
         m_linearReloadFlag = true;
     }
@@ -90,14 +87,12 @@ void TriangleChannel::setRegister(uint8_t registerNumber, uint8_t data)
 
 bool TriangleChannel::getLengthCounterOutput() const
 {
-    return m_lengthCounter > 0;
+    return m_lengthCounter.isActive();
 }
 
 void TriangleChannel::setLengthCounterEnabled(bool enabled)
 {
-    if (!enabled) {
-        m_lengthCounter = 0;
-    }
+    m_lengthCounter.setEnabled(enabled);
 }
 
 } // namespace ocf::audio

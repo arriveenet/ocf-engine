@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "audio/AudioClipBuffer.h"
 
 #include <algorithm>
