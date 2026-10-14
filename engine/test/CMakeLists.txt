@@ -6,6 +6,7 @@ add_executable(test_${TARGET}
     test_apu.cpp
     test_audio_mixer.cpp
     test_audio_tracker_source.cpp
+    test_dpcm.cpp
     test_event_dispatcher.cpp
     test_geometric.cpp
     test_imgui.cpp
