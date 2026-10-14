@@ -15,6 +15,16 @@ namespace {
 constexpr uint8_t A4 = 58;
 constexpr uint8_t C4 = 49;
 
+/** Two samples, and instrument 0 playing the second at C-4 at rate 12. */
+void addDpcmSamples(Song& song, bool loop = false)
+{
+    song.dpcmSamples.resize(2);
+    song.dpcmSamples[0].data.assign(17, 0x55);
+    song.dpcmSamples[1].data.assign(33, 0xAA);
+    song.dpcmSamples[1].restLevel = 40;
+    *song.instruments[0].findDpcmKey(C4) = DpcmKey{1, 12, loop};
+}
+
 /** Records the register writes of a SongPlayer. */
 class SongPlayerTest : public ::testing::Test {
 protected:
@@ -351,14 +361,147 @@ TEST_F(SongPlayerTest, NoiseNote)
     EXPECT_TRUE(written(0x400F));
 }
 
-TEST_F(SongPlayerTest, DpcmIsNotPlayed)
+TEST_F(SongPlayerTest, DpcmNoteStartsTheSample)
 {
-    cell(ChannelType::Dpcm, 0, 0).note = C4;
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
     start();
-    tick(3);
-    for (const auto& [address, data] : m_registers) {
-        EXPECT_TRUE(address < 0x4010 || address == 0x4015) << std::hex << address;
+    tick();
+    EXPECT_EQ(written(0x4010), 12);
+    EXPECT_EQ(written(0x4011), 40);   // The rest level of the sample
+    EXPECT_EQ(written(0x4012), 1);    // After the first sample, at 64 bytes
+    EXPECT_EQ(written(0x4013), 2);    // 33 bytes
+    EXPECT_EQ(written(0x4015), 0x1F); // Enabled last
+
+    // Nothing more until the next note
+    tick();
+    EXPECT_FALSE(written(0x4010));
+    EXPECT_FALSE(written(0x4015));
+}
+
+TEST_F(SongPlayerTest, DpcmNoteRestartsThePlayingSample)
+{
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    cell(ChannelType::Dpcm, 0, 1).note = C4;
+    start();
+    tick(7); // Row 1
+
+    // Disabled first, since enabling a playing sample does nothing
+    std::vector<uint8_t> status;
+    for (const Write& write : m_writes) {
+        if (write.address == 0x4015) {
+            status.push_back(write.data);
+        }
     }
+    EXPECT_EQ(status, (std::vector<uint8_t>{0x0F, 0x1F}));
+}
+
+TEST_F(SongPlayerTest, DpcmNoteOffStopsTheSample)
+{
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    cell(ChannelType::Dpcm, 0, 1).note = NOTE_OFF;
+    start();
+    tick();
+    EXPECT_EQ(written(0x4015), 0x1F);
+    tick(6);
+    EXPECT_EQ(written(0x4015), 0x0F);
+}
+
+TEST_F(SongPlayerTest, DpcmReleaseStopsLooping)
+{
+    addDpcmSamples(m_song, true);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    cell(ChannelType::Dpcm, 0, 1).note = NOTE_RELEASE;
+    start();
+    tick();
+    EXPECT_EQ(written(0x4010), 0x40 | 12);
+    tick(6);
+    EXPECT_EQ(written(0x4010), 12);
+    EXPECT_FALSE(written(0x4015)); // Plays on to the end of the sample
+}
+
+TEST_F(SongPlayerTest, DpcmNoteWithoutAKeyPlaysNothing)
+{
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{A4, 0, VALUE_NONE, {}};
+    start();
+    tick();
+    EXPECT_FALSE(written(0x4010));
+    EXPECT_EQ(reg(0x4015) & 0x10, 0);
+}
+
+TEST_F(SongPlayerTest, DpcmSampleBeyondTheMemoryIsNotPlayed)
+{
+    // Four samples of 4096 bytes fill the 16KB
+    m_song.dpcmSamples.resize(5);
+    for (DpcmSample& sample : m_song.dpcmSamples) {
+        sample.data.assign(DPCM_MAX_SAMPLE_BYTES, 0x55);
+    }
+    *m_song.instruments[0].findDpcmKey(C4) = DpcmKey{3, 15, false};
+    *m_song.instruments[0].findDpcmKey(A4) = DpcmKey{4, 15, false};
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    cell(ChannelType::Dpcm, 0, 1).note = A4;
+    start();
+    tick();
+    EXPECT_EQ(written(0x4012), 3 * 4096 / 64);
+    EXPECT_EQ(written(0x4015), 0x1F);
+    tick(6);
+    EXPECT_FALSE(written(0x4012));
+    EXPECT_EQ(written(0x4015), 0x0F);
+}
+
+TEST_F(SongPlayerTest, MutedDpcmDoesNotStart)
+{
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    m_player.setChannelMuted(ChannelType::Dpcm, true);
+    start();
+    tick();
+    EXPECT_FALSE(written(0x4010));
+    EXPECT_EQ(reg(0x4015) & 0x10, 0);
+}
+
+TEST_F(SongPlayerTest, StoppingStopsTheSample)
+{
+    addDpcmSamples(m_song);
+    cell(ChannelType::Dpcm, 0, 0) = Cell{C4, 0, VALUE_NONE, {}};
+    start();
+    tick();
+    m_writes.clear();
+    m_player.stop();
+    EXPECT_EQ(written(0x4015), 0x0F);
+}
+
+TEST_F(SongPlayerTest, PreviewDpcmSampleWithoutAKey)
+{
+    addDpcmSamples(m_song);
+    m_player.setSong(std::make_shared<const Song>(m_song));
+    m_player.playDpcmSample(DpcmKey{0, 7, true});
+    tick();
+    EXPECT_EQ(written(0x4010), 0x40 | 7);
+    EXPECT_EQ(written(0x4012), 0);
+    EXPECT_EQ(written(0x4015), 0x1F);
+
+    m_player.stopNote(ChannelType::Dpcm);
+    tick();
+    EXPECT_EQ(written(0x4015), 0x0F);
+
+    // A note afterwards plays its key again
+    m_player.playNote(ChannelType::Dpcm, C4, 0);
+    tick();
+    EXPECT_EQ(written(0x4010), 12);
+}
+
+TEST_F(SongPlayerTest, PreviewDpcmNote)
+{
+    addDpcmSamples(m_song);
+    m_player.setSong(std::make_shared<const Song>(m_song));
+    m_player.playNote(ChannelType::Dpcm, C4, 0);
+    tick();
+    EXPECT_EQ(written(0x4010), 12);
+    EXPECT_EQ(written(0x4015), 0x1F);
 }
 
 TEST_F(SongPlayerTest, PreviewNoteWhileStopped)

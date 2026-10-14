@@ -8,6 +8,7 @@ set(TARGET tracker)
 # ==================================================================================================
 set(HDRS
     DemoSong.h
+    DpcmEditor.h
     EditorState.h
     FileDialog.h
     FrameEditor.h
@@ -19,6 +20,7 @@ set(HDRS
 
 set(SRCS
     DemoSong.cpp
+    DpcmEditor.cpp
     FileDialog.cpp
     FrameEditor.cpp
     InstrumentEditor.cpp

@@ -12,6 +12,7 @@ namespace ocf {
 namespace audio {
 
 namespace tracker {
+struct DpcmKey;
 struct Song;
 }
 
@@ -77,6 +78,9 @@ public:
                           uint8_t instrument);
 
     void tracker_stopNote(AudioSourceHandle handle, tracker::ChannelType channel);
+
+    /** Plays a DPCM sample of the song without an instrument, for previews. */
+    void tracker_playDpcmSample(AudioSourceHandle handle, const tracker::DpcmKey& key);
 
     void tracker_setChannelMuted(AudioSourceHandle handle, tracker::ChannelType channel,
                                  bool muted);

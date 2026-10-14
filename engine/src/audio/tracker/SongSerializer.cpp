@@ -13,6 +13,8 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <span>
+#include <string_view>
 #include <system_error>
 #include <vector>
 
@@ -43,6 +45,87 @@ SequenceRange getSequenceRange(SequenceType type)
     case SequenceType::Volume: return {0, MAX_VOLUME};
     default:                   return {0, 3};
     }
+}
+
+constexpr char BASE64_ALPHABET[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+std::string encodeBase64(std::span<const uint8_t> data)
+{
+    std::string text;
+    text.reserve((data.size() + 2) / 3 * 4);
+    for (size_t i = 0; i < data.size(); i += 3) {
+        const size_t count = std::min<size_t>(3, data.size() - i);
+        uint32_t group = static_cast<uint32_t>(data[i]) << 16;
+        if (count > 1) {
+            group |= static_cast<uint32_t>(data[i + 1]) << 8;
+        }
+        if (count > 2) {
+            group |= data[i + 2];
+        }
+        text += BASE64_ALPHABET[(group >> 18) & 0x3F];
+        text += BASE64_ALPHABET[(group >> 12) & 0x3F];
+        text += (count > 1) ? BASE64_ALPHABET[(group >> 6) & 0x3F] : '=';
+        text += (count > 2) ? BASE64_ALPHABET[group & 0x3F] : '=';
+    }
+    return text;
+}
+
+int getBase64Value(char c)
+{
+    if (c >= 'A' && c <= 'Z') {
+        return c - 'A';
+    }
+    if (c >= 'a' && c <= 'z') {
+        return c - 'a' + 26;
+    }
+    if (c >= '0' && c <= '9') {
+        return c - '0' + 52;
+    }
+    if (c == '+') {
+        return 62;
+    }
+    if (c == '/') {
+        return 63;
+    }
+    return -1;
+}
+
+/** Standard base64 with padding. nullopt when the text is not. */
+std::optional<std::vector<uint8_t>> decodeBase64(std::string_view text)
+{
+    if (text.size() % 4 != 0) {
+        return std::nullopt;
+    }
+    std::vector<uint8_t> data;
+    data.reserve(text.size() / 4 * 3);
+    for (size_t i = 0; i < text.size(); i += 4) {
+        const bool last = (i + 4 == text.size());
+        uint32_t group = 0;
+        int padding = 0;
+        for (size_t j = 0; j < 4; j++) {
+            const char c = text[i + j];
+            int value = 0;
+            if (c == '=' && last && j >= 2) {
+                padding++;
+            }
+            else {
+                value = getBase64Value(c);
+                if (value < 0 || padding > 0) {
+                    return std::nullopt;
+                }
+            }
+            group = (group << 6) | static_cast<uint32_t>(value);
+        }
+        data.push_back(static_cast<uint8_t>(group >> 16));
+        if (padding < 2) {
+            data.push_back(static_cast<uint8_t>(group >> 8));
+        }
+        if (padding < 1) {
+            data.push_back(static_cast<uint8_t>(group));
+        }
+    }
+    return data;
 }
 
 std::string toUtf8(const std::filesystem::path& path)
@@ -143,6 +226,25 @@ MutableDocument createDocument(const Song& song)
                 yyjson_mut_obj_add_val(document, sequences, key, createSequence(document, sequence));
             }
         }
+
+        // Only the assigned keys, and only when there are any
+        const auto& keys = instrument.dpcmKeys;
+        if (std::any_of(keys.begin(), keys.end(), [](const DpcmKey& key) { return key.isAssigned(); })) {
+            yyjson_mut_val* dpcm = yyjson_mut_obj_add_arr(document, object, "dpcm");
+            for (size_t k = 0; k < keys.size(); k++) {
+                if (!keys[k].isAssigned()) {
+                    continue;
+                }
+                yyjson_mut_val* key = yyjson_mut_arr_add_obj(document, dpcm);
+                addString(document, key, "note",
+                          noteToString(ChannelType::Dpcm, static_cast<uint8_t>(NOTE_MIN + k)));
+                yyjson_mut_obj_add_uint(document, key, "sample", keys[k].sample);
+                yyjson_mut_obj_add_uint(document, key, "rate", keys[k].rate);
+                if (keys[k].loop) {
+                    yyjson_mut_obj_add_bool(document, key, "loop", true);
+                }
+            }
+        }
     }
 
     yyjson_mut_val* frames = yyjson_mut_obj_add_arr(document, root, "frames");
@@ -171,6 +273,20 @@ MutableDocument createDocument(const Song& song)
                     yyjson_mut_arr_append(rows, createRow(document, type, cell, row));
                 }
             }
+        }
+    }
+
+    // Last, since the data is long
+    if (!song.dpcmSamples.empty()) {
+        yyjson_mut_val* samples = yyjson_mut_obj_add_arr(document, root, "dpcmSamples");
+        for (size_t i = 0; i < song.dpcmSamples.size(); i++) {
+            const DpcmSample& sample = song.dpcmSamples[i];
+            yyjson_mut_val* object = yyjson_mut_arr_add_obj(document, samples);
+            yyjson_mut_obj_add_uint(document, object, "index", i);
+            addString(document, object, "name", sample.name);
+            yyjson_mut_obj_add_uint(document, object, "rate", sample.rate);
+            yyjson_mut_obj_add_uint(document, object, "restLevel", sample.restLevel);
+            addString(document, object, "data", encodeBase64(sample.data));
         }
     }
 
@@ -325,7 +441,10 @@ public:
 
 private:
     bool readChannels(yyjson_val* root, Song& song);
+    bool readDpcmSamples(yyjson_val* root, Song& song);
     bool readInstruments(yyjson_val* root, Song& song);
+    bool readDpcmKeys(yyjson_val* value, const std::string& path, const Song& song,
+                      Instrument& instrument);
     bool readSequence(yyjson_val* value, const std::string& path, SequenceType type,
                       Sequence& sequence);
     bool readFrames(yyjson_val* root, Song& song);
@@ -342,6 +461,7 @@ private:
                  int& result, bool required = false);
     bool readString(yyjson_val* object, const char* key, const std::string& path,
                     std::string& result, bool required = false);
+    bool readBool(yyjson_val* object, const char* key, const std::string& path, bool& result);
     bool getArray(yyjson_val* object, const char* key, const std::string& path,
                   yyjson_val*& result, bool required = false);
     bool getObject(yyjson_val* object, const char* key, const std::string& path,
@@ -415,6 +535,19 @@ bool SongReader::readString(yyjson_val* object, const char* key, const std::stri
     return true;
 }
 
+bool SongReader::readBool(yyjson_val* object, const char* key, const std::string& path, bool& result)
+{
+    yyjson_val* member = yyjson_obj_get(object, key);
+    if (member == nullptr) {
+        return true;
+    }
+    if (!yyjson_is_bool(member)) {
+        return fail(memberPath(path, key), "must be true or false");
+    }
+    result = yyjson_get_bool(member);
+    return true;
+}
+
 bool SongReader::getArray(yyjson_val* object, const char* key, const std::string& path,
                           yyjson_val*& result, bool required)
 {
@@ -480,8 +613,9 @@ bool SongReader::readSong(yyjson_val* root, Song& song)
     // Set before the patterns are added, since they are created with this many rows
     song.rowsPerPattern = static_cast<uint16_t>(rows);
 
-    return readChannels(root, song) && readInstruments(root, song) && readFrames(root, song) &&
-           readPatterns(root, song);
+    // The samples first, since the instruments refer to them
+    return readChannels(root, song) && readDpcmSamples(root, song) && readInstruments(root, song) &&
+           readFrames(root, song) && readPatterns(root, song);
 }
 
 bool SongReader::readChannels(yyjson_val* root, Song& song)
@@ -523,6 +657,72 @@ bool SongReader::readChannels(yyjson_val* root, Song& song)
     return true;
 }
 
+bool SongReader::readDpcmSamples(yyjson_val* root, Song& song)
+{
+    yyjson_val* samples = nullptr;
+    if (!getArray(root, "dpcmSamples", "", samples)) {
+        return false;
+    }
+    if (samples == nullptr) {
+        return true;
+    }
+
+    std::bitset<MAX_DPCM_SAMPLES> seen;
+    size_t index = 0;
+    size_t max = 0;
+    yyjson_val* value = nullptr;
+    yyjson_arr_foreach(samples, index, max, value)
+    {
+        const std::string path = itemPath("/dpcmSamples", index);
+        if (!yyjson_is_obj(value)) {
+            return fail(path, "must be an object");
+        }
+
+        int number = 0;
+        if (!readInt(value, "index", path, 0, static_cast<int>(MAX_DPCM_SAMPLES) - 1, number, true)) {
+            return false;
+        }
+        if (seen[number]) {
+            return fail(memberPath(path, "index"), std::format("duplicate sample {}", number));
+        }
+        seen[number] = true;
+
+        // Missing numbers become empty samples
+        if (song.dpcmSamples.size() <= static_cast<size_t>(number)) {
+            song.dpcmSamples.resize(number + 1);
+        }
+        DpcmSample& sample = song.dpcmSamples[number];
+        int rate = DPCM_MAX_RATE;
+        int restLevel = DPCM_DEFAULT_LEVEL;
+        std::string text;
+        if (!readString(value, "name", path, sample.name) ||
+            !readInt(value, "rate", path, 0, DPCM_MAX_RATE, rate) ||
+            !readInt(value, "restLevel", path, 0, DPCM_LEVEL_MAX, restLevel) ||
+            !readString(value, "data", path, text, true)) {
+            return false;
+        }
+        sample.rate = static_cast<uint8_t>(rate);
+        sample.restLevel = static_cast<uint8_t>(restLevel);
+
+        std::optional<std::vector<uint8_t>> data = decodeBase64(text);
+        if (!data) {
+            return fail(memberPath(path, "data"), "must be base64");
+        }
+        if (!data->empty() && (data->size() > DPCM_MAX_SAMPLE_BYTES || (data->size() - 1) % 16 != 0)) {
+            return fail(memberPath(path, "data"),
+                        std::format("must be 16n + 1 bytes, at most {} (not {})",
+                                    DPCM_MAX_SAMPLE_BYTES, data->size()));
+        }
+        sample.data = std::move(*data);
+    }
+
+    if (song.getDpcmMemoryUsed() > DPCM_MEMORY_SIZE) {
+        return fail("/dpcmSamples", std::format("the samples take {} bytes, more than {}",
+                                                song.getDpcmMemoryUsed(), DPCM_MEMORY_SIZE));
+    }
+    return true;
+}
+
 bool SongReader::readInstruments(yyjson_val* root, Song& song)
 {
     yyjson_val* instruments = nullptr;
@@ -558,7 +758,8 @@ bool SongReader::readInstruments(yyjson_val* root, Song& song)
             song.instruments.resize(number + 1);
         }
         Instrument& instrument = song.instruments[number];
-        if (!readString(value, "name", path, instrument.name)) {
+        if (!readString(value, "name", path, instrument.name) ||
+            !readDpcmKeys(value, path, song, instrument)) {
             return false;
         }
 
@@ -580,6 +781,58 @@ bool SongReader::readInstruments(yyjson_val* root, Song& song)
                 return false;
             }
         }
+    }
+    return true;
+}
+
+bool SongReader::readDpcmKeys(yyjson_val* value, const std::string& path, const Song& song,
+                              Instrument& instrument)
+{
+    yyjson_val* keys = nullptr;
+    if (!getArray(value, "dpcm", path, keys)) {
+        return false;
+    }
+    if (keys == nullptr) {
+        return true;
+    }
+
+    const std::string keysPath = memberPath(path, "dpcm");
+    size_t index = 0;
+    size_t max = 0;
+    yyjson_val* item = nullptr;
+    yyjson_arr_foreach(keys, index, max, item)
+    {
+        const std::string keyPath = itemPath(keysPath, index);
+        if (!yyjson_is_obj(item)) {
+            return fail(keyPath, "must be an object");
+        }
+
+        std::string noteText;
+        if (!readString(item, "note", keyPath, noteText, true)) {
+            return false;
+        }
+        const std::optional<uint8_t> note = noteFromString(ChannelType::Dpcm, noteText);
+        DpcmKey* key = note ? instrument.findDpcmKey(*note) : nullptr;
+        if (key == nullptr) {
+            return fail(memberPath(keyPath, "note"), std::format("invalid note \"{}\"", noteText));
+        }
+        if (key->isAssigned()) {
+            return fail(memberPath(keyPath, "note"), std::format("duplicate note {}", noteText));
+        }
+
+        int sample = 0;
+        int rate = DPCM_MAX_RATE;
+        bool loop = false;
+        if (!readInt(item, "sample", keyPath, 0, static_cast<int>(MAX_DPCM_SAMPLES) - 1, sample,
+                     true) ||
+            !readInt(item, "rate", keyPath, 0, DPCM_MAX_RATE, rate) ||
+            !readBool(item, "loop", keyPath, loop)) {
+            return false;
+        }
+        if (static_cast<size_t>(sample) >= song.dpcmSamples.size()) {
+            return fail(memberPath(keyPath, "sample"), std::format("sample {} does not exist", sample));
+        }
+        *key = DpcmKey{static_cast<uint8_t>(sample), static_cast<uint8_t>(rate), loop};
     }
     return true;
 }

@@ -427,6 +427,13 @@ void AudioSystem::tracker_stopNote(AudioSourceHandle handle, tracker::ChannelTyp
     }
 }
 
+void AudioSystem::tracker_playDpcmSample(AudioSourceHandle handle, const tracker::DpcmKey& key)
+{
+    if (AudioTrackerSource* source = m_impl->findTrackerSource(handle)) {
+        source->playDpcmSample(key);
+    }
+}
+
 void AudioSystem::tracker_setChannelMuted(AudioSourceHandle handle, tracker::ChannelType channel,
                                           bool muted)
 {

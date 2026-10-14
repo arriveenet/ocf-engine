@@ -3,9 +3,8 @@
  * ocf_dmcconv: converts audio files (WAV, FLAC, MP3) to samples of the APU's DMC channel (.dmc).
  * See docs/dmc-converter-design.md.
  */
+#include <ocf/audio/AudioFile.h>
 #include <ocf/audio/tracker/DpcmEncoder.h>
-
-#include <miniaudio.h>
 
 #include <algorithm>
 #include <charconv>
@@ -56,11 +55,6 @@ struct Arguments {
     DpcmEncodeOptions options;
     bool quiet = false;
     bool help = false;
-};
-
-struct Audio {
-    std::vector<float> samples; // Mono
-    uint32_t sampleRate = 0;
 };
 
 std::string toDisplay(const fs::path& path)
@@ -263,46 +257,6 @@ fs::path getOutputPath(const fs::path& option, const fs::path& input, std::strin
     return option;
 }
 
-bool readFile(const fs::path& path, std::vector<char>& data)
-{
-    std::ifstream file(path, std::ios::binary);
-    if (!file) {
-        return false;
-    }
-    data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-    return !file.bad();
-}
-
-std::optional<std::string> readAudio(const fs::path& path, Audio& audio)
-{
-    std::vector<char> data;
-    if (!readFile(path, data)) {
-        return "cannot read the file";
-    }
-
-    // Mono float at the original sample rate
-    const ma_decoder_config config = ma_decoder_config_init(ma_format_f32, 1, 0);
-    ma_decoder decoder;
-    if (ma_decoder_init_memory(data.data(), data.size(), &config, &decoder) != MA_SUCCESS) {
-        return "not a supported audio file (WAV, FLAC or MP3)";
-    }
-    audio.sampleRate = decoder.outputSampleRate;
-
-    // The length is not known in advance for some formats
-    std::vector<float> chunk(16384);
-    for (;;) {
-        ma_uint64 framesRead = 0;
-        const ma_result result =
-            ma_decoder_read_pcm_frames(&decoder, chunk.data(), chunk.size(), &framesRead);
-        audio.samples.insert(audio.samples.end(), chunk.begin(), chunk.begin() + framesRead);
-        if (result != MA_SUCCESS || framesRead < chunk.size()) {
-            break;
-        }
-    }
-    ma_decoder_uninit(&decoder);
-    return std::nullopt;
-}
-
 bool writeFile(const fs::path& path, const void* data, size_t size)
 {
     std::error_code error;
@@ -373,12 +327,12 @@ bool convert(const Arguments& arguments, const fs::path& input)
         return false;
     };
 
-    Audio audio;
-    if (const std::optional<std::string> error = readAudio(input, audio)) {
-        return fail(*error);
+    auto audio = ocf::audio::readMonoAudio(input);
+    if (audio.isErr()) {
+        return fail(audio.unwrapErr());
     }
 
-    auto encoded = encodeDpcm(audio.samples, audio.sampleRate, arguments.options);
+    auto encoded = encodeDpcm(audio.unwrap().samples, audio.unwrap().sampleRate, arguments.options);
     if (encoded.isErr()) {
         return fail(encoded.unwrapErr());
     }

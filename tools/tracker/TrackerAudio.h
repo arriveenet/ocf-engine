@@ -51,6 +51,12 @@ public:
         m_audioSystem.tracker_stopNote(m_source, channel);
     }
 
+    /** Plays a sample of the song without an instrument. stopNote(ChannelType::Dpcm) stops it. */
+    void playDpcmSample(const audio::tracker::DpcmKey& key)
+    {
+        m_audioSystem.tracker_playDpcmSample(m_source, key);
+    }
+
     void setChannelMuted(audio::tracker::ChannelType channel, bool muted)
     {
         m_audioSystem.tracker_setChannelMuted(m_source, channel, muted);

@@ -6,6 +6,7 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace ocf::audio::tracker {
 
@@ -35,6 +36,9 @@ public:
 
     void stopNote(ChannelType channel);
 
+    /** Plays a sample on the DPCM channel without a key, for previews. stopNote() stops it. */
+    void playDpcmSample(const DpcmKey& key);
+
     void setChannelMuted(ChannelType channel, bool muted);
 
     bool isChannelMuted(ChannelType channel) const { return m_channels[toIndex(channel)].muted; }
@@ -52,8 +56,11 @@ private:
         bool released = false;
         bool triggered = false; // The note started this tick
         bool muted = false;
-        bool audible = false; // Triangle: sounding after the last tick
-        int periodHigh = -1;  // Last value written to the period high bits
+        bool audible = false;  // Triangle: sounding after the last tick. DPCM: a sample started
+        bool dpcmLoop = false; // DPCM: the sample loops
+        uint8_t dpcmRate = 0;  // DPCM: the rate of the sample
+        std::optional<DpcmKey> dpcmPreview; // DPCM: played instead of the instrument's key
+        int periodHigh = -1;   // Last value written to the period high bits
         std::array<uint16_t, SEQUENCE_TYPE_COUNT> sequencePositions{};
     };
 
@@ -68,6 +75,9 @@ private:
     void writePulse(ChannelType channel, uint8_t volume, uint8_t duty);
     void writeTriangle(uint8_t volume);
     void writeNoise(uint8_t volume, uint8_t duty);
+    void writeDpcm();
+    void startDpcm(ChannelState& state);
+    void stopDpcm(ChannelState& state);
 
     RegisterWriter m_writer;
     std::shared_ptr<const Song> m_song;

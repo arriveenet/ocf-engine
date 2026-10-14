@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "DpcmEditor.h"
 #include "EditorState.h"
 #include "FileDialog.h"
 #include "FrameEditor.h"
@@ -69,7 +70,8 @@ private:
     PatternEditor m_patternEditor;
     FrameEditor m_frameEditor;
     InstrumentEditor m_instrumentEditor;
-    FileDialog m_fileDialog;
+    DpcmEditor m_dpcmEditor;
+    FileDialog m_fileDialog{"SongDialog"};
 
     PendingAction m_pendingAction = PendingAction::None;
     bool m_openConfirmPopup = false;

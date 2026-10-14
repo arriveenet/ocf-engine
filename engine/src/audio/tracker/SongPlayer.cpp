@@ -19,9 +19,12 @@ constexpr uint16_t PULSE1_BASE = 0x4000;
 constexpr uint16_t PULSE2_BASE = 0x4004;
 constexpr uint16_t TRIANGLE_BASE = 0x4008;
 constexpr uint16_t NOISE_BASE = 0x400C;
+constexpr uint16_t DMC_BASE = 0x4010;
 constexpr uint16_t STATUS_REGISTER = 0x4015;
 
 constexpr uint8_t ENABLE_CHANNELS = 0x0F;      // Pulse 1, pulse 2, triangle and noise
+constexpr uint8_t ENABLE_DMC = 0x10;           // Starts the sample, when it is not playing
+constexpr uint8_t DMC_LOOP = 0x40;
 constexpr uint8_t SWEEP_DISABLED = 0x08;       // Negate set so that low periods are not muted
 constexpr uint8_t HALT_CONSTANT_VOLUME = 0x30; // Length counter halted, constant volume
 constexpr uint8_t TRIANGLE_ON = 0xFF;          // Linear counter halted at its maximum
@@ -79,6 +82,12 @@ void SongPlayer::stop()
         state.active = false;
         state.released = false;
     }
+
+    // At once, since play() forgets that the sample is playing
+    ChannelState& dpcm = m_channels[toIndex(ChannelType::Dpcm)];
+    if (dpcm.audible) {
+        stopDpcm(dpcm);
+    }
 }
 
 void SongPlayer::playNote(ChannelType channel, uint8_t note, uint8_t instrument)
@@ -105,6 +114,13 @@ void SongPlayer::playNote(ChannelType channel, uint8_t note, uint8_t instrument)
 void SongPlayer::stopNote(ChannelType channel)
 {
     m_channels[toIndex(channel)].active = false;
+}
+
+void SongPlayer::playDpcmSample(const DpcmKey& key)
+{
+    ChannelState& state = m_channels[toIndex(ChannelType::Dpcm)];
+    triggerNote(state, NOTE_MIN);
+    state.dpcmPreview = key;
 }
 
 void SongPlayer::setChannelMuted(ChannelType channel, bool muted)
@@ -227,6 +243,7 @@ void SongPlayer::triggerNote(ChannelState& state, uint8_t note)
     state.released = false;
     state.triggered = true;
     state.sequencePositions.fill(0);
+    state.dpcmPreview.reset();
 }
 
 void SongPlayer::releaseNote(ChannelState& state)
@@ -311,7 +328,7 @@ void SongPlayer::updateChannel(ChannelType channel)
     case ChannelType::Pulse2:   writePulse(channel, volume, duty); break;
     case ChannelType::Triangle: writeTriangle(volume); break;
     case ChannelType::Noise:    writeNoise(volume, duty); break;
-    default:                    break; // DPCM is not played yet
+    default:                    writeDpcm(); break;
     }
     state.triggered = false;
 }
@@ -369,6 +386,59 @@ void SongPlayer::writeNoise(uint8_t volume, uint8_t duty)
     if (state.triggered) {
         m_writer(NOISE_BASE + 3, LENGTH_LOAD);
     }
+}
+
+void SongPlayer::writeDpcm()
+{
+    // The DMC has no volume: the sample plays to its end unless it is stopped
+    ChannelState& state = m_channels[toIndex(ChannelType::Dpcm)];
+    if (state.triggered && !state.muted) {
+        startDpcm(state);
+    }
+    else if (state.audible && (!state.active || state.muted)) {
+        stopDpcm(state);
+    }
+    else if (state.audible && state.released && state.dpcmLoop) {
+        // A released note stops looping, and plays to the end of the sample
+        m_writer(DMC_BASE, state.dpcmRate);
+        state.dpcmLoop = false;
+    }
+}
+
+void SongPlayer::startDpcm(ChannelState& state)
+{
+    const Instrument* instrument = m_song ? m_song->findInstrument(state.instrument) : nullptr;
+    const DpcmKey* key = state.dpcmPreview ? &*state.dpcmPreview
+                         : instrument      ? instrument->findDpcmKey(state.note)
+                                           : nullptr;
+    const std::optional<size_t> offset =
+        (key != nullptr && key->isAssigned()) ? m_song->getDpcmSampleOffset(key->sample) : std::nullopt;
+    if (!offset) {
+        stopDpcm(state);
+        return;
+    }
+
+    const DpcmSample& sample = m_song->dpcmSamples[key->sample];
+    const uint8_t rate = std::min(key->rate, DPCM_MAX_RATE);
+    // Disabling first, so that enabling restarts the sample even when one is playing
+    m_writer(STATUS_REGISTER, ENABLE_CHANNELS);
+    m_writer(DMC_BASE, static_cast<uint8_t>((key->loop ? DMC_LOOP : 0) | rate));
+    m_writer(DMC_BASE + 1, std::min(sample.restLevel, DPCM_LEVEL_MAX));
+    m_writer(DMC_BASE + 2, static_cast<uint8_t>(*offset / DPCM_SAMPLE_ALIGNMENT));
+    m_writer(DMC_BASE + 3, static_cast<uint8_t>((getDpcmPlayableLength(sample.data.size()) - 1) / 16));
+    m_writer(STATUS_REGISTER, ENABLE_CHANNELS | ENABLE_DMC);
+
+    state.audible = true;
+    state.dpcmLoop = key->loop;
+    state.dpcmRate = rate;
+}
+
+void SongPlayer::stopDpcm(ChannelState& state)
+{
+    // The bits already read still play, and the level stays where it is
+    m_writer(STATUS_REGISTER, ENABLE_CHANNELS);
+    state.audible = false;
+    state.dpcmLoop = false;
 }
 
 } // namespace ocf::audio::tracker

@@ -23,6 +23,7 @@ namespace {
 constexpr float LEFT_PANEL_WIDTH = 340.0f;
 constexpr float SONG_WINDOW_HEIGHT = 215.0f;
 constexpr float FRAME_WINDOW_HEIGHT = 210.0f;
+constexpr ImVec2 DPCM_WINDOW_SIZE(380.0f, 600.0f);
 
 constexpr const char* CONFIRM_POPUP = "Confirm";
 constexpr const char* ERROR_POPUP = "Error";
@@ -30,6 +31,7 @@ constexpr const char* ERROR_POPUP = "Error";
 // Songs are kept with the other assets, so that games can load them
 constexpr const char* SONG_DIRECTORY = "songs";
 constexpr const char* DEFAULT_FILE_NAME = "untitled.json";
+constexpr const char* SONG_EXTENSION = ".json";
 
 struct KeyHelp {
     const char* keys;
@@ -126,6 +128,12 @@ void TrackerScene::onImGui()
     ImGui::SetNextWindowSize(ImVec2(viewport->Size.x - LEFT_PANEL_WIDTH, height),
                              ImGuiCond_FirstUseEver);
     m_patternEditor.draw(m_state, *m_audio, m_monospaceFont);
+
+    // Over the right of the pattern, when opened
+    ImGui::SetNextWindowPos(ImVec2(origin.x + viewport->Size.x - DPCM_WINDOW_SIZE.x, origin.y + 40.0f),
+                            ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(DPCM_WINDOW_SIZE, ImGuiCond_FirstUseEver);
+    m_dpcmEditor.draw(m_state, *m_audio);
 
     drawConfirmPopup();
     drawFileDialog();
@@ -284,6 +292,11 @@ void TrackerScene::drawMenuBar()
         ImGui::EndMenu();
     }
 
+    if (ImGui::BeginMenu("View")) {
+        ImGui::MenuItem("DPCM Samples", nullptr, &m_state.showDpcmSamples);
+        ImGui::EndMenu();
+    }
+
     if (ImGui::BeginMenu("Help")) {
         ImGui::MenuItem("Keyboard Shortcuts", nullptr, &m_showHelp);
         ImGui::EndMenu();
@@ -427,6 +440,8 @@ void TrackerScene::drawHelpWindow()
         }
         ImGui::TextDisabled("Click a channel name to mute it. Right-click it to change the "
                             "number of effect columns.");
+        ImGui::TextDisabled("DPCM: import samples in View > DPCM Samples, and assign them to the "
+                            "notes of an instrument in DPCM Keys.");
     }
     ImGui::End();
 }
@@ -454,7 +469,7 @@ void TrackerScene::runAction(PendingAction action)
         m_state.replaceSong(createDemoSong());
         break;
     case PendingAction::OpenFile:
-        m_fileDialog.open(FileDialog::Mode::Open, getSongDirectory());
+        m_fileDialog.open(FileDialog::Mode::Open, "Open Song", getSongDirectory(), {SONG_EXTENSION});
         break;
     default: break;
     }
@@ -474,7 +489,8 @@ void TrackerScene::saveAs()
 {
     const std::string fileName = m_state.filePath.empty() ? std::string(DEFAULT_FILE_NAME)
                                                           : pathToUtf8(m_state.filePath.filename());
-    m_fileDialog.open(FileDialog::Mode::Save, getSongDirectory(), fileName);
+    m_fileDialog.open(FileDialog::Mode::Save, "Save Song", getSongDirectory(), {SONG_EXTENSION},
+                      fileName);
 }
 
 void TrackerScene::saveTo(const std::filesystem::path& path)

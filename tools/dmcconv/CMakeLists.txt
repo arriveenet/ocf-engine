@@ -10,8 +10,7 @@ add_executable(${TARGET} main.cpp)
 
 set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME ocf_dmcconv FOLDER Tools)
 
-# miniaudio reads the input files
-target_link_libraries(${TARGET} PRIVATE ocfengine miniaudio)
+target_link_libraries(${TARGET} PRIVATE ocfengine)
 
 # ==================================================================================================
 # Compiler flags

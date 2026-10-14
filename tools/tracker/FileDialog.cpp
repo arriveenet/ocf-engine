@@ -5,17 +5,15 @@
 #include <imgui_stdlib.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cfloat>
 #include <optional>
 #include <system_error>
+#include <utility>
 
 namespace ocf::tracker_tool {
 
 namespace {
-
-constexpr const char* OPEN_TITLE = "Open Song###FileDialog";
-constexpr const char* SAVE_TITLE = "Save Song###FileDialog";
-constexpr const char* EXTENSION = ".json";
 
 constexpr ImVec4 MESSAGE_COLOR(1.0f, 0.4f, 0.4f, 1.0f);
 
@@ -32,9 +30,16 @@ std::filesystem::path pathFromUtf8(const std::string& text)
     return std::filesystem::path(std::u8string(text.begin(), text.end()));
 }
 
-void FileDialog::open(Mode mode, const std::filesystem::path& directory,
-                      const std::string& fileName)
+FileDialog::FileDialog(std::string id)
+    : m_id(std::move(id))
 {
+}
+
+void FileDialog::open(Mode mode, const std::string& title, const std::filesystem::path& directory,
+                      std::vector<std::string> extensions, const std::string& fileName)
+{
+    m_title = title + "###" + m_id;
+    m_extensions = std::move(extensions);
     m_mode = mode;
     m_openRequested = true;
     m_fileName = fileName;
@@ -44,7 +49,7 @@ void FileDialog::open(Mode mode, const std::filesystem::path& directory,
 
 bool FileDialog::draw()
 {
-    const char* title = (m_mode == Mode::Open) ? OPEN_TITLE : SAVE_TITLE;
+    const char* title = m_title.c_str();
     if (m_openRequested) {
         ImGui::OpenPopup(title);
         m_openRequested = false;
@@ -64,7 +69,7 @@ bool FileDialog::draw()
         setDirectory(pathFromUtf8(m_directoryText));
     }
 
-    // Directories, then .json files. Changing the directory is done after the loop.
+    // Directories, then the files. Changing the directory is done after the loop.
     bool acceptRequested = false;
     std::optional<std::filesystem::path> nextDirectory;
     const float footerHeight = ImGui::GetFrameHeightWithSpacing() * 3.0f;
@@ -154,7 +159,7 @@ void FileDialog::setDirectory(const std::filesystem::path& directory)
          !error && it != end; it.increment(error)) {
         std::error_code entryError;
         const bool isDirectory = it->is_directory(entryError);
-        if (!isDirectory && it->path().extension() != EXTENSION) {
+        if (!isDirectory && !hasExtension(it->path())) {
             continue;
         }
         m_entries.push_back({pathToUtf8(it->path().filename()), isDirectory});
@@ -169,6 +174,14 @@ void FileDialog::setDirectory(const std::filesystem::path& directory)
         }
         return a.name < b.name;
     });
+}
+
+bool FileDialog::hasExtension(const std::filesystem::path& path) const
+{
+    std::string extension = pathToUtf8(path.extension());
+    std::transform(extension.begin(), extension.end(), extension.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return std::find(m_extensions.begin(), m_extensions.end(), extension) != m_extensions.end();
 }
 
 bool FileDialog::accept()
@@ -191,8 +204,8 @@ bool FileDialog::accept()
         }
     }
     else {
-        if (!path.has_extension()) {
-            path += EXTENSION;
+        if (!path.has_extension() && !m_extensions.empty()) {
+            path += m_extensions.front();
         }
         if (std::filesystem::exists(path, error)) {
             m_path = path;

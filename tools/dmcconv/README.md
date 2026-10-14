@@ -5,7 +5,7 @@ WAV・FLAC・MP3 を、APU の DMC チャンネルで鳴らすサンプル（`.d
 
 変換の仕組みと設計は [docs/dmc-converter-design.md](../../docs/dmc-converter-design.md) にまとめています。
 
-> DMC チャンネルの再生（APU・曲データ・トラッカー）はまだ実装していません。今は変換と、プレビューの WAV で音を確かめるところまでです。
+トラッカーの `DPCM Samples` ウィンドウでも、同じ変換で WAV などを直接読み込めます（[tools/tracker/README.md](../tracker/README.md#dpcm)）。このツールは、まとめて変換したいときや、FamiTracker など他のツール向けに `.dmc` を作るときに使います。
 
 ## ビルド
 

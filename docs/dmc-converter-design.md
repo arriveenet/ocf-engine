@@ -23,7 +23,7 @@ DMCチャンネルの実装（APU・曲データ・再生・トラッカー）�
 - 変換結果を耳で確かめるため、`.dmc` をWAVに戻すプレビューも出力できるようにする。
 - 変換処理の本体はエンジンに置き、コマンドラインツールとトラッカー（後の段階でのWAVの読み込み）で共有する。
 
-範囲外: PAL のレート、NSF の書き出し、DMCのIRQ（曲の再生には使わない）。
+範囲外: PAL のレート、NSF の書き出し。DMCのIRQは、APUのフラグ（`$4015` のbit7）だけを実装する（CPUがないので割り込みは起きない）。
 
 ## DMCの仕様（変換で守ること）
 
@@ -101,7 +101,7 @@ tools/dmcconv/                                  コマンドラインツール o
 ```
 
 - 変換の本体（`encodeDpcm()`）は、float のモノラル波形とサンプルレートを受け取り、バイト列を返すだけの関数にします。ファイルの読み書きは持たないので、単体テストしやすく、トラッカーからも同じものを呼べます。
-- 音声ファイルの読み込みは、ツール側で miniaudio の `ma_decoder` を直接使います（エンジンの `AudioDecoder` は `engine/src` の内部用なので）。CMake の `miniaudio` ターゲットにリンクします。
+- 音声ファイルの読み込みは、エンジンの `readMonoAudio()`（`ocf/audio/AudioFile.h`）で行います。中では miniaudio の `ma_decoder` を使います。トラッカーの読み込みと共有します。
   - ファイルは `std::filesystem::path` で読んでから `ma_decoder_init_memory()` に渡します。日本語のファイル名でも開けるようにするためです。
 - プレビューのWAV（16bitモノラル）は、ヘッダーが単純なのでツールで直接書きます。
 - `ocf_dmcconv` は ImGui を使わないので、`OCF_ENABLE_IMGUI` に関係なくビルドします。
@@ -236,8 +236,9 @@ Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples,
 
 ### トラッカー
 
-- `DPCM Samples` ウィンドウ: サンプルの一覧、WAV・`.dmc` の読み込み（WAVは `encodeDpcm()` で変換し、設定を変えて変換し直せる）、`.dmc` の書き出し、波形の表示、試聴。
+- `DPCM Samples` ウィンドウ: サンプルの一覧、WAV・FLAC・MP3・`.dmc` の読み込み（WAVなどは `encodeDpcm()` で変換し、最後に読み込んだファイルは設定を変えて変換し直せる）、`.dmc` の書き出し、波形の表示、試聴。
 - インストゥルメントにDPCMのキー割り当てを追加する。
+- 音声ファイルの読み込みは `ocf/audio/AudioFile.h` の `readMonoAudio()` にまとめ、`ocf_dmcconv` と共有する。
 
 ## 決めたこと
 
@@ -257,8 +258,8 @@ Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples,
 | 1 | `Dpcm.h` と `DpcmEncoder` と、そのテスト | 済み |
 | 2 | `ocf_dmcconv`（`--preview` まで） | 済み |
 | 3 | `--method optimal`、`--rate auto`、`--trim` | 済み |
-| 4 | APU の `DmcChannel` と、変換器とのずれを防ぐテスト | |
-| 5 | 曲データと `SongPlayer` | |
-| 6 | トラッカーの `DPCM Samples` ウィンドウとキー割り当て | |
+| 4 | APU の `DmcChannel` と、変換器とのずれを防ぐテスト | 済み |
+| 5 | 曲データと `SongPlayer` | 済み |
+| 6 | トラッカーの `DPCM Samples` ウィンドウとキー割り当て | 済み |
 
 設計のときの `--lookahead N`（先のNbitを総当たりする）は、ビタビ法の `--method optimal` に置き換えました。ビタビ法はサンプル全体で誤差が最小になり、計算量もNに対して指数的に増えないためです。

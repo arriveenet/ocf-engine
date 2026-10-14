@@ -42,6 +42,7 @@ constexpr size_t MAX_ROWS = 256;
 constexpr size_t MAX_FRAMES = 256;
 constexpr size_t MAX_PATTERNS = 256; // Per channel
 constexpr size_t MAX_INSTRUMENTS = 64;
+constexpr size_t MAX_DPCM_SAMPLES = 64;
 constexpr size_t MAX_EFFECT_COLUMNS = 4;
 constexpr size_t MAX_SEQUENCE_LENGTH = 256;
 

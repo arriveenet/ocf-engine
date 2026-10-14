@@ -5,6 +5,7 @@
 
 #include <ocf/audio/tracker/SongNotation.h>
 
+#include <string>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -19,6 +20,25 @@ namespace {
 
 constexpr uint8_t PREVIEW_NOTE = 49; // C-4
 constexpr ChannelType PREVIEW_CHANNEL = ChannelType::Pulse1;
+
+std::string getSampleLabel(const Song& song, uint8_t sample)
+{
+    if (sample >= song.dpcmSamples.size()) {
+        return std::format("{:02X} (missing)", sample);
+    }
+    return std::format("{:02X} {}", sample, song.dpcmSamples[sample].name);
+}
+
+std::string getKeyLabel(const Song& song, const Instrument& instrument, uint8_t note)
+{
+    const std::string name = noteToString(ChannelType::Dpcm, note);
+    const DpcmKey* key = instrument.findDpcmKey(note);
+    if (key == nullptr || !key->isAssigned()) {
+        return name;
+    }
+    return std::format("{}  {}  rate {}{}", name, getSampleLabel(song, key->sample), key->rate,
+                       key->loop ? "  loop" : "");
+}
 
 struct SequenceInfo {
     const char* label;
@@ -82,6 +102,8 @@ void InstrumentEditor::draw(EditorState& state, TrackerAudio& audio)
                 audio.stopNote(PREVIEW_CHANNEL);
             }
             ImGui::SetItemTooltip("Plays on Pulse 1 while held");
+
+            drawDpcmKeys(state, instrument, audio);
         }
     }
     ImGui::End();
@@ -176,6 +198,95 @@ void InstrumentEditor::drawSequence(EditorState& state, Instrument& instrument, 
                             loop.c_str(), release.c_str());
     }
     ImGui::PopID();
+}
+
+void InstrumentEditor::drawDpcmKeys(EditorState& state, Instrument& instrument, TrackerAudio& audio)
+{
+    ImGui::Spacing();
+    if (!ImGui::CollapsingHeader("DPCM Keys", ImGuiTreeNodeFlags_DefaultOpen)) {
+        return;
+    }
+
+    const Song& song = state.song;
+    if (song.dpcmSamples.empty()) {
+        ImGui::TextDisabled("No samples");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("DPCM Samples...")) {
+            state.showDpcmSamples = true;
+        }
+        return;
+    }
+
+    // The note played on the DPCM channel, also chosen by playing a note there
+    uint8_t& note = state.dpcmKeyNote;
+    note = std::clamp(note, NOTE_MIN, NOTE_MAX);
+    if (ImGui::BeginCombo("Key", getKeyLabel(song, instrument, note).c_str())) {
+        for (int n = NOTE_MIN; n <= NOTE_MAX; n++) {
+            const auto value = static_cast<uint8_t>(n);
+            if (ImGui::Selectable(getKeyLabel(song, instrument, value).c_str(), value == note)) {
+                note = value;
+            }
+            if (value == note) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetItemTooltip("Also chosen by entering a note on the DPCM channel");
+
+    DpcmKey& key = *instrument.findDpcmKey(note);
+    const std::string sampleLabel = key.isAssigned() ? getSampleLabel(song, key.sample) : "(none)";
+    if (ImGui::BeginCombo("Sample", sampleLabel.c_str())) {
+        if (ImGui::Selectable("(none)", !key.isAssigned())) {
+            key = DpcmKey{};
+            state.markModified();
+        }
+        for (int i = 0; i < static_cast<int>(song.dpcmSamples.size()); i++) {
+            if (ImGui::Selectable(getSampleLabel(song, static_cast<uint8_t>(i)).c_str(), key.sample == i)) {
+                // A new key starts at the rate the sample was made for
+                if (!key.isAssigned()) {
+                    key.rate = song.dpcmSamples[i].rate;
+                }
+                key.sample = static_cast<uint8_t>(i);
+                state.markModified();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::BeginDisabled(!key.isAssigned());
+    int rate = key.rate;
+    if (ImGui::SliderInt("Rate", &rate, 0, DPCM_MAX_RATE)) {
+        key.rate = static_cast<uint8_t>(rate);
+        state.markModified();
+    }
+    ImGui::SetItemTooltip("%.1f kHz. 15 is the fastest", getDpcmRateFrequency(key.rate) / 1000.0);
+    if (ImGui::Checkbox("Loop", &key.loop)) {
+        state.markModified();
+    }
+    ImGui::SetItemTooltip("Plays the sample again from the start until the note is released (===)");
+    ImGui::SameLine();
+    ImGui::Button("Preview##dpcm");
+    if (ImGui::IsItemActivated()) {
+        audio.playNote(ChannelType::Dpcm, note, state.getCurrentInstrument());
+    }
+    if (ImGui::IsItemDeactivated()) {
+        audio.stopNote(ChannelType::Dpcm);
+    }
+    ImGui::SetItemTooltip("Plays the key on the DPCM channel while held");
+    ImGui::EndDisabled();
+
+    // The assigned keys, to choose one
+    for (int n = NOTE_MIN; n <= NOTE_MAX; n++) {
+        const auto value = static_cast<uint8_t>(n);
+        if (!instrument.findDpcmKey(value)->isAssigned()) {
+            continue;
+        }
+        const std::string label = getKeyLabel(song, instrument, value) + "##key" + std::to_string(n);
+        if (ImGui::Selectable(label.c_str(), value == note)) {
+            note = value;
+        }
+    }
 }
 
 void InstrumentEditor::syncText(const EditorState& state)

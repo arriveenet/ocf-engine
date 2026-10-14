@@ -12,7 +12,7 @@ namespace ocf::tracker_tool {
 std::string pathToUtf8(const std::filesystem::path& path);
 std::filesystem::path pathFromUtf8(const std::string& text);
 
-/** A small modal dialog that picks a .json file to open or save. */
+/** A small modal dialog that picks a file to open or save. */
 class FileDialog {
 public:
     enum class Mode : uint8_t {
@@ -20,8 +20,15 @@ public:
         Save,
     };
 
-    /** Opens the dialog at the next draw(). */
-    void open(Mode mode, const std::filesystem::path& directory, const std::string& fileName = {});
+    /** The id tells the dialogs apart, so that there can be several. */
+    explicit FileDialog(std::string id);
+
+    /**
+     * Opens the dialog at the next draw(). It lists the files with the extensions (lower case,
+     * with the dot), and saving adds the first one to a name without an extension.
+     */
+    void open(Mode mode, const std::string& title, const std::filesystem::path& directory,
+              std::vector<std::string> extensions, const std::string& fileName = {});
 
     /** Returns true on the frame a file is chosen. getPath() then returns it. */
     bool draw();
@@ -37,10 +44,14 @@ private:
     };
 
     void setDirectory(const std::filesystem::path& directory);
+    bool hasExtension(const std::filesystem::path& path) const;
 
     /** Checks the file name. Returns true when m_path is the final choice. */
     bool accept();
 
+    std::string m_id;
+    std::string m_title; // With the id, as the ImGui name
+    std::vector<std::string> m_extensions;
     Mode m_mode = Mode::Open;
     bool m_openRequested = false;
     std::filesystem::path m_directory;

@@ -24,6 +24,7 @@ constexpr std::array<uint16_t, DPCM_RATE_COUNT> DPCM_RATE_PERIODS = {
 constexpr uint8_t DPCM_MAX_RATE = DPCM_RATE_COUNT - 1;
 constexpr size_t DPCM_MAX_SAMPLE_BYTES = 4081; // $4013 = FF: FF * 16 + 1
 constexpr size_t DPCM_MEMORY_SIZE = 0x4000;    // $C000-$FFFF
+constexpr size_t DPCM_SAMPLE_ALIGNMENT = 64;   // $4012 = $C000 + A * 64
 constexpr uint8_t DPCM_LEVEL_MAX = 127;
 constexpr uint8_t DPCM_DEFAULT_LEVEL = 64;
 
@@ -32,6 +33,12 @@ double getDpcmRateFrequency(uint8_t rate);
 
 /** Rounds up to a length that $4013 can play: 16n + 1 bytes. */
 size_t getDpcmPlayableLength(size_t bytes);
+
+/** The memory a sample takes: its length rounded up to the alignment. */
+constexpr size_t getDpcmAlignedSize(size_t bytes)
+{
+    return (bytes + DPCM_SAMPLE_ALIGNMENT - 1) / DPCM_SAMPLE_ALIGNMENT * DPCM_SAMPLE_ALIGNMENT;
+}
 
 /** One bit of the output unit, as the APU does it: +2 for 1, -2 for 0, unchanged at the limits. */
 constexpr uint8_t stepDpcmLevel(uint8_t level, bool bit)

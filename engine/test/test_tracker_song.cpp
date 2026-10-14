@@ -92,3 +92,42 @@ TEST(TrackerSongTest, FindInstrument)
     EXPECT_EQ(song.findInstrument(1), nullptr);
     EXPECT_EQ(song.findInstrument(VALUE_NONE), nullptr);
 }
+
+TEST(TrackerSongTest, DpcmSamplesArePlacedAt64ByteBoundaries)
+{
+    Song song;
+    song.dpcmSamples.resize(4);
+    song.dpcmSamples[0].data.assign(17, 0);
+    // 1 is empty
+    song.dpcmSamples[2].data.assign(DPCM_MAX_SAMPLE_BYTES, 0);
+    song.dpcmSamples[3].data.assign(33, 0);
+
+    EXPECT_EQ(song.getDpcmSampleOffset(0), 0u);
+    EXPECT_EQ(song.getDpcmSampleOffset(1), std::nullopt);
+    EXPECT_EQ(song.getDpcmSampleOffset(2), 64u);
+    EXPECT_EQ(song.getDpcmSampleOffset(3), 64u + 4096u);
+    EXPECT_EQ(song.getDpcmSampleOffset(4), std::nullopt);
+    EXPECT_EQ(song.getDpcmMemoryUsed(), 64u + 4096u + 64u);
+
+    // Those beyond the 16KB are not placed
+    song.dpcmSamples.resize(7);
+    for (size_t i = 4; i < 7; i++) {
+        song.dpcmSamples[i].data.assign(DPCM_MAX_SAMPLE_BYTES, 0);
+    }
+    EXPECT_EQ(song.getDpcmSampleOffset(5), 64u + 4096u + 64u + 4096u);
+    EXPECT_EQ(song.getDpcmSampleOffset(6), std::nullopt); // 12416 + 4081 > 16384
+    EXPECT_GT(song.getDpcmMemoryUsed(), DPCM_MEMORY_SIZE);
+}
+
+TEST(TrackerSongTest, DpcmKeys)
+{
+    Instrument instrument;
+    EXPECT_EQ(instrument.findDpcmKey(NOTE_NONE), nullptr);
+    EXPECT_EQ(instrument.findDpcmKey(NOTE_OFF), nullptr);
+    ASSERT_NE(instrument.findDpcmKey(NOTE_MIN), nullptr);
+    ASSERT_NE(instrument.findDpcmKey(NOTE_MAX), nullptr);
+    EXPECT_FALSE(instrument.findDpcmKey(NOTE_MAX)->isAssigned());
+
+    instrument.findDpcmKey(NOTE_MIN)->sample = 0;
+    EXPECT_TRUE(instrument.dpcmKeys[0].isAssigned());
+}

@@ -161,6 +161,19 @@ Song createFullSong()
 
     Pattern& dpcm = song.getPattern(ChannelType::Dpcm, 4);
     dpcm.rows[10].note = note(ChannelType::Dpcm, "A-0");
+
+    song.dpcmSamples.resize(3);
+    song.dpcmSamples[0].name = "Kick";
+    for (uint8_t i = 0; i < 33; i++) {
+        song.dpcmSamples[0].data.push_back(static_cast<uint8_t>(i * 37));
+    }
+    song.dpcmSamples[0].rate = 13;
+    song.dpcmSamples[0].restLevel = 0;
+    song.dpcmSamples[2].name = "One byte";
+    song.dpcmSamples[2].data = {0xFF};
+    *song.instruments[0].findDpcmKey(note(ChannelType::Dpcm, "C-3")) = DpcmKey{0, 13, false};
+    *song.instruments[0].findDpcmKey(note(ChannelType::Dpcm, "B-7")) = DpcmKey{2, 0, true};
+    *song.instruments[2].findDpcmKey(NOTE_MIN) = DpcmKey{0, 15, false};
     return song;
 }
 
@@ -179,6 +192,15 @@ void expectSameSong(const Song& expected, const Song& actual)
     for (size_t i = 0; i < expected.instruments.size(); i++) {
         EXPECT_EQ(actual.instruments[i].name, expected.instruments[i].name) << i;
         EXPECT_EQ(actual.instruments[i].sequences, expected.instruments[i].sequences) << i;
+        EXPECT_EQ(actual.instruments[i].dpcmKeys, expected.instruments[i].dpcmKeys) << i;
+    }
+
+    ASSERT_EQ(actual.dpcmSamples.size(), expected.dpcmSamples.size());
+    for (size_t i = 0; i < expected.dpcmSamples.size(); i++) {
+        EXPECT_EQ(actual.dpcmSamples[i].name, expected.dpcmSamples[i].name) << i;
+        EXPECT_EQ(actual.dpcmSamples[i].data, expected.dpcmSamples[i].data) << i;
+        EXPECT_EQ(actual.dpcmSamples[i].rate, expected.dpcmSamples[i].rate) << i;
+        EXPECT_EQ(actual.dpcmSamples[i].restLevel, expected.dpcmSamples[i].restLevel) << i;
     }
 
     for (size_t channel = 0; channel < CHANNEL_COUNT; channel++) {
@@ -458,4 +480,102 @@ TEST(SongSerializerTest, LoadMissingFile)
     const auto result = loadSong(std::filesystem::temp_directory_path() / "ocf_no_such_song.json");
     ASSERT_TRUE(result.isErr());
     EXPECT_NE(result.unwrapErr().find("cannot open"), std::string::npos);
+}
+
+namespace {
+
+// 17 bytes of 0x55
+constexpr const char* SAMPLE_17_BYTES = "VVVVVVVVVVVVVVVVVVVVVVU=";
+
+std::string exampleWithDpcm(const std::string& samples, const std::string& keys = "")
+{
+    std::string json = exampleWith("\"instruments\": [", "\"dpcmSamples\": [" + samples + "],\n  \"instruments\": [");
+    if (!keys.empty()) {
+        const std::string from = "\"name\": \"Bass\",";
+        json.replace(json.find(from), from.size(), from + " \"dpcm\": [" + keys + "],");
+    }
+    return json;
+}
+
+} // namespace
+
+TEST(SongSerializerTest, ReadsDpcmSamplesAndKeys)
+{
+    const std::string json =
+        exampleWithDpcm(std::string(R"({ "index": 1, "name": "Snare", "data": ")") + SAMPLE_17_BYTES + "\" }",
+                        R"({ "note": "C-3", "sample": 1, "rate": 9, "loop": true }, { "note": "D-3", "sample": 0 })");
+    const auto result = loadSongFromString(json);
+    ASSERT_TRUE(result.isOk()) << result.unwrapErr();
+    const Song& song = result.unwrap();
+
+    ASSERT_EQ(song.dpcmSamples.size(), 2u);
+    EXPECT_TRUE(song.dpcmSamples[0].data.empty()); // Missing numbers are empty
+    EXPECT_EQ(song.dpcmSamples[1].name, "Snare");
+    EXPECT_EQ(song.dpcmSamples[1].data, std::vector<uint8_t>(17, 0x55));
+    EXPECT_EQ(song.dpcmSamples[1].rate, DPCM_MAX_RATE);           // Default
+    EXPECT_EQ(song.dpcmSamples[1].restLevel, DPCM_DEFAULT_LEVEL); // Default
+
+    const Instrument& bass = song.instruments[1];
+    EXPECT_EQ(*bass.findDpcmKey(note(ChannelType::Dpcm, "C-3")), (DpcmKey{1, 9, true}));
+    EXPECT_EQ(*bass.findDpcmKey(note(ChannelType::Dpcm, "D-3")), (DpcmKey{0, DPCM_MAX_RATE, false}));
+    EXPECT_FALSE(bass.findDpcmKey(note(ChannelType::Dpcm, "E-3"))->isAssigned());
+}
+
+TEST(SongSerializerTest, WritesDpcmOnlyWhenUsed)
+{
+    const std::string json = saveSongToString(createExampleSong());
+    EXPECT_EQ(json.find("dpcmSamples"), std::string::npos);
+    EXPECT_EQ(json.find(R"("dpcm": [)"), std::string::npos);
+
+    const std::string full = saveSongToString(createFullSong());
+    EXPECT_NE(full.find(R"({ "note": "C-3", "sample": 0, "rate": 13 })"), std::string::npos) << full;
+    EXPECT_NE(full.find(R"({ "note": "B-7", "sample": 2, "rate": 0, "loop": true })"), std::string::npos) << full;
+    EXPECT_NE(full.find(R"({ "index": 1, "name": "", "rate": 15, "restLevel": 64, "data": "" })"), std::string::npos) << full;
+    EXPECT_NE(full.find(R"("data": "/w==")"), std::string::npos) << full;
+}
+
+TEST(SongSerializerTest, RejectsInvalidDpcm)
+{
+    const std::string valid = std::string(R"({ "index": 0, "data": ")") + SAMPLE_17_BYTES + "\" }";
+    struct Case {
+        std::string json;
+        std::string error;
+    };
+    const Case cases[] = {
+        {exampleWithDpcm(R"({ "index": 0, "data": "VVV" })"), "/dpcmSamples/0/data: must be base64"},
+        {exampleWithDpcm(R"({ "index": 0, "data": "VV=V" })"), "/dpcmSamples/0/data: must be base64"},
+        {exampleWithDpcm(R"({ "index": 0, "data": "VVU*" })"), "/dpcmSamples/0/data: must be base64"},
+        {exampleWithDpcm(R"({ "index": 0, "data": "VVU=" })"),
+         "/dpcmSamples/0/data: must be 16n + 1 bytes, at most 4081 (not 2)"},
+        {exampleWithDpcm(R"({ "index": 0 })"), "/dpcmSamples/0/data: is required"},
+        {exampleWithDpcm(R"({ "index": 0, "rate": 16, "data": "" })"),
+         "/dpcmSamples/0/rate: must be between 0 and 15"},
+        {exampleWithDpcm(R"({ "index": 0, "restLevel": 128, "data": "" })"),
+         "/dpcmSamples/0/restLevel: must be between 0 and 127"},
+        {exampleWithDpcm(valid + ", " + valid), "/dpcmSamples/1/index: duplicate sample 0"},
+        {exampleWithDpcm(valid, R"({ "note": "---", "sample": 0 })"),
+         "/instruments/1/dpcm/0/note: invalid note \"---\""},
+        {exampleWithDpcm(valid, R"({ "note": "C-3", "sample": 0 }, { "note": "C-3", "sample": 0 })"),
+         "/instruments/1/dpcm/1/note: duplicate note C-3"},
+        {exampleWithDpcm(valid, R"({ "note": "C-3", "sample": 1 })"),
+         "/instruments/1/dpcm/0/sample: sample 1 does not exist"},
+        {exampleWithDpcm(valid, R"({ "note": "C-3" })"), "/instruments/1/dpcm/0/sample: is required"},
+        {exampleWithDpcm(valid, R"({ "note": "C-3", "sample": 0, "loop": 1 })"),
+         "/instruments/1/dpcm/0/loop: must be true or false"},
+    };
+    for (const Case& c : cases) {
+        EXPECT_EQ(loadError(c.json), c.error);
+    }
+}
+
+TEST(SongSerializerTest, RejectsDpcmSamplesBeyondTheMemory)
+{
+    Song song = Song::createDefault();
+    song.dpcmSamples.resize(5);
+    for (DpcmSample& sample : song.dpcmSamples) {
+        sample.data.assign(DPCM_MAX_SAMPLE_BYTES, 0x55);
+    }
+    EXPECT_EQ(loadError(saveSongToString(song)), "/dpcmSamples: the samples take 20480 bytes, more than 16384");
+    song.dpcmSamples.pop_back();
+    EXPECT_TRUE(loadSongFromString(saveSongToString(song)).isOk());
 }

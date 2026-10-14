@@ -136,3 +136,30 @@ TEST(AudioTrackerSourceTest, ReleasesReplacedSongOnUpdate)
     source.update();
     EXPECT_TRUE(weakFirst.expired());
 }
+
+TEST(AudioTrackerSourceTest, PlaysDpcm)
+{
+    // A square wave of 16 levels: 8 bits up, 8 bits down
+    Song song = Song::createDefault();
+    song.dpcmSamples.resize(1);
+    for (size_t i = 0; i < DPCM_MAX_SAMPLE_BYTES; i++) {
+        song.dpcmSamples[0].data.push_back((i % 2 == 0) ? 0xFF : 0x00);
+    }
+    *song.instruments[0].findDpcmKey(A4) = DpcmKey{0, DPCM_MAX_RATE, false};
+    song.getPattern(ChannelType::Dpcm, 0).rows[0] = Cell{A4, 0, VALUE_NONE, {}};
+
+    AudioTrackerSource source;
+    source.setSong(std::make_shared<const Song>(song));
+    source.playSong(0, 0);
+
+    // 33144 / 16 = about 2071 Hz
+    const uint32_t frameCount = InternalSampleRate / 5;
+    const std::vector<float> output = render(source, frameCount);
+    EXPECT_GT(rms(output, frameCount / 2, frameCount), 0.01f);
+    EXPECT_NEAR(countZeroCrossings(output, frameCount / 2, frameCount), 2 * 2071 / 10, 20);
+
+    source.stopSong();
+    render(source, InternalSampleRate / 10); // The buffered bits, and the high-pass filter settle
+    const std::vector<float> stopped = render(source, InternalSampleRate / 10);
+    EXPECT_LT(rms(stopped, 0, InternalSampleRate / 10), 1e-3f);
+}

@@ -129,6 +129,14 @@ void AudioTrackerSource::stopNote(tracker::ChannelType channel)
     pushCommand(std::move(command));
 }
 
+void AudioTrackerSource::playDpcmSample(const tracker::DpcmKey& key)
+{
+    Command command;
+    command.type = Command::Type::PlayDpcmSample;
+    command.dpcmKey = key;
+    pushCommand(std::move(command));
+}
+
 void AudioTrackerSource::setChannelMuted(tracker::ChannelType channel, bool muted)
 {
     Command command;
@@ -165,6 +173,7 @@ void AudioTrackerSource::processCommands()
         switch (command.type) {
         case Command::Type::SetSong: {
             std::shared_ptr<const tracker::Song> previous = m_player.setSong(std::move(command.song));
+            loadDpcmSamples();
             if (previous) {
                 std::lock_guard<std::mutex> lock(m_retiredMutex);
                 m_retiredSongs.push_back(std::move(previous));
@@ -172,6 +181,7 @@ void AudioTrackerSource::processCommands()
             break;
         }
         case Command::Type::PlaySong: m_player.play(command.frame, command.row); break;
+        case Command::Type::PlayDpcmSample: m_player.playDpcmSample(command.dpcmKey); break;
         case Command::Type::StopSong: m_player.stop(); break;
         case Command::Type::PlayNote:
             m_player.playNote(command.channel, command.note, command.instrument);
@@ -183,6 +193,22 @@ void AudioTrackerSource::processCommands()
         }
     }
     m_processingCommands.clear();
+}
+
+void AudioTrackerSource::loadDpcmSamples()
+{
+    // A sample that is playing keeps playing from the new memory, which is the same unless the
+    // samples were changed
+    m_apu->setDmcMemory({});
+    const tracker::Song* song = m_player.getSong();
+    if (song == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < song->dpcmSamples.size(); i++) {
+        if (const std::optional<size_t> offset = song->getDpcmSampleOffset(i)) {
+            m_apu->writeDmcMemory(*offset, song->dpcmSamples[i].data);
+        }
+    }
 }
 
 void AudioTrackerSource::writeRegister(uint16_t address, uint8_t data)

@@ -19,6 +19,16 @@ bool Pattern::isEmpty() const
     return std::all_of(rows.begin(), rows.end(), [](const Cell& cell) { return cell.isEmpty(); });
 }
 
+DpcmKey* Instrument::findDpcmKey(uint8_t note)
+{
+    return (note >= NOTE_MIN && note <= NOTE_MAX) ? &dpcmKeys[note - NOTE_MIN] : nullptr;
+}
+
+const DpcmKey* Instrument::findDpcmKey(uint8_t note) const
+{
+    return (note >= NOTE_MIN && note <= NOTE_MAX) ? &dpcmKeys[note - NOTE_MIN] : nullptr;
+}
+
 Song Song::createDefault()
 {
     Song song;
@@ -65,6 +75,30 @@ const Cell* Song::findCell(ChannelType channel, size_t frame, size_t row) const
 const Instrument* Song::findInstrument(uint8_t index) const
 {
     return index < instruments.size() ? &instruments[index] : nullptr;
+}
+
+std::optional<size_t> Song::getDpcmSampleOffset(size_t index) const
+{
+    if (index >= dpcmSamples.size() || dpcmSamples[index].data.empty()) {
+        return std::nullopt;
+    }
+    size_t offset = 0;
+    for (size_t i = 0; i < index; i++) {
+        offset += getDpcmAlignedSize(dpcmSamples[i].data.size());
+    }
+    if (offset + dpcmSamples[index].data.size() > DPCM_MEMORY_SIZE) {
+        return std::nullopt;
+    }
+    return offset;
+}
+
+size_t Song::getDpcmMemoryUsed() const
+{
+    size_t used = 0;
+    for (const DpcmSample& sample : dpcmSamples) {
+        used += getDpcmAlignedSize(sample.data.size());
+    }
+    return used;
 }
 
 void Song::setRowsPerPattern(uint16_t rows)

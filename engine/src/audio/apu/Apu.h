@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+#include "DmcChannel.h"
 #include "FrameSequencer.h"
 #include "NoiseChannel.h"
 #include "PulseChannel.h"
 #include "TriangleChannel.h"
 
+#include <span>
 #include <stdint.h>
 
 namespace ocf::audio {
@@ -26,6 +28,12 @@ public:
     // Output sample
     float getOutput();
 
+    /** The DMC's samples at $C000-$FFFF. Copied, at most 16KB. The rest is zero. */
+    void setDmcMemory(std::span<const uint8_t> data);
+
+    /** Copies to $C000 + offset, keeping the rest of the memory. */
+    void writeDmcMemory(size_t offset, std::span<const uint8_t> data);
+
 private:
     void clockFrameCounterQuarterFrame();
     void clockFrameCounterHalfFrame();
@@ -41,6 +49,7 @@ private:
     PulseChannel m_pulseChannel[2] = {PulseChannel(true), PulseChannel(false)};
     TriangleChannel m_triangleChannel;
     NoiseChannel m_noiseChannel;
+    DmcChannel m_dmcChannel;
 
     friend FrameSequencer;
 };

@@ -18,6 +18,7 @@ void Apu::clock()
     m_pulseChannel[1].clock();
     m_triangleChannel.clock();
     m_noiseChannel.clock();
+    m_dmcChannel.clock();
 }
 
 void Apu::writeRegister(uint16_t address, uint8_t data)
@@ -34,6 +35,10 @@ void Apu::writeRegister(uint16_t address, uint8_t data)
     // Noise register
     else if (address < 0x4010) {
         m_noiseChannel.setRegister(address & 0x3, data);
+    }
+    // DMC register
+    else if (address < 0x4014) {
+        m_dmcChannel.setRegister(address & 0x3, data);
     }
     // Frame counter
     else if (address == 0x4017) {
@@ -56,12 +61,20 @@ uint8_t Apu::readStatusRegister()
     if (m_noiseChannel.getLengthCounterOutput()) {
         status |= 0x08;
     }
+    if (m_dmcChannel.isActive()) {
+        status |= 0x10;
+    }
 
     // Reading the status clears the frame interrupt
     if (m_frameSequencer.getInterrupt()) {
         status |= 0x40;
     }
     m_frameSequencer.clearInterrupt();
+
+    // Unlike the frame interrupt, reading does not clear the DMC interrupt
+    if (m_dmcChannel.getInterrupt()) {
+        status |= 0x80;
+    }
 
     return status;
 }
@@ -72,6 +85,17 @@ void Apu::writeStatusRegister(uint8_t data)
     m_pulseChannel[1].setLengthCounterEnabled(data & 0x02);
     m_triangleChannel.setLengthCounterEnabled(data & 0x04);
     m_noiseChannel.setLengthCounterEnabled(data & 0x08);
+    m_dmcChannel.setEnabled(data & 0x10);
+}
+
+void Apu::setDmcMemory(std::span<const uint8_t> data)
+{
+    m_dmcChannel.setMemory(data);
+}
+
+void Apu::writeDmcMemory(size_t offset, std::span<const uint8_t> data)
+{
+    m_dmcChannel.writeMemory(offset, data);
 }
 
 void Apu::clockFrameCounterQuarterFrame()
@@ -105,7 +129,7 @@ float Apu::getOutput()
     float tndOut = 0.0f;
     uint8_t triangle = m_triangleChannel.getOutput();
     uint8_t noise = m_noiseChannel.getOutput();
-    uint8_t dmc = 0;
+    uint8_t dmc = m_dmcChannel.getOutput();
     if (triangle + noise + dmc > 0) {
         tndOut = 159.79f /
                  (1.0f / ((triangle / 8227.0f) + (noise / 12241.0f) + (dmc / 22638.0f)) + 100.0f);

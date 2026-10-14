@@ -30,7 +30,8 @@
   "channels": [ ... ],
   "instruments": [ ... ],
   "frames": [ ... ],
-  "patterns": [ ... ]
+  "patterns": [ ... ],
+  "dpcmSamples": [ ... ]
 }
 ```
 
@@ -47,6 +48,7 @@
 | `instruments` | array | | インストゥルメント。[instruments](#instruments)。省略時は空 | `instruments` |
 | `frames` | array | ○ | 再生順。[frames](#frames) | `frames` |
 | `patterns` | array | | パターンの中身。[patterns](#patterns)。省略時はすべて空 | `patterns` |
+| `dpcmSamples` | array | | DPCMのサンプル。[dpcmSamples](#dpcmsamples)。省略時は空 | `dpcmSamples` |
 
 テンポの計算はFamiTrackerと同じです。1秒あたり約60tick（NTSC）で進み、`tempo * 24 / speed` を1tickごとに `3600` から引いていき、0以下になったら次の行に進みます。
 `speed = 6`、`tempo = 150` のとき、6tickで1行進みます。
@@ -73,8 +75,7 @@
 `type` を書くのは、将来の拡張音源（VRC6など）でチャンネルが増えたときに、何のチャンネルかを判別できるようにするためです。
 以降の `frames` と `patterns` の `channel` は、この配列のインデックスを指します。
 
-> 現在の再生エンジンが鳴らすのは `pulse1` `pulse2` `triangle` だけです。
-> `noise` はレジスタへの書き込みまで実装済みで、APUにノイズチャンネルが実装されれば鳴ります。`dpcm` は保存されますが再生しません。
+> `dpcm` チャンネルは、インストゥルメントの [DPCMのキー割り当て](#dpcmのキー割り当て) でノートごとにサンプルを鳴らします。
 
 ### `instruments`
 
@@ -96,6 +97,7 @@
 | `index` | 整数 | ○ | インストゥルメント番号（0〜63）。パターンの `instrument` から参照されます |
 | `name` | string | | 名前。省略時は `""` |
 | `sequences` | object | | シーケンス。キーはシーケンスの種類。省略したシーケンスは空 |
+| `dpcm` | array | | DPCMのキー割り当て。[後述](#dpcmのキー割り当て)。省略時は割り当てなし |
 
 - `index` に欠番があってもかまいません。読み込み時は、欠番の位置に空のインストゥルメントを作ります。
 - 同じ `index` が2回出てきたらエラーです。
@@ -125,6 +127,31 @@
 4. 末尾に来たら、ループ点があれば（かつリリース点より後ろにあれば）ループ点に戻り、なければ最後の値を保ちます。
 
 エディタでは、FamiTracker形式のMML（`15 13 | 11 10 / 9 0`。`|` がループ点、`/` がリリース点の直前に入る）で入力します（`sequenceToMml()` / `sequenceFromMml()`）。
+
+#### DPCMのキー割り当て
+
+`dpcm` チャンネルでこのインストゥルメントのノートを鳴らしたときに、どのサンプルをどのレートで鳴らすかです（FamiTracker と同じ考え方）。割り当てたノートだけを、ノートの順に書きます。
+
+```json
+"dpcm": [
+  { "note": "C-3", "sample": 0, "rate": 15 },
+  { "note": "D-3", "sample": 1, "rate": 13, "loop": true }
+]
+```
+
+| キー | 型 | 必須 | 内容 | `DpcmKey` のメンバ |
+| --- | --- | --- | --- | --- |
+| `note` | string | ○ | ノート（`C-0`〜`B-7`） | `Instrument::dpcmKeys` の位置 |
+| `sample` | 整数 | ○ | `dpcmSamples` の `index` | `sample` |
+| `rate` | 整数 | | レート（0〜15。15が最も速い）。省略時は `15` | `rate` |
+| `loop` | bool | | 末尾まで来たら先頭に戻る。省略時は `false`（書くときも `true` のときだけ書きます） | `loop` |
+
+- 同じ `note` が2回出てきたら、または無いサンプルを指したらエラーです。
+- 鳴らし方: ノートで `$4011` にサンプルの `restLevel`、`$4010`〜`$4013` にレート・ループ・アドレス・長さを書いて、サンプルを先頭から鳴らします。
+  - `---` で止めます。止めても、読み込み済みの最大16bitは鳴り、レベルはそこで止まった値のままです。
+  - `===` でループをやめ、サンプルの末尾まで鳴らします。
+  - 割り当てのないノートでは、鳴っているサンプルを止めます。
+- 音量列とシーケンスは、DPCMでは使いません。
 
 ### `frames`
 
@@ -199,6 +226,29 @@
 | `Dxx` | この行の後、次のフレームの行xxに移る |
 | `Cxx` | この行の後、曲を止める |
 
+### `dpcmSamples`
+
+DMCチャンネルのサンプルです。曲のファイルに埋め込むので、ゲームは曲のファイル1つを読めば鳴らせます。
+データは `.dmc` ファイルと同じバイト列（下位ビットから使う1bitのデルタ）です。作り方は [dmc-converter-design.md](dmc-converter-design.md) を参照してください。
+
+```json
+"dpcmSamples": [
+  { "index": 0, "name": "Kick", "rate": 15, "restLevel": 64, "data": "VVVVqqqq..." }
+]
+```
+
+| キー | 型 | 必須 | 内容 | `DpcmSample` のメンバ |
+| --- | --- | --- | --- | --- |
+| `index` | 整数 | ○ | サンプル番号（0〜63）。キー割り当ての `sample` から参照されます | — |
+| `name` | string | | 名前。省略時は `""` | `name` |
+| `rate` | 整数 | | 作ったときのレート（0〜15）。キーに割り当てるときの初期値。省略時は `15` | `rate` |
+| `restLevel` | 整数 | | 鳴らし始めるレベル（0〜127）。鳴らすときに `$4011` に書きます。省略時は `64` | `restLevel` |
+| `data` | string | ○ | バイト列のbase64（パディング付き）。`16n + 1` バイトで4081バイト以下。`""` は空のサンプル | `data` |
+
+- `index` に欠番があってもかまいません。読み込み時は、欠番の位置に空のサンプルを作ります。
+- サンプルは、`index` の順に64バイト境界で16KBのメモリ（`$C000`〜`$FFFF`）に並べます（`Song::getDpcmSampleOffset()`）。合計（各サンプルを64バイトに切り上げた和）が16384バイトを超えたらエラーです。
+- サンプルがあるときだけ書きます。データが長いので、最後に書きます。
+
 ## 読み込み時の検証
 
 次の場合は読み込みをエラーにします。エラーメッセージは、問題の場所（JSONポインタ形式）で始まります。
@@ -207,6 +257,7 @@
 /patterns/3/rows/7/note: invalid note "H-4"
 /speed: must be between 1 and 31
 /instruments/1/index: duplicate instrument 0
+/dpcmSamples/0/data: must be 16n + 1 bytes, at most 4081 (not 2)
 invalid JSON at line 12, column 5: unexpected character, expected a string key
 ```
 
@@ -215,8 +266,9 @@ invalid JSON at line 12, column 5: unexpected character, expected a string key
 - `version` が `1` より大きい（新しいバージョンで保存されたファイル）
 - 必須のキーが無い、型が違う
 - 値が範囲外、表記が不正（`noteFromString()` などが `std::nullopt` を返す）
-- 番号の重複（インストゥルメントの `index`、パターンの `(channel, index)`、行の `row`）
+- 番号の重複（インストゥルメントの `index`、パターンの `(channel, index)`、行の `row`、サンプルの `index`、キー割り当ての `note`）
 - シーケンスの `loop` / `release` が `values` の範囲外
+- DPCMのサンプルが長さの条件を満たさない、合計が16KBを超える、キー割り当てが無いサンプルを指す
 
 範囲外の値を丸めて読み込むことはしません。手で編集したファイルの誤りに気付けるようにするためです。
 
@@ -228,7 +280,7 @@ invalid JSON at line 12, column 5: unexpected character, expected a string key
 - インデントは2スペースです。
 - 次の値は1行に書きます。それ以外は、1要素を1行に書きます。
   - スカラー値だけを持つ配列・オブジェクト（チャンネル、フレーム、`effects`）
-  - スカラー値と「スカラー値だけの配列」を持つオブジェクト（行、シーケンス）
+  - スカラー値と「スカラー値だけの配列」を持つオブジェクト（行、シーケンス、キー割り当て、サンプル）
 - 1行に書くオブジェクトは `{ "key": value, ... }`、配列は `[1, 2, 3]` の形です。
 - 末尾は改行で終わります。
 

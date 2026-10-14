@@ -10,7 +10,7 @@ namespace ocf::tracker_tool {
 
 class TrackerAudio;
 
-/** Lists the instruments and edits their sequences as MML text. */
+/** Lists the instruments, and edits their sequences as MML text and their DPCM keys. */
 class InstrumentEditor {
 public:
     void draw(EditorState& state, TrackerAudio& audio);
@@ -18,6 +18,7 @@ public:
 private:
     void drawList(EditorState& state);
     void drawSequence(EditorState& state, Instrument& instrument, SequenceType type);
+    void drawDpcmKeys(EditorState& state, Instrument& instrument, TrackerAudio& audio);
     void syncText(const EditorState& state);
 
     // The text being edited, which may be invalid while typing

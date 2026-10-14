@@ -347,12 +347,7 @@ void PatternEditor::drawChannelHeader(EditorState& state, TrackerAudio& audio, i
     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
         toggleMute(state, audio, channel);
     }
-    if (type == ChannelType::Dpcm) {
-        ImGui::SetItemTooltip("DPCM is not played yet\nClick: mute / Right-click: menu");
-    }
-    else {
-        ImGui::SetItemTooltip("Click: mute / Right-click: menu");
-    }
+    ImGui::SetItemTooltip("Click: mute / Right-click: menu");
 
     if (ImGui::BeginPopupContextItem("##header_menu")) {
         if (ImGui::MenuItem("Mute", nullptr, state.muted[channel])) {
@@ -631,6 +626,10 @@ void PatternEditor::handleValueInput(EditorState& state)
 void PatternEditor::enterNote(EditorState& state, TrackerAudio& audio, uint8_t note, ImGuiKey key)
 {
     const ChannelType channel = state.getCursorChannel();
+    // The instrument editor shows the key of the note
+    if (channel == ChannelType::Dpcm && note >= NOTE_MIN && note <= NOTE_MAX) {
+        state.dpcmKeyNote = note;
+    }
     if (m_previewKey != ImGuiKey_None) {
         audio.stopNote(m_previewChannel);
         m_previewKey = ImGuiKey_None;

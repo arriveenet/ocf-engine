@@ -49,6 +49,8 @@ public:
 
     void stopNote(tracker::ChannelType channel);
 
+    void playDpcmSample(const tracker::DpcmKey& key);
+
     void setChannelMuted(tracker::ChannelType channel, bool muted);
 
     /** Status as of the last render(). */
@@ -56,7 +58,15 @@ public:
 
 private:
     struct Command {
-        enum class Type : uint8_t { SetSong, PlaySong, StopSong, PlayNote, StopNote, SetMuted };
+        enum class Type : uint8_t {
+            SetSong,
+            PlaySong,
+            StopSong,
+            PlayNote,
+            StopNote,
+            PlayDpcmSample,
+            SetMuted,
+        };
 
         Type type = Type::StopSong;
         std::shared_ptr<const tracker::Song> song;
@@ -66,12 +76,14 @@ private:
         uint8_t note = tracker::NOTE_NONE;
         uint8_t instrument = tracker::VALUE_NONE;
         bool muted = false;
+        tracker::DpcmKey dpcmKey;
     };
 
     void pushCommand(Command command);
 
     // Audio thread
     void processCommands();
+    void loadDpcmSamples();
     void writeRegister(uint16_t address, uint8_t data);
 
     std::unique_ptr<Apu> m_apu;

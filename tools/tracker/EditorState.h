@@ -123,6 +123,9 @@ struct EditorState {
     bool editMode = false;
     bool followPlayback = true;
     int currentInstrument = 0;
+    int currentDpcmSample = 0;
+    uint8_t dpcmKeyNote = 37; // C-3, the key edited in the instrument editor
+    bool showDpcmSamples = false;
     std::array<bool, CHANNEL_COUNT> muted{};
     std::optional<Selection> selection; // In the cursor's frame
     PlaybackStatus playback;            // As of this frame
@@ -156,6 +159,7 @@ struct EditorState {
         filePath = std::move(path);
         cursor = Cursor{};
         currentInstrument = 0;
+        currentDpcmSample = 0;
         selection.reset();
         songChanged = true;
         modified = false;
