@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
+#include <optional>
 #include <utility>
+#include <vector>
 
 namespace ocf::tracker_tool {
 
@@ -54,12 +56,63 @@ inline Field getField(int column)
     return {FieldType::EffectParam, sub - 1, effect};
 }
 
+/*
+ * Fields of one channel, in column order: 0: note, 1: instrument, 2: volume, then the effect
+ * columns. Selections, copy and paste work on whole fields.
+ */
+constexpr int FIXED_FIELD_COUNT = 3;
+
+inline int getFieldIndex(int column)
+{
+    const Field field = getField(column);
+    switch (field.type) {
+    case FieldType::Note:       return 0;
+    case FieldType::Instrument: return 1;
+    case FieldType::Volume:     return 2;
+    default:                    return FIXED_FIELD_COUNT + field.effect;
+    }
+}
+
 struct Cursor {
     int frame = 0;
     int row = 0;
     int channel = 0;
     int column = 0;
 };
+
+/** A selection, as the cursor positions where it started and where it ends. */
+struct Selection {
+    Cursor anchor;
+    Cursor end;
+};
+
+/** The rows and fields a selection covers. */
+struct SelectionBlock {
+    int rowStart = 0; // Inclusive
+    int rowEnd = 0;   // Inclusive
+    int channelStart = 0;
+    int channelEnd = 0;
+    int fieldStart = 0; // Field of channelStart
+    int fieldEnd = 0;   // Field of channelEnd
+
+    int getFirstField(int channel) const { return channel == channelStart ? fieldStart : 0; }
+
+    int getLastField(int channel, int fieldCount) const
+    {
+        return channel == channelEnd ? std::min(fieldEnd, fieldCount - 1) : fieldCount - 1;
+    }
+
+    bool operator==(const SelectionBlock&) const = default;
+};
+
+/** What undo and redo bring back. */
+struct Snapshot {
+    Song song;
+    Cursor cursor;
+    int currentInstrument = 0;
+};
+
+constexpr size_t MAX_UNDO_STEPS = 100;
 
 /** Everything the editor windows share. */
 struct EditorState {
@@ -71,17 +124,30 @@ struct EditorState {
     bool followPlayback = true;
     int currentInstrument = 0;
     std::array<bool, CHANNEL_COUNT> muted{};
-    PlaybackStatus playback; // As of this frame
+    std::optional<Selection> selection; // In the cursor's frame
+    PlaybackStatus playback;            // As of this frame
 
     bool songChanged = true;        // The song must be sent to the player
     bool modified = false;          // Changed since it was created, opened or saved
-    int songRevision = 0;           // Incremented when the whole song is replaced
+    int songRevision = 0;           // Incremented when the whole song is replaced, also by undo
     std::filesystem::path filePath; // Empty until the song is saved or opened
+
+    /*
+     * Undo and redo keep copies of the whole song. The edits are recorded as one step when no
+     * item is active, so that typing in a text field or dragging a slider is one step.
+     */
+    std::vector<Snapshot> undoStack;
+    std::vector<Snapshot> redoStack;
+    Song committedSong = song; // As of the last step
+    bool editPending = false;  // Edited since the last step
+    Cursor editCursor;         // Where the pending edit began
+    int editInstrument = 0;
 
     void markModified()
     {
         songChanged = true;
         modified = true;
+        editPending = true;
     }
 
     void replaceSong(Song newSong, std::filesystem::path path = {})
@@ -90,14 +156,111 @@ struct EditorState {
         filePath = std::move(path);
         cursor = Cursor{};
         currentInstrument = 0;
+        selection.reset();
         songChanged = true;
         modified = false;
+        songRevision++;
+
+        undoStack.clear();
+        redoStack.clear();
+        committedSong = song;
+        editPending = false;
+    }
+
+    /** Called at the start of each frame, before anything is edited. */
+    void beginFrame()
+    {
+        if (!editPending) {
+            editCursor = cursor;
+            editInstrument = currentInstrument;
+        }
+    }
+
+    /** Records the pending edit as one undo step. */
+    void commitEdit()
+    {
+        if (!editPending) {
+            return;
+        }
+        editPending = false;
+        undoStack.push_back({std::move(committedSong), editCursor, editInstrument});
+        if (undoStack.size() > MAX_UNDO_STEPS) {
+            undoStack.erase(undoStack.begin());
+        }
+        redoStack.clear();
+        committedSong = song;
+    }
+
+    bool canUndo() const { return editPending || !undoStack.empty(); }
+
+    bool canRedo() const { return !editPending && !redoStack.empty(); }
+
+    void undo()
+    {
+        commitEdit();
+        if (undoStack.empty()) {
+            return;
+        }
+        redoStack.push_back({std::move(song), cursor, currentInstrument});
+        restore(std::move(undoStack.back()));
+        undoStack.pop_back();
+    }
+
+    void redo()
+    {
+        if (!canRedo()) {
+            return;
+        }
+        undoStack.push_back({std::move(song), cursor, currentInstrument});
+        restore(std::move(redoStack.back()));
+        redoStack.pop_back();
+    }
+
+    void restore(Snapshot snapshot)
+    {
+        song = std::move(snapshot.song);
+        committedSong = song;
+        cursor = snapshot.cursor;
+        currentInstrument = snapshot.currentInstrument;
+        selection.reset();
+        clampCursor();
+        songChanged = true;
+        modified = true;
         songRevision++;
     }
 
     int getColumnCount(int channel) const
     {
         return FIXED_COLUMN_COUNT + COLUMNS_PER_EFFECT * song.effectColumns[channel];
+    }
+
+    int getFieldCount(int channel) const { return FIXED_FIELD_COUNT + song.effectColumns[channel]; }
+
+    SelectionBlock getBlock(const Selection& selected) const
+    {
+        const Cursor& anchor = selected.anchor;
+        const Cursor& end = selected.end;
+        const int lastRow = song.rowsPerPattern - 1;
+        SelectionBlock block;
+        block.rowStart = std::min(std::min(anchor.row, end.row), lastRow);
+        block.rowEnd = std::min(std::max(anchor.row, end.row), lastRow);
+
+        const std::pair anchorField(anchor.channel, getFieldIndex(anchor.column));
+        const std::pair endField(end.channel, getFieldIndex(end.column));
+        const auto& [first, last] = std::minmax(anchorField, endField);
+        block.channelStart = first.first;
+        block.fieldStart = first.second;
+        block.channelEnd = last.first;
+        block.fieldEnd = last.second;
+        return block;
+    }
+
+    std::optional<SelectionBlock> getSelectedBlock() const
+    {
+        if (!selection || selection->anchor.frame != cursor.frame) {
+            return std::nullopt;
+        }
+        return getBlock(*selection);
     }
 
     ChannelType getCursorChannel() const { return static_cast<ChannelType>(cursor.channel); }

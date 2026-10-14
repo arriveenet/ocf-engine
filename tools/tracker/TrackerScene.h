@@ -55,6 +55,9 @@ private:
     std::filesystem::path getSongDirectory() const;
     void showError(std::string message);
 
+    void undo();
+    void redo();
+
     void playFromStart();
     void playFromFrame();
     void playFromRow();

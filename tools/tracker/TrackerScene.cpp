@@ -43,8 +43,10 @@ constexpr KeyHelp KEY_HELP[] = {
     {"-", "Note release (===)"},
     {"0-9 A-F", "Instrument, volume and effect parameter (hexadecimal)"},
     {"F B D C", "Effect (effect column)"},
-    {"Delete", "Clear the field under the cursor"},
+    {"Delete", "Clear the field under the cursor, or the selection"},
     {"Arrow keys", "Move the cursor"},
+    {"Shift+Arrow keys / drag", "Select (within the frame)"},
+    {"Escape", "Clear the selection"},
     {"PageUp / PageDown", "Move 16 rows"},
     {"Home / End", "First / last row"},
     {"Tab / Shift+Tab", "Next / previous channel"},
@@ -55,6 +57,11 @@ constexpr KeyHelp KEY_HELP[] = {
     {"F6", "Play from the start of the cursor's frame"},
     {"F7", "Play from the cursor"},
     {"F8", "Stop"},
+    {"Ctrl+Z", "Undo"},
+    {"Ctrl+Y / Ctrl+Shift+Z", "Redo"},
+    {"Ctrl+C / Ctrl+X", "Copy / cut the selection (or the field under the cursor)"},
+    {"Ctrl+V", "Paste at the cursor"},
+    {"Ctrl+A", "Select the channel, again for the whole frame"},
     {"Ctrl+N", "New song"},
     {"Ctrl+O", "Open a song"},
     {"Ctrl+S / Ctrl+Shift+S", "Save / save as"},
@@ -92,6 +99,7 @@ void TrackerScene::onUpdate(float /*deltaTime*/)
 
 void TrackerScene::onImGui()
 {
+    m_state.beginFrame();
     handleShortcuts();
     drawMenuBar();
 
@@ -124,6 +132,11 @@ void TrackerScene::onImGui()
     drawErrorPopup();
     drawHelpWindow();
 
+    // Typing in a text field or dragging a slider is one undo step, recorded when it ends
+    if (!ImGui::IsAnyItemActive()) {
+        m_state.commitEdit();
+    }
+
     // Send the changes of this frame to the player at once
     if (m_state.songChanged) {
         m_audio->setSong(m_state.song);
@@ -153,6 +166,29 @@ void TrackerScene::handleShortcuts()
             else {
                 save();
             }
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Z)) {
+            if (io.KeyShift) {
+                redo();
+            }
+            else {
+                undo();
+            }
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
+            redo();
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_C, false)) {
+            m_patternEditor.copy(m_state);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_X, false)) {
+            m_patternEditor.cut(m_state);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_V, false)) {
+            m_patternEditor.paste(m_state);
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey_A, false)) {
+            m_patternEditor.selectAll(m_state);
         }
         return;
     }
@@ -202,6 +238,30 @@ void TrackerScene::drawMenuBar()
         }
         if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
             saveAs();
+        }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu("Edit")) {
+        if (ImGui::MenuItem("Undo", "Ctrl+Z", false, m_state.canUndo())) {
+            undo();
+        }
+        if (ImGui::MenuItem("Redo", "Ctrl+Y", false, m_state.canRedo())) {
+            redo();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Cut", "Ctrl+X")) {
+            m_patternEditor.cut(m_state);
+        }
+        if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+            m_patternEditor.copy(m_state);
+        }
+        if (ImGui::MenuItem("Paste", "Ctrl+V", false, m_patternEditor.canPaste())) {
+            m_patternEditor.paste(m_state);
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Select All", "Ctrl+A")) {
+            m_patternEditor.selectAll(m_state);
         }
         ImGui::EndMenu();
     }
@@ -452,6 +512,18 @@ void TrackerScene::showError(std::string message)
 {
     m_errorMessage = std::move(message);
     m_openErrorPopup = true;
+}
+
+void TrackerScene::undo()
+{
+    m_state.undo();
+    m_patternEditor.scrollToCursor();
+}
+
+void TrackerScene::redo()
+{
+    m_state.redo();
+    m_patternEditor.scrollToCursor();
 }
 
 void TrackerScene::playFromStart()

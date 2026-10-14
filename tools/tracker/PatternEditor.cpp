@@ -23,6 +23,7 @@ constexpr ImU32 VOLUME_COLOR = IM_COL32(130, 180, 255, 255);
 constexpr ImU32 EFFECT_COLOR = IM_COL32(255, 180, 100, 255);
 constexpr ImU32 EMPTY_COLOR = IM_COL32(110, 110, 110, 255);
 
+constexpr ImU32 SELECTION_COLOR = IM_COL32(70, 80, 150, 170);
 constexpr ImU32 CURSOR_COLOR = IM_COL32(60, 110, 210, 200);
 constexpr ImU32 CURSOR_EDIT_COLOR = IM_COL32(200, 60, 60, 200);
 constexpr ImU32 CURSOR_ROW_COLOR = IM_COL32(50, 60, 90, 255);
@@ -88,6 +89,16 @@ CharRange getColumnChars(int column)
     }
 }
 
+CharRange getFieldChars(int field)
+{
+    switch (field) {
+    case 0:  return {0, 3};
+    case 1:  return {4, 2};
+    case 2:  return {7, 1};
+    default: return {9 + 4 * (field - FIXED_FIELD_COUNT), 3};
+    }
+}
+
 int getColumnAtChar(int charIndex, int columnCount)
 {
     for (int column = 0; column < columnCount; column++) {
@@ -125,6 +136,63 @@ ImU32 dim(ImU32 color)
     return (color & ~IM_COL32_A_MASK) | (static_cast<ImU32>(80) << IM_COL32_A_SHIFT);
 }
 
+void clearCellField(Cell& cell, int field)
+{
+    switch (field) {
+    case 0:  cell.note = NOTE_NONE; break;
+    case 1:  cell.instrument = VALUE_NONE; break;
+    case 2:  cell.volume = VALUE_NONE; break;
+    default: cell.effects[field - FIXED_FIELD_COUNT] = Effect{}; break;
+    }
+}
+
+/** Notes pasted into the noise channel are folded into its 16 pitches. */
+void copyCellField(const Cell& source, ChannelType sourceChannel, int sourceField, Cell& target,
+                   ChannelType targetChannel, int targetField)
+{
+    switch (sourceField) {
+    case 0: {
+        uint8_t note = source.note;
+        if (targetChannel == ChannelType::Noise && sourceChannel != ChannelType::Noise &&
+            note >= NOTE_MIN && note <= NOTE_MAX) {
+            note = static_cast<uint8_t>((note - NOTE_MIN) % NOISE_NOTE_MAX + NOTE_MIN);
+        }
+        target.note = note;
+        break;
+    }
+    case 1:  target.instrument = source.instrument; break;
+    case 2:  target.volume = source.volume; break;
+    default:
+        target.effects[targetField - FIXED_FIELD_COUNT] =
+            source.effects[sourceField - FIXED_FIELD_COUNT];
+        break;
+    }
+}
+
+SelectionBlock getSelectedBlockOrCursor(const EditorState& state)
+{
+    if (const std::optional<SelectionBlock> block = state.getSelectedBlock()) {
+        return *block;
+    }
+    const Cursor& cursor = state.cursor;
+    const int field = getFieldIndex(cursor.column);
+    return {cursor.row, cursor.row, cursor.channel, cursor.channel, field, field};
+}
+
+void clearBlock(EditorState& state, const SelectionBlock& block)
+{
+    for (int channel = block.channelStart; channel <= block.channelEnd; channel++) {
+        Pattern& pattern = state.getPattern(state.cursor.frame, channel);
+        const int firstField = block.getFirstField(channel);
+        const int lastField = block.getLastField(channel, state.getFieldCount(channel));
+        for (int row = block.rowStart; row <= block.rowEnd; row++) {
+            for (int field = firstField; field <= lastField; field++) {
+                clearCellField(pattern.rows[row], field);
+            }
+        }
+    }
+}
+
 void toggleMute(EditorState& state, TrackerAudio& audio, int channel)
 {
     state.muted[channel] = !state.muted[channel];
@@ -136,6 +204,21 @@ void toggleMute(EditorState& state, TrackerAudio& audio, int channel)
 void PatternEditor::draw(EditorState& state, TrackerAudio& audio, ImFont* font)
 {
     state.clampCursor();
+    if (state.selection && state.selection->anchor.frame != state.cursor.frame) {
+        state.selection.reset();
+    }
+    if (m_dragging && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        m_dragging = false;
+        // A click without a drag only moves the cursor
+        if (state.selection) {
+            const Cursor& anchor = state.selection->anchor;
+            const Cursor& end = state.selection->end;
+            if (anchor.row == end.row && anchor.channel == end.channel &&
+                getFieldIndex(anchor.column) == getFieldIndex(end.column)) {
+                state.selection.reset();
+            }
+        }
+    }
     handleKeyboard(state, audio);
     if (state.playback.playing && state.followPlayback) {
         m_scrollToCursor = true;
@@ -211,6 +294,7 @@ void PatternEditor::drawGrid(EditorState& state, TrackerAudio& audio)
     }
 
     const bool showPlayback = state.playback.playing && state.playback.frame == state.cursor.frame;
+    const std::optional<SelectionBlock> block = state.getSelectedBlock();
     for (int row = 0; row < state.song.rowsPerPattern; row++) {
         ImGui::TableNextRow();
         ImGui::PushID(row);
@@ -236,7 +320,7 @@ void PatternEditor::drawGrid(EditorState& state, TrackerAudio& audio)
 
         for (int channel = 0; channel < static_cast<int>(CHANNEL_COUNT); channel++) {
             ImGui::TableSetColumnIndex(channel + 1);
-            drawCell(state, row, channel, charWidth);
+            drawCell(state, row, channel, charWidth, block ? &*block : nullptr);
         }
 
         if (m_scrollToCursor && row == state.cursor.row) {
@@ -286,7 +370,8 @@ void PatternEditor::drawChannelHeader(EditorState& state, TrackerAudio& audio, i
     ImGui::PopID();
 }
 
-void PatternEditor::drawCell(EditorState& state, int row, int channel, float charWidth)
+void PatternEditor::drawCell(EditorState& state, int row, int channel, float charWidth,
+                             const SelectionBlock* block)
 {
     const auto type = static_cast<ChannelType>(channel);
     const int effectColumns = state.song.effectColumns[channel];
@@ -303,15 +388,46 @@ void PatternEditor::drawCell(EditorState& state, int row, int channel, float cha
 
     ImGui::PushID(channel);
     ImGui::InvisibleButton("##cell", ImVec2(charWidth * getCellChars(effectColumns), lineHeight));
-    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+    auto getMouseCursor = [&]() {
         const int charIndex = static_cast<int>((ImGui::GetIO().MousePos.x - origin.x) / charWidth);
-        state.cursor.row = row;
-        state.cursor.channel = channel;
-        state.cursor.column = getColumnAtChar(charIndex, state.getColumnCount(channel));
+        return Cursor{state.cursor.frame, row, channel,
+                      getColumnAtChar(charIndex, state.getColumnCount(channel))};
+    };
+    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+        // Drag to select. Shift+click extends the selection
+        const Cursor clicked = getMouseCursor();
+        if (ImGui::GetIO().KeyShift) {
+            if (!state.selection) {
+                state.selection = Selection{state.cursor, state.cursor};
+            }
+            state.selection->end = clicked;
+        }
+        else {
+            state.selection = Selection{clicked, clicked};
+        }
+        state.cursor = clicked;
+        m_dragging = true;
+    }
+    else if (m_dragging && state.selection &&
+             ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+        state.cursor = getMouseCursor();
+        state.selection->end = state.cursor;
     }
     ImGui::PopID();
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
+    if (block != nullptr && row >= block->rowStart && row <= block->rowEnd &&
+        channel >= block->channelStart && channel <= block->channelEnd) {
+        const int firstField = block->getFirstField(channel);
+        const int lastField = block->getLastField(channel, state.getFieldCount(channel));
+        if (firstField <= lastField) {
+            const CharRange first = getFieldChars(firstField);
+            const CharRange last = getFieldChars(lastField);
+            const ImVec2 min(origin.x + first.start * charWidth, origin.y);
+            const ImVec2 max(origin.x + (last.start + last.count) * charWidth, origin.y + lineHeight);
+            drawList->AddRectFilled(min, max, SELECTION_COLOR);
+        }
+    }
     if (row == state.cursor.row && channel == state.cursor.channel) {
         const CharRange range = getColumnChars(state.cursor.column);
         const ImVec2 min(origin.x + range.start * charWidth, origin.y);
@@ -363,12 +479,15 @@ void PatternEditor::handleKeyboard(EditorState& state, TrackerAudio& audio)
 void PatternEditor::handleNavigation(EditorState& state)
 {
     const int lastRow = state.song.rowsPerPattern - 1;
+    // Shift+move selects, within the cursor's frame
+    const bool selecting = ImGui::GetIO().KeyShift;
+    const Cursor before = state.cursor;
 
     if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-        moveRows(state, -1, true);
+        moveRows(state, -1, !selecting);
     }
     if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
-        moveRows(state, 1, true);
+        moveRows(state, 1, !selecting);
     }
     if (ImGui::IsKeyPressed(ImGuiKey_PageUp)) {
         moveRows(state, -PAGE_ROWS, false);
@@ -388,7 +507,26 @@ void PatternEditor::handleNavigation(EditorState& state)
     if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
         moveColumn(state, 1);
     }
+
+    const Cursor& after = state.cursor;
+    if (after.frame != before.frame || after.row != before.row || after.channel != before.channel ||
+        after.column != before.column) {
+        if (selecting) {
+            if (!state.selection) {
+                state.selection = Selection{before, before};
+            }
+            state.selection->end = after;
+        }
+        else {
+            state.selection.reset();
+        }
+    }
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+        state.selection.reset();
+    }
+
     if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
+        state.selection.reset();
         const int channelCount = static_cast<int>(CHANNEL_COUNT);
         const int delta = ImGui::GetIO().KeyShift ? channelCount - 1 : 1;
         state.cursor.channel = (state.cursor.channel + delta) % channelCount;
@@ -407,9 +545,15 @@ void PatternEditor::handleNavigation(EditorState& state)
     }
 
     if (state.editMode && ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-        clearField(state);
-        state.markModified();
-        advanceAfterEdit(state);
+        if (const std::optional<SelectionBlock> block = state.getSelectedBlock()) {
+            clearBlock(state, *block);
+            state.markModified();
+        }
+        else {
+            clearField(state);
+            state.markModified();
+            advanceAfterEdit(state);
+        }
     }
 }
 
@@ -530,6 +674,90 @@ void PatternEditor::clearField(EditorState& state)
     case FieldType::Instrument: cell.instrument = VALUE_NONE; break;
     case FieldType::Volume:     cell.volume = VALUE_NONE; break;
     default:                    cell.effects[field.effect] = Effect{}; break;
+    }
+}
+
+void PatternEditor::copy(EditorState& state)
+{
+    const SelectionBlock block = getSelectedBlockOrCursor(state);
+    m_clipboard.clear();
+    for (int channel = block.channelStart; channel <= block.channelEnd; channel++) {
+        const Pattern& pattern = state.getPattern(state.cursor.frame, channel);
+        ClipboardChannel& copied = m_clipboard.emplace_back();
+        copied.type = static_cast<ChannelType>(channel);
+        copied.firstField = block.getFirstField(channel);
+        copied.lastField = block.getLastField(channel, state.getFieldCount(channel));
+        copied.rows.assign(pattern.rows.begin() + block.rowStart,
+                           pattern.rows.begin() + block.rowEnd + 1);
+    }
+}
+
+void PatternEditor::cut(EditorState& state)
+{
+    copy(state);
+    clearBlock(state, getSelectedBlockOrCursor(state));
+    state.markModified();
+}
+
+void PatternEditor::paste(EditorState& state)
+{
+    if (m_clipboard.empty()) {
+        return;
+    }
+
+    // Fields go to the same fields of the channels from the cursor's channel. Only effect columns
+    // copied from one channel go to the cursor's effect column, to move them between columns
+    const Cursor& cursor = state.cursor;
+    const int cursorField = getFieldIndex(cursor.column);
+    const ClipboardChannel& front = m_clipboard.front();
+    int effectOffset = 0;
+    if (m_clipboard.size() == 1 && front.firstField >= FIXED_FIELD_COUNT &&
+        cursorField >= FIXED_FIELD_COUNT) {
+        effectOffset = cursorField - front.firstField;
+    }
+
+    for (size_t i = 0; i < m_clipboard.size(); i++) {
+        const ClipboardChannel& copied = m_clipboard[i];
+        const int channel = cursor.channel + static_cast<int>(i);
+        if (channel >= static_cast<int>(CHANNEL_COUNT)) {
+            break;
+        }
+        const auto type = static_cast<ChannelType>(channel);
+        const int fieldCount = state.getFieldCount(channel);
+        Pattern& pattern = state.getPattern(cursor.frame, channel);
+        for (size_t r = 0; r < copied.rows.size(); r++) {
+            const int row = cursor.row + static_cast<int>(r);
+            if (row >= state.song.rowsPerPattern) {
+                break;
+            }
+            for (int field = copied.firstField; field <= copied.lastField; field++) {
+                const int target = (field >= FIXED_FIELD_COUNT) ? field + effectOffset : field;
+                if (target < fieldCount) {
+                    copyCellField(copied.rows[r], copied.type, field, pattern.rows[row], type, target);
+                }
+            }
+        }
+    }
+    state.markModified();
+}
+
+void PatternEditor::selectAll(EditorState& state)
+{
+    const Cursor& cursor = state.cursor;
+    const int lastRow = state.song.rowsPerPattern - 1;
+    const Selection channelSelection{
+        {cursor.frame, 0, cursor.channel, 0},
+        {cursor.frame, lastRow, cursor.channel, state.getColumnCount(cursor.channel) - 1}};
+
+    // A second time selects every channel
+    if (state.getSelectedBlock() == state.getBlock(channelSelection)) {
+        const int lastChannel = static_cast<int>(CHANNEL_COUNT) - 1;
+        state.selection = Selection{
+            {cursor.frame, 0, 0, 0},
+            {cursor.frame, lastRow, lastChannel, state.getColumnCount(lastChannel) - 1}};
+    }
+    else {
+        state.selection = channelSelection;
     }
 }
 
