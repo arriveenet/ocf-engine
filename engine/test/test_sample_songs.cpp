@@ -35,16 +35,16 @@ TEST(SampleSongTest, CanonInDIsValidAndCanonical)
     const std::string json = readFile(CANON_IN_D);
     ASSERT_FALSE(json.empty()) << CANON_IN_D;
 
-    const auto result = loadSongFromString(json);
+    const auto result = SongSerializer::loadFromString(json);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
 
     // Already in the layout the serializer writes, so saving it from the tracker gives no diff
-    EXPECT_EQ(saveSongToString(result.unwrap()), json);
+    EXPECT_EQ(SongSerializer::saveToString(result.unwrap()), json);
 }
 
 TEST(SampleSongTest, CanonInDPlaysEveryFrameAndStopsAfterTheLastChord)
 {
-    auto result = loadSong(CANON_IN_D);
+    auto result = SongSerializer::load(CANON_IN_D);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
     const auto song = std::make_shared<const Song>(std::move(result).unwrap());
 

@@ -125,7 +125,7 @@ std::optional<DpcmEncodeResult> encodeAtRate(std::span<const float> input, uint3
         input = input.first(std::min(input.size(), static_cast<size_t>(std::ceil(needed))));
     }
 
-    std::vector<float> targets = detail::resample(input, sampleRate, frequency);
+    std::vector<float> targets = DpcmEncoder::resample(input, sampleRate, frequency);
     for (float& target : targets) {
         target = std::clamp(options.center + target * scale * FULL_SCALE_LEVELS, 0.0f,
                             static_cast<float>(DPCM_LEVEL_MAX));
@@ -142,7 +142,7 @@ std::optional<DpcmEncodeResult> encodeAtRate(std::span<const float> input, uint3
     }
 
     const uint8_t rest = options.restLevel;
-    std::vector<uint8_t> bits = detail::encodeBits(targets, rest, options.method);
+    std::vector<uint8_t> bits = DpcmEncoder::encodeBits(targets, rest, options.method);
     std::vector<uint8_t> levels;
     levels.reserve(bits.size());
     uint8_t level = rest;
@@ -177,7 +177,7 @@ std::optional<DpcmEncodeResult> encodeAtRate(std::span<const float> input, uint3
             bits.push_back(bit);
         }
     }
-    result.data = detail::packBits(bits);
+    result.data = DpcmEncoder::packBits(bits);
 
     double signal = 0.0;
     double noise = 0.0;
@@ -198,9 +198,8 @@ std::optional<DpcmEncodeResult> encodeAtRate(std::span<const float> input, uint3
 
 } // namespace
 
-namespace detail {
-
-std::pair<size_t, size_t> findNonSilentRange(std::span<const float> samples, float thresholdDb)
+std::pair<size_t, size_t> DpcmEncoder::findNonSilentRange(std::span<const float> samples,
+                                                          float thresholdDb)
 {
     const float threshold = std::pow(10.0f, thresholdDb / 20.0f);
     auto isLoud = [threshold](float sample) { return std::abs(sample) > threshold; };
@@ -213,7 +212,8 @@ std::pair<size_t, size_t> findNonSilentRange(std::span<const float> samples, flo
             static_cast<size_t>(last - samples.begin())};
 }
 
-std::vector<float> resample(std::span<const float> samples, double fromRate, double toRate)
+std::vector<float> DpcmEncoder::resample(std::span<const float> samples, double fromRate,
+                                         double toRate)
 {
     if (samples.empty()) {
         return {};
@@ -242,8 +242,8 @@ std::vector<float> resample(std::span<const float> samples, double fromRate, dou
     return output;
 }
 
-std::vector<uint8_t> encodeBits(std::span<const float> targets, uint8_t startLevel,
-                                DpcmEncodeMethod method)
+std::vector<uint8_t> DpcmEncoder::encodeBits(std::span<const float> targets, uint8_t startLevel,
+                                             DpcmEncodeMethod method)
 {
     startLevel = std::min(startLevel, DPCM_LEVEL_MAX);
     switch (method) {
@@ -252,7 +252,7 @@ std::vector<uint8_t> encodeBits(std::span<const float> targets, uint8_t startLev
     }
 }
 
-std::vector<uint8_t> packBits(std::span<const uint8_t> bits)
+std::vector<uint8_t> DpcmEncoder::packBits(std::span<const uint8_t> bits)
 {
     std::vector<uint8_t> data(getDpcmPlayableLength((bits.size() + 7) / 8), 0);
     for (size_t i = 0; i < data.size() * 8; i++) {
@@ -265,10 +265,9 @@ std::vector<uint8_t> packBits(std::span<const uint8_t> bits)
     return data;
 }
 
-} // namespace detail
-
-Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples, uint32_t sampleRate,
-                                                 const DpcmEncodeOptions& options)
+Result<DpcmEncodeResult, std::string> DpcmEncoder::encode(std::span<const float> samples,
+                                                          uint32_t sampleRate,
+                                                          const DpcmEncodeOptions& options)
 {
     if (sampleRate == 0) {
         return EncodeResult::Err("invalid sample rate 0");
@@ -288,7 +287,8 @@ Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples,
 
     std::span<const float> input = samples;
     if (options.trimThresholdDb) {
-        const auto [first, last] = detail::findNonSilentRange(samples, *options.trimThresholdDb);
+        const auto [first, last] =
+            DpcmEncoder::findNonSilentRange(samples, *options.trimThresholdDb);
         if (first >= last) {
             return EncodeResult::Err(
                 std::format("the input is silent below {} dBFS", *options.trimThresholdDb));

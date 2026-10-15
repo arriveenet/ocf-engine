@@ -8,10 +8,6 @@
 
 namespace ocf::tracker_tool {
 
-/** ImGui works with UTF-8 strings. */
-std::string pathToUtf8(const std::filesystem::path& path);
-std::filesystem::path pathFromUtf8(const std::string& text);
-
 /** A small modal dialog that picks a file to open or save. */
 class FileDialog {
 public:

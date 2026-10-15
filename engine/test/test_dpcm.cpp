@@ -24,7 +24,7 @@ std::vector<float> makeSine(double frequency, double amplitude, uint32_t sampleR
 DpcmEncodeResult encode(const std::vector<float>& samples, uint32_t sampleRate,
                         const DpcmEncodeOptions& options = {})
 {
-    auto result = encodeDpcm(samples, sampleRate, options);
+    auto result = DpcmEncoder::encode(samples, sampleRate, options);
     EXPECT_TRUE(result.isOk()) << (result.isErr() ? result.unwrapErr() : "");
     return result.isOk() ? std::move(result).unwrap() : DpcmEncodeResult{};
 }
@@ -78,13 +78,13 @@ TEST(DpcmTest, RateFrequency)
 TEST(DpcmEncoderTest, PackBitsPadsWithAlternatingBits)
 {
     const std::vector<uint8_t> bits = {1, 1, 0};
-    const std::vector<uint8_t> data = detail::packBits(bits);
+    const std::vector<uint8_t> data = DpcmEncoder::packBits(bits);
     ASSERT_EQ(data.size(), 1u);
     // 1, 1, 0, then 1, 0, 1, 0, 1
     EXPECT_EQ(data[0], 0b10101011);
 
     const std::vector<uint8_t> moreBits(9, 1);
-    const std::vector<uint8_t> padded = detail::packBits(moreBits);
+    const std::vector<uint8_t> padded = DpcmEncoder::packBits(moreBits);
     ASSERT_EQ(padded.size(), 17u);
     EXPECT_EQ(padded[0], 0xFF);
     EXPECT_EQ(padded[1], 0b10101011);
@@ -94,15 +94,16 @@ TEST(DpcmEncoderTest, PackBitsPadsWithAlternatingBits)
 TEST(DpcmEncoderTest, FindNonSilentRange)
 {
     const std::vector<float> samples = {0.0f, 0.001f, 0.5f, 0.0f, -0.5f, 0.001f, 0.0f};
-    EXPECT_EQ(detail::findNonSilentRange(samples, -40.0f), std::make_pair(size_t{2}, size_t{5}));
-    EXPECT_EQ(detail::findNonSilentRange(samples, 0.0f), std::make_pair(size_t{0}, size_t{0}));
+    EXPECT_EQ(DpcmEncoder::findNonSilentRange(samples, -40.0f),
+              std::make_pair(size_t{2}, size_t{5}));
+    EXPECT_EQ(DpcmEncoder::findNonSilentRange(samples, 0.0f), std::make_pair(size_t{0}, size_t{0}));
 }
 
 TEST(DpcmEncoderTest, ResampleKeepsLowFrequencies)
 {
     const std::vector<float> input = makeSine(200.0, 0.5, 44100, 0.1);
     const double toRate = getDpcmRateFrequency(15);
-    const std::vector<float> output = detail::resample(input, 44100, toRate);
+    const std::vector<float> output = DpcmEncoder::resample(input, 44100, toRate);
     ASSERT_EQ(output.size(), static_cast<size_t>(std::ceil(input.size() * toRate / 44100)));
     // Away from the edges, the output is the same sine
     for (size_t i = 200; i < output.size() - 200; i++) {
@@ -115,7 +116,7 @@ TEST(DpcmEncoderTest, ResampleRemovesFrequenciesAboveTheNyquistFrequency)
 {
     // 10kHz cannot be played at about 4.2kHz, and must not alias
     const std::vector<float> input = makeSine(10000.0, 0.5, 44100, 0.1);
-    const std::vector<float> output = detail::resample(input, 44100, getDpcmRateFrequency(0));
+    const std::vector<float> output = DpcmEncoder::resample(input, 44100, getDpcmRateFrequency(0));
     for (size_t i = 100; i < output.size() - 100; i++) {
         ASSERT_NEAR(output[i], 0.0f, 0.01f) << i;
     }
@@ -191,7 +192,7 @@ TEST(DpcmEncoderTest, TooLongIsAnErrorUnlessTruncated)
     // 1.5 seconds does not fit at rate 15 (0.98 seconds)
     const std::vector<float> sine = makeSine(100.0, 0.3, 22050, 1.5);
     DpcmEncodeOptions options;
-    auto error = encodeDpcm(sine, 22050, options);
+    auto error = DpcmEncoder::encode(sine, 22050, options);
     ASSERT_TRUE(error.isErr());
     EXPECT_NE(error.unwrapErr().find("Rate 13 fits"), std::string::npos) << error.unwrapErr();
 
@@ -214,7 +215,7 @@ TEST(DpcmEncoderTest, AutoRateChoosesTheHighestRateThatFits)
 
     // Too long for any rate
     const std::vector<float> longSine = makeSine(100.0, 0.3, 8000, 10.0);
-    EXPECT_TRUE(encodeDpcm(longSine, 8000, options).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode(longSine, 8000, options).isErr());
     options.truncate = true;
     const DpcmEncodeResult truncated = encode(longSine, 8000, options);
     EXPECT_EQ(truncated.rate, 0);
@@ -242,21 +243,22 @@ TEST(DpcmEncoderTest, TrimAndNormalize)
     EXPECT_GE(*std::max_element(levels.begin(), levels.end()), 120);
     EXPECT_LE(*std::min_element(levels.begin(), levels.end()), 8);
 
-    EXPECT_TRUE(encodeDpcm(std::vector<float>(100, 0.0f), 44100, options).isErr()); // Silent
+    EXPECT_TRUE(
+        DpcmEncoder::encode(std::vector<float>(100, 0.0f), 44100, options).isErr()); // Silent
 }
 
 TEST(DpcmEncoderTest, InvalidInput)
 {
     const std::vector<float> samples(100, 0.0f);
-    EXPECT_TRUE(encodeDpcm({}, 44100, {}).isErr());
-    EXPECT_TRUE(encodeDpcm(samples, 0, {}).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode({}, 44100, {}).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode(samples, 0, {}).isErr());
     DpcmEncodeOptions options;
     options.rate = 16;
-    EXPECT_TRUE(encodeDpcm(samples, 44100, options).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode(samples, 44100, options).isErr());
     options = {};
     options.restLevel = 128;
-    EXPECT_TRUE(encodeDpcm(samples, 44100, options).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode(samples, 44100, options).isErr());
     options = {};
     options.gain = -1.0f;
-    EXPECT_TRUE(encodeDpcm(samples, 44100, options).isErr());
+    EXPECT_TRUE(DpcmEncoder::encode(samples, 44100, options).isErr());
 }

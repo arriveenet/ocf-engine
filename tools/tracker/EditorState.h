@@ -30,13 +30,25 @@ enum class FieldType : uint8_t {
     EffectParam,
 };
 
+/*
+ * Fields of one channel, in column order: 0: note, 1: instrument, 2: volume, then the effect
+ * columns. Selections, copy and paste work on whole fields.
+ */
+constexpr int FIXED_FIELD_COUNT = 3;
+
+/** What a column of the pattern editor edits. */
 struct Field {
     FieldType type = FieldType::Note;
     int digit = 0;  // 0: high, 1: low
     int effect = 0; // Effect column
+
+    static Field fromColumn(int column);
+
+    /** The field of the column, counted as in FIXED_FIELD_COUNT. */
+    static int getIndexOfColumn(int column);
 };
 
-inline Field getField(int column)
+inline Field Field::fromColumn(int column)
 {
     if (column == 0) {
         return {FieldType::Note, 0, 0};
@@ -56,15 +68,9 @@ inline Field getField(int column)
     return {FieldType::EffectParam, sub - 1, effect};
 }
 
-/*
- * Fields of one channel, in column order: 0: note, 1: instrument, 2: volume, then the effect
- * columns. Selections, copy and paste work on whole fields.
- */
-constexpr int FIXED_FIELD_COUNT = 3;
-
-inline int getFieldIndex(int column)
+inline int Field::getIndexOfColumn(int column)
 {
-    const Field field = getField(column);
+    const Field field = Field::fromColumn(column);
     switch (field.type) {
     case FieldType::Note:       return 0;
     case FieldType::Instrument: return 1;
@@ -249,8 +255,8 @@ struct EditorState {
         block.rowStart = std::min(std::min(anchor.row, end.row), lastRow);
         block.rowEnd = std::min(std::max(anchor.row, end.row), lastRow);
 
-        const std::pair anchorField(anchor.channel, getFieldIndex(anchor.column));
-        const std::pair endField(end.channel, getFieldIndex(end.column));
+        const std::pair anchorField(anchor.channel, Field::getIndexOfColumn(anchor.column));
+        const std::pair endField(end.channel, Field::getIndexOfColumn(end.column));
         const auto& [first, last] = std::minmax(anchorField, endField);
         block.channelStart = first.first;
         block.fieldStart = first.second;
@@ -294,16 +300,5 @@ struct EditorState {
         cursor.column = std::clamp(cursor.column, 0, getColumnCount(cursor.channel) - 1);
     }
 };
-
-inline const char* getChannelName(ChannelType channel)
-{
-    switch (channel) {
-    case ChannelType::Pulse1:   return "Pulse 1";
-    case ChannelType::Pulse2:   return "Pulse 2";
-    case ChannelType::Triangle: return "Triangle";
-    case ChannelType::Noise:    return "Noise";
-    default:                    return "DPCM";
-    }
-}
 
 } // namespace ocf::tracker_tool

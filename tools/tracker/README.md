@@ -321,7 +321,7 @@ BGMで前奏だけを飛ばしてループしたいときは、最後のフレ�
 #include <ocf/audio/tracker/SongSerializer.h>
 #include <ocf/platform/FileSystem.h>
 
-auto result = audio::tracker::loadSong(
+auto result = audio::tracker::SongSerializer::load(
     FileSystem::getInstance()->getAssetFullPath("songs/canon_in_d.json"));
 if (result.isErr()) {
     OCF_LOG_ERROR("{}", result.unwrapErr());

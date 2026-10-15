@@ -293,23 +293,29 @@ invalid JSON at line 12, column 5: unexpected character, expected a string key
 
 namespace ocf::audio::tracker {
 
-std::string saveSongToString(const Song& song);
-Result<Song, std::string> loadSongFromString(std::string_view json);
+class SongSerializer {
+public:
+    static constexpr const char* FORMAT_NAME = "ocf-tracker-song";
+    static constexpr int FORMAT_VERSION = 1;
 
-Result<void, std::string> saveSong(const Song& song, const std::filesystem::path& path);
-Result<Song, std::string> loadSong(const std::filesystem::path& path);
+    static std::string saveToString(const Song& song);
+    static Result<Song, std::string> loadFromString(std::string_view json);
+
+    static Result<void, std::string> save(const Song& song, const std::filesystem::path& path);
+    static Result<Song, std::string> load(const std::filesystem::path& path);
+};
 
 } // namespace ocf::audio::tracker
 ```
 
 - エラーは `Result` の `Err` で、[読み込み時の検証](#読み込み時の検証)のメッセージを返します。例外は使いません。
-- `saveSong()` は、親ディレクトリが無ければ作ります。いったん `<ファイル名>.tmp` に書き出してから置き換えるので、書き込みに失敗しても元のファイルは壊れません。
+- `SongSerializer::save()` は、親ディレクトリが無ければ作ります。いったん `<ファイル名>.tmp` に書き出してから置き換えるので、書き込みに失敗しても元のファイルは壊れません。
 - 実装は `engine/src/audio/tracker/SongSerializer.cpp` です。yyjsonはエンジンに `PRIVATE` でリンクし、公開ヘッダにはyyjsonの型を出しません。
 
 ゲームから読み込む例:
 
 ```cpp
-auto result = audio::tracker::loadSong(FileSystem::getInstance()->getAssetFullPath("songs/stage1.json"));
+auto result = audio::tracker::SongSerializer::load(FileSystem::getInstance()->getAssetFullPath("songs/stage1.json"));
 if (result.isErr()) {
     OCF_LOG_ERROR("{}", result.unwrapErr());
     return;
@@ -320,7 +326,7 @@ audioSystem.tracker_setSong(bgm, std::make_shared<const audio::tracker::Song>(st
 ## 完全な例
 
 Pulse1でメロディ、Triangleでベースを鳴らす2フレームの曲です。
-`saveSongToString()` はこの曲をこの通りの文字列で書き出します（`engine/test/test_song_serializer.cpp` で確認しています）。
+`SongSerializer::saveToString()` はこの曲をこの通りの文字列で書き出します（`engine/test/test_song_serializer.cpp` で確認しています）。
 
 ```json
 {

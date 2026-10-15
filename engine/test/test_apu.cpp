@@ -443,7 +443,7 @@ TEST(ApuDmcTest, PlaysWhatTheEncoderEncoded)
     for (uint8_t rate : {0, 15}) {
         DpcmEncodeOptions options;
         options.rate = rate;
-        auto result = encodeDpcm(sine, 44100, options);
+        auto result = DpcmEncoder::encode(sine, 44100, options);
         ASSERT_TRUE(result.isOk());
         const std::vector<uint8_t>& data = result.unwrap().data;
 

@@ -2,6 +2,7 @@
 #include "ocf/audio/tracker/SongSerializer.h"
 
 #include "ocf/audio/tracker/SongNotation.h"
+#include "ocf/core/base64.h"
 
 #include <yyjson.h>
 
@@ -45,87 +46,6 @@ SequenceRange getSequenceRange(SequenceType type)
     case SequenceType::Volume: return {0, MAX_VOLUME};
     default:                   return {0, 3};
     }
-}
-
-constexpr char BASE64_ALPHABET[] =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-std::string encodeBase64(std::span<const uint8_t> data)
-{
-    std::string text;
-    text.reserve((data.size() + 2) / 3 * 4);
-    for (size_t i = 0; i < data.size(); i += 3) {
-        const size_t count = std::min<size_t>(3, data.size() - i);
-        uint32_t group = static_cast<uint32_t>(data[i]) << 16;
-        if (count > 1) {
-            group |= static_cast<uint32_t>(data[i + 1]) << 8;
-        }
-        if (count > 2) {
-            group |= data[i + 2];
-        }
-        text += BASE64_ALPHABET[(group >> 18) & 0x3F];
-        text += BASE64_ALPHABET[(group >> 12) & 0x3F];
-        text += (count > 1) ? BASE64_ALPHABET[(group >> 6) & 0x3F] : '=';
-        text += (count > 2) ? BASE64_ALPHABET[group & 0x3F] : '=';
-    }
-    return text;
-}
-
-int getBase64Value(char c)
-{
-    if (c >= 'A' && c <= 'Z') {
-        return c - 'A';
-    }
-    if (c >= 'a' && c <= 'z') {
-        return c - 'a' + 26;
-    }
-    if (c >= '0' && c <= '9') {
-        return c - '0' + 52;
-    }
-    if (c == '+') {
-        return 62;
-    }
-    if (c == '/') {
-        return 63;
-    }
-    return -1;
-}
-
-/** Standard base64 with padding. nullopt when the text is not. */
-std::optional<std::vector<uint8_t>> decodeBase64(std::string_view text)
-{
-    if (text.size() % 4 != 0) {
-        return std::nullopt;
-    }
-    std::vector<uint8_t> data;
-    data.reserve(text.size() / 4 * 3);
-    for (size_t i = 0; i < text.size(); i += 4) {
-        const bool last = (i + 4 == text.size());
-        uint32_t group = 0;
-        int padding = 0;
-        for (size_t j = 0; j < 4; j++) {
-            const char c = text[i + j];
-            int value = 0;
-            if (c == '=' && last && j >= 2) {
-                padding++;
-            }
-            else {
-                value = getBase64Value(c);
-                if (value < 0 || padding > 0) {
-                    return std::nullopt;
-                }
-            }
-            group = (group << 6) | static_cast<uint32_t>(value);
-        }
-        data.push_back(static_cast<uint8_t>(group >> 16));
-        if (padding < 2) {
-            data.push_back(static_cast<uint8_t>(group >> 8));
-        }
-        if (padding < 1) {
-            data.push_back(static_cast<uint8_t>(group));
-        }
-    }
-    return data;
 }
 
 std::string toUtf8(const std::filesystem::path& path)
@@ -195,8 +115,8 @@ MutableDocument createDocument(const Song& song)
     yyjson_mut_val* root = yyjson_mut_obj(document);
     yyjson_mut_doc_set_root(document, root);
 
-    yyjson_mut_obj_add_str(document, root, "format", SONG_FORMAT_NAME);
-    yyjson_mut_obj_add_int(document, root, "version", SONG_FORMAT_VERSION);
+    yyjson_mut_obj_add_str(document, root, "format", SongSerializer::FORMAT_NAME);
+    yyjson_mut_obj_add_int(document, root, "version", SongSerializer::FORMAT_VERSION);
     addString(document, root, "title", song.title);
     addString(document, root, "author", song.author);
     yyjson_mut_obj_add_uint(document, root, "speed", song.speed);
@@ -585,17 +505,17 @@ bool SongReader::readSong(yyjson_val* root, Song& song)
     if (!readString(root, "format", path, format, true)) {
         return false;
     }
-    if (format != SONG_FORMAT_NAME) {
-        return fail("/format", std::format("must be \"{}\"", SONG_FORMAT_NAME));
+    if (format != SongSerializer::FORMAT_NAME) {
+        return fail("/format", std::format("must be \"{}\"", SongSerializer::FORMAT_NAME));
     }
 
     int version = 0;
     if (!readInt(root, "version", path, 1, INT_MAX, version, true)) {
         return false;
     }
-    if (version > SONG_FORMAT_VERSION) {
+    if (version > SongSerializer::FORMAT_VERSION) {
         return fail("/version", std::format("version {} is newer than the supported version {}",
-                                            version, SONG_FORMAT_VERSION));
+                                            version, SongSerializer::FORMAT_VERSION));
     }
 
     int speed = DEFAULT_SPEED;
@@ -1042,7 +962,7 @@ bool SongReader::readRow(yyjson_val* value, const std::string& path, ChannelType
 
 } // namespace
 
-std::string saveSongToString(const Song& song)
+std::string SongSerializer::saveToString(const Song& song)
 {
     const MutableDocument document = createDocument(song);
     std::string output;
@@ -1051,7 +971,7 @@ std::string saveSongToString(const Song& song)
     return output;
 }
 
-Result<Song, std::string> loadSongFromString(std::string_view json)
+Result<Song, std::string> SongSerializer::loadFromString(std::string_view json)
 {
     // A UTF-8 BOM is accepted, since some editors add one
     const yyjson_read_flag flags = YYJSON_READ_ALLOW_BOM | YYJSON_READ_ALLOW_INVALID_UNICODE;
@@ -1078,9 +998,9 @@ Result<Song, std::string> loadSongFromString(std::string_view json)
     return Result<Song, std::string>::Ok(std::move(song));
 }
 
-Result<void, std::string> saveSong(const Song& song, const std::filesystem::path& path)
+Result<void, std::string> SongSerializer::save(const Song& song, const std::filesystem::path& path)
 {
-    const std::string json = saveSongToString(song);
+    const std::string json = SongSerializer::saveToString(song);
 
     std::error_code error;
     if (path.has_parent_path()) {
@@ -1113,7 +1033,7 @@ Result<void, std::string> saveSong(const Song& song, const std::filesystem::path
     return Result<void, std::string>::Ok();
 }
 
-Result<Song, std::string> loadSong(const std::filesystem::path& path)
+Result<Song, std::string> SongSerializer::load(const std::filesystem::path& path)
 {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
@@ -1124,7 +1044,7 @@ Result<Song, std::string> loadSong(const std::filesystem::path& path)
     if (file.bad()) {
         return Result<Song, std::string>::Err(std::format("cannot read {}", toUtf8(path)));
     }
-    return loadSongFromString(json);
+    return SongSerializer::loadFromString(json);
 }
 
 } // namespace ocf::audio::tracker

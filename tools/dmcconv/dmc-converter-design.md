@@ -90,7 +90,7 @@ APUのミキサーでは、Triangle・Noise・DMC が非線形に合成されま
 
 ```
 engine/include/ocf/audio/tracker/Dpcm.h         定数（レート表・長さの上限）、stepDpcmLevel()、decodeDpcm()
-engine/include/ocf/audio/tracker/DpcmEncoder.h  encodeDpcm() と変換の設定
+engine/include/ocf/audio/tracker/DpcmEncoder.h  DpcmEncoder::encode() と変換の設定
 engine/src/audio/tracker/Dpcm.cpp
 engine/src/audio/tracker/DpcmEncoder.cpp        リサンプル、ビット列の決定、長さの調整
 engine/test/test_dpcm.cpp
@@ -100,8 +100,8 @@ tools/dmcconv/                                  コマンドラインツール o
   CMakeLists.txt
 ```
 
-- 変換の本体（`encodeDpcm()`）は、float のモノラル波形とサンプルレートを受け取り、バイト列を返すだけの関数にします。ファイルの読み書きは持たないので、単体テストしやすく、トラッカーからも同じものを呼べます。
-- 音声ファイルの読み込みは、エンジンの `readMonoAudio()`（`ocf/audio/AudioFile.h`）で行います。中では miniaudio の `ma_decoder` を使います。トラッカーの読み込みと共有します。
+- 変換の本体（`DpcmEncoder::encode()`）は、float のモノラル波形とサンプルレートを受け取り、バイト列を返すだけの関数にします。ファイルの読み書きは持たないので、単体テストしやすく、トラッカーからも同じものを呼べます。
+- 音声ファイルの読み込みは、エンジンの `AudioFile::readMono()`（`ocf/audio/AudioFile.h`）で行います。中では miniaudio の `ma_decoder` を使います。トラッカーの読み込みと共有します。
   - ファイルは `std::filesystem::path` で読んでから `ma_decoder_init_memory()` に渡します。日本語のファイル名でも開けるようにするためです。
 - プレビューのWAV（16bitモノラル）は、ヘッダーが単純なのでツールで直接書きます。
 - `ocf_dmcconv` は ImGui を使わないので、`OCF_ENABLE_IMGUI` に関係なくビルドします。
@@ -174,20 +174,26 @@ tone_long.wav -> tone_long.dmc  rate 11 (13982.6Hz)  3505 bytes  2.01s  SNR 4.5d
 | ヘッダー | 内容 |
 | --- | --- |
 | [Dpcm.h](../engine/include/ocf/audio/tracker/Dpcm.h) | 定数（レート表、`DPCM_MAX_SAMPLE_BYTES`、`DPCM_MEMORY_SIZE` など）、`getDpcmRateFrequency()`、`getDpcmPlayableLength()`、`stepDpcmLevel()`、`decodeDpcm()` |
-| [DpcmEncoder.h](../engine/include/ocf/audio/tracker/DpcmEncoder.h) | `encodeDpcm()` と、その設定 `DpcmEncodeOptions`・結果 `DpcmEncodeResult` |
+| [DpcmEncoder.h](../engine/include/ocf/audio/tracker/DpcmEncoder.h) | `DpcmEncoder::encode()` と、その設定 `DpcmEncodeOptions`・結果 `DpcmEncodeResult` |
 
 ```cpp
 /** One bit of the output unit, as the APU does it: +2 for 1, -2 for 0, unchanged at the limits. */
 constexpr uint8_t stepDpcmLevel(uint8_t level, bool bit);
 
-/** Converts mono samples (-1.0 to 1.0) at the sample rate. */
-Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples, uint32_t sampleRate,
-                                                 const DpcmEncodeOptions& options);
+class DpcmEncoder {
+public:
+    /** Converts mono samples (-1.0 to 1.0) at the sample rate. */
+    static Result<DpcmEncodeResult, std::string> encode(std::span<const float> samples,
+                                                        uint32_t sampleRate,
+                                                        const DpcmEncodeOptions& options);
+    // ...
+};
 ```
 
 - `DpcmEncodeOptions` の各項目は、コマンドラインのオプションと1対1に対応する。既定値も同じ。
-- エラーは `loadSong()` と同じく `Result<..., std::string>` で返す（空の入力、無音の入力、長すぎる入力、範囲外の設定など）。
-- 途中の段階（`findNonSilentRange()`、`resample()`、`encodeBits()`、`packBits()`）は、テストのために `detail` 名前空間で公開している。
+- エラーは `SongSerializer::load()` と同じく `Result<..., std::string>` で返す（空の入力、無音の入力、長すぎる入力、範囲外の設定など）。
+- 途中の段階（`findNonSilentRange()`、`resample()`、`encodeBits()`、`packBits()`）は、テストのために `DpcmEncoder` の static 関数として公開している。
+- 汎用で独立した関数（`stepDpcmLevel()` などの DMC の仕様の計算）は、名前空間の直下に置く。1つの部品の API（`DpcmEncoder`）や、単独では使わない途中の段階は、クラスの static 関数にまとめる。
 
 ## テスト
 
@@ -196,7 +202,7 @@ Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples,
 - `stepDpcmLevel()`: +2/−2、上下の端（0, 1, 126, 127）で変わらないこと。
 - `decodeDpcm()`: 下位ビットから読むこと（`0x01` は最初のbitだけ `1`）。
 - `getDpcmPlayableLength()`: 1→1、2→17、17→17、18→33、4081→4081。
-- `encodeDpcm()`:
+- `DpcmEncoder::encode()`:
   - 出力の長さが必ず `16n + 1` で、4081以下。
   - 無音を変換すると、レベルが休止レベルの±2にとどまる。
   - 傾きの限界に収まる正弦波（レート15、振幅32、100Hz）を変換して戻すと、SNR が20dBを超え、overload が0。
@@ -236,9 +242,9 @@ Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples,
 
 ### トラッカー
 
-- `DPCM Samples` ウィンドウ: サンプルの一覧、WAV・FLAC・MP3・`.dmc` の読み込み（WAVなどは `encodeDpcm()` で変換し、最後に読み込んだファイルは設定を変えて変換し直せる）、`.dmc` の書き出し、波形の表示、試聴。
+- `DPCM Samples` ウィンドウ: サンプルの一覧、WAV・FLAC・MP3・`.dmc` の読み込み（WAVなどは `DpcmEncoder::encode()` で変換し、最後に読み込んだファイルは設定を変えて変換し直せる）、`.dmc` の書き出し、波形の表示、試聴。
 - インストゥルメントにDPCMのキー割り当てを追加する。
-- 音声ファイルの読み込みは `ocf/audio/AudioFile.h` の `readMonoAudio()` にまとめ、`ocf_dmcconv` と共有する。
+- 音声ファイルの読み込みは `ocf/audio/AudioFile.h` の `AudioFile::readMono()` にまとめ、`ocf_dmcconv` と共有する。
 
 ## 決めたこと
 

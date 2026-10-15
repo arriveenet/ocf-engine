@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "DpcmEditor.h"
 
+#include "PathUtility.h"
 #include "TrackerAudio.h"
 
 #include <ocf/platform/FileSystem.h>
@@ -32,7 +33,8 @@ constexpr const char* DMC_EXTENSION = ".dmc";
 
 std::string getRateLabel(int rate)
 {
-    return std::format("{} ({:.1f} kHz)", rate, getDpcmRateFrequency(static_cast<uint8_t>(rate)) / 1000.0);
+    return std::format("{} ({:.1f} kHz)", rate,
+                       getDpcmRateFrequency(static_cast<uint8_t>(rate)) / 1000.0);
 }
 
 bool isDmcFile(const std::filesystem::path& path)
@@ -78,8 +80,9 @@ std::string describeResult(const DpcmEncodeResult& result)
     const std::string snr =
         std::isinf(result.snrDb) ? std::string("inf") : std::format("{:.1f}", result.snrDb);
     return std::format("rate {}, {} bytes, {:.2f} s, SNR {} dB, overload {:.1f}%{}", result.rate,
-                       result.data.size(), result.data.size() * 8 / getDpcmRateFrequency(result.rate),
-                       snr, result.overloadRatio * 100.0, result.truncated ? " (truncated)" : "");
+                       result.data.size(),
+                       result.data.size() * 8 / getDpcmRateFrequency(result.rate), snr,
+                       result.overloadRatio * 100.0, result.truncated ? " (truncated)" : "");
 }
 
 } // namespace
@@ -304,7 +307,7 @@ void DpcmEditor::importFile(EditorState& state, const std::filesystem::path& pat
                               sample.data.size());
     }
     else {
-        auto audio = audio::readMonoAudio(path);
+        auto audio = audio::AudioFile::readMono(path);
         if (audio.isErr()) {
             setMessage(std::format("Could not import {}: {}", fileName, audio.unwrapErr()), true);
             return;
@@ -441,7 +444,7 @@ Result<DpcmEncodeResult, std::string> DpcmEditor::encode(const audio::MonoAudio&
     options.restLevel = static_cast<uint8_t>(m_restLevel);
     options.method = m_greedy ? DpcmEncodeMethod::Greedy : DpcmEncodeMethod::Optimal;
     options.truncate = m_truncate;
-    return encodeDpcm(audio.samples, audio.sampleRate, options);
+    return DpcmEncoder::encode(audio.samples, audio.sampleRate, options);
 }
 
 bool DpcmEditor::hasSource(const EditorState& state) const

@@ -175,7 +175,7 @@ SelectionBlock getSelectedBlockOrCursor(const EditorState& state)
         return *block;
     }
     const Cursor& cursor = state.cursor;
-    const int field = getFieldIndex(cursor.column);
+    const int field = Field::getIndexOfColumn(cursor.column);
     return {cursor.row, cursor.row, cursor.channel, cursor.channel, field, field};
 }
 
@@ -190,6 +190,22 @@ void clearBlock(EditorState& state, const SelectionBlock& block)
                 clearCellField(pattern.rows[row], field);
             }
         }
+    }
+}
+
+const char* getChannelName(ChannelType channel)
+{
+    switch (channel) {
+    case ChannelType::Pulse1:
+        return "Pulse 1";
+    case ChannelType::Pulse2:
+        return "Pulse 2";
+    case ChannelType::Triangle:
+        return "Triangle";
+    case ChannelType::Noise:
+        return "Noise";
+    default:
+        return "DPCM";
     }
 }
 
@@ -214,7 +230,7 @@ void PatternEditor::draw(EditorState& state, TrackerAudio& audio, ImFont* font)
             const Cursor& anchor = state.selection->anchor;
             const Cursor& end = state.selection->end;
             if (anchor.row == end.row && anchor.channel == end.channel &&
-                getFieldIndex(anchor.column) == getFieldIndex(end.column)) {
+                Field::getIndexOfColumn(anchor.column) == Field::getIndexOfColumn(end.column)) {
                 state.selection.reset();
             }
         }
@@ -463,7 +479,7 @@ void PatternEditor::handleKeyboard(EditorState& state, TrackerAudio& audio)
     }
 
     handleNavigation(state);
-    if (getField(state.cursor.column).type == FieldType::Note) {
+    if (Field::fromColumn(state.cursor.column).type == FieldType::Note) {
         handleNoteInput(state, audio);
     }
     else if (state.editMode) {
@@ -580,7 +596,7 @@ void PatternEditor::handleNoteInput(EditorState& state, TrackerAudio& audio)
 
 void PatternEditor::handleValueInput(EditorState& state)
 {
-    const Field field = getField(state.cursor.column);
+    const Field field = Field::fromColumn(state.cursor.column);
     Cell& cell = state.getCursorCell();
 
     if (field.type == FieldType::EffectType) {
@@ -663,7 +679,7 @@ void PatternEditor::enterNote(EditorState& state, TrackerAudio& audio, uint8_t n
 void PatternEditor::clearField(EditorState& state)
 {
     Cell& cell = state.getCursorCell();
-    const Field field = getField(state.cursor.column);
+    const Field field = Field::fromColumn(state.cursor.column);
     switch (field.type) {
     case FieldType::Note:
         cell.note = NOTE_NONE;
@@ -707,7 +723,7 @@ void PatternEditor::paste(EditorState& state)
     // Fields go to the same fields of the channels from the cursor's channel. Only effect columns
     // copied from one channel go to the cursor's effect column, to move them between columns
     const Cursor& cursor = state.cursor;
-    const int cursorField = getFieldIndex(cursor.column);
+    const int cursorField = Field::getIndexOfColumn(cursor.column);
     const ClipboardChannel& front = m_clipboard.front();
     int effectOffset = 0;
     if (m_clipboard.size() == 1 && front.firstField >= FIXED_FIELD_COUNT &&

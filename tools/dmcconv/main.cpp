@@ -327,12 +327,13 @@ bool convert(const Arguments& arguments, const fs::path& input)
         return false;
     };
 
-    auto audio = ocf::audio::readMonoAudio(input);
+    auto audio = ocf::audio::AudioFile::readMono(input);
     if (audio.isErr()) {
         return fail(audio.unwrapErr());
     }
 
-    auto encoded = encodeDpcm(audio.unwrap().samples, audio.unwrap().sampleRate, arguments.options);
+    auto encoded =
+        DpcmEncoder::encode(audio.unwrap().samples, audio.unwrap().sampleRate, arguments.options);
     if (encoded.isErr()) {
         return fail(encoded.unwrapErr());
     }

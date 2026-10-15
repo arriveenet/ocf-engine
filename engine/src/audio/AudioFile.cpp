@@ -8,7 +8,7 @@
 
 namespace ocf::audio {
 
-Result<MonoAudio, std::string> readMonoAudio(const std::filesystem::path& path)
+Result<MonoAudio, std::string> AudioFile::readMono(const std::filesystem::path& path)
 {
     using AudioResult = Result<MonoAudio, std::string>;
 

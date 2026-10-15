@@ -223,7 +223,7 @@ void expectSameSong(const Song& expected, const Song& actual)
 
 std::string loadError(const std::string& json)
 {
-    const auto result = loadSongFromString(json);
+    const auto result = SongSerializer::loadFromString(json);
     return result.isErr() ? result.unwrapErr() : std::string("(no error)");
 }
 
@@ -243,12 +243,12 @@ std::string exampleWith(const std::string& from, const std::string& to)
 
 TEST(SongSerializerTest, WritesTheDocumentedExample)
 {
-    EXPECT_EQ(saveSongToString(createExampleSong()), EXAMPLE_JSON);
+    EXPECT_EQ(SongSerializer::saveToString(createExampleSong()), EXAMPLE_JSON);
 }
 
 TEST(SongSerializerTest, ReadsTheDocumentedExample)
 {
-    const auto result = loadSongFromString(EXAMPLE_JSON);
+    const auto result = SongSerializer::loadFromString(EXAMPLE_JSON);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
     expectSameSong(createExampleSong(), result.unwrap());
 }
@@ -256,25 +256,25 @@ TEST(SongSerializerTest, ReadsTheDocumentedExample)
 TEST(SongSerializerTest, RoundTrip)
 {
     const Song song = createFullSong();
-    const std::string json = saveSongToString(song);
-    const auto result = loadSongFromString(json);
+    const std::string json = SongSerializer::saveToString(song);
+    const auto result = SongSerializer::loadFromString(json);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr() << "\n" << json;
     expectSameSong(song, result.unwrap());
 
     // Writing again gives the same text
-    EXPECT_EQ(saveSongToString(result.unwrap()), json);
+    EXPECT_EQ(SongSerializer::saveToString(result.unwrap()), json);
 }
 
 TEST(SongSerializerTest, WritesEmptyEffectColumnsInTheMiddle)
 {
-    const std::string json = saveSongToString(createFullSong());
+    const std::string json = SongSerializer::saveToString(createFullSong());
     EXPECT_NE(json.find(R"("effects": ["C00", "...", "...", "D1F"])"), std::string::npos) << json;
     EXPECT_NE(json.find(R"("effects": ["...", "F96"])"), std::string::npos) << json;
 }
 
 TEST(SongSerializerTest, LoadedPatternsHaveAllRows)
 {
-    const Song song = loadSongFromString(EXAMPLE_JSON).unwrap();
+    const Song song = SongSerializer::loadFromString(EXAMPLE_JSON).unwrap();
     for (const std::vector<Pattern>& pool : song.patterns) {
         for (const Pattern& pattern : pool) {
             EXPECT_EQ(pattern.rows.size(), song.rowsPerPattern);
@@ -286,7 +286,7 @@ TEST(SongSerializerTest, LoadedPatternsHaveAllRows)
 
 TEST(SongSerializerTest, OptionalMembersHaveDefaults)
 {
-    const auto result = loadSongFromString(R"({
+    const auto result = SongSerializer::loadFromString(R"({
         "format": "ocf-tracker-song", "version": 1, "rowsPerPattern": 8,
         "channels": [{ "type": "pulse1" }, { "type": "pulse2" }, { "type": "triangle" },
                      { "type": "noise" }, { "type": "dpcm" }],
@@ -304,10 +304,9 @@ TEST(SongSerializerTest, OptionalMembersHaveDefaults)
 
 TEST(SongSerializerTest, MissingInstrumentNumbersBecomeEmptyInstruments)
 {
-    const auto result =
-        loadSongFromString(exampleWith(R"("index": 1,
+    const auto result = SongSerializer::loadFromString(exampleWith(R"("index": 1,
       "name": "Bass")",
-                                       R"("index": 3,
+                                                                   R"("index": 3,
       "name": "Bass")"));
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
     const Song& song = result.unwrap();
@@ -325,14 +324,14 @@ TEST(SongSerializerTest, IgnoresUnknownMembers)
     const std::string withSequence =
         json.substr(0, json.find(R"("duty")")) + R"("arpeggio": { "values": [0, 4, 7] }, )" +
         json.substr(json.find(R"("duty")"));
-    const auto result = loadSongFromString(withSequence);
+    const auto result = SongSerializer::loadFromString(withSequence);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
     expectSameSong(createExampleSong(), result.unwrap());
 }
 
 TEST(SongSerializerTest, AcceptsUtf8Bom)
 {
-    const auto result = loadSongFromString(std::string("\xEF\xBB\xBF") + EXAMPLE_JSON);
+    const auto result = SongSerializer::loadFromString(std::string("\xEF\xBB\xBF") + EXAMPLE_JSON);
     EXPECT_TRUE(result.isOk()) << result.unwrapErr();
 }
 
@@ -431,13 +430,12 @@ TEST(SongSerializerTest, NoiseNotesAreValidOnTheNoiseChannelOnly)
     const std::string json = exampleWith(R"("channel": 2)", R"("channel": 3)");
     EXPECT_EQ(loadError(json), R"(/patterns/2/rows/0/note: invalid note "C-3")");
 
-    const auto result = loadSongFromString(
-        exampleWith(R"("channel": 2,
+    const auto result = SongSerializer::loadFromString(exampleWith(R"("channel": 2,
       "index": 0,
       "rows": [
         { "row": 0, "note": "C-3", "instrument": 1 },
         { "row": 8, "note": "G-2" })",
-                    R"("channel": 3,
+                                                                   R"("channel": 3,
       "index": 0,
       "rows": [
         { "row": 0, "note": "0-#", "instrument": 1 },
@@ -454,18 +452,18 @@ TEST(SongSerializerTest, SaveAndLoadFile)
     const std::filesystem::path path = directory / "songs" / u8"曲.json";
 
     const Song song = createFullSong();
-    const auto saved = saveSong(song, path);
+    const auto saved = SongSerializer::save(song, path);
     ASSERT_TRUE(saved.isOk()) << saved.unwrapErr();
     std::filesystem::path temporaryPath = path;
     temporaryPath += ".tmp";
     EXPECT_FALSE(std::filesystem::exists(temporaryPath));
 
-    const auto loaded = loadSong(path);
+    const auto loaded = SongSerializer::load(path);
     ASSERT_TRUE(loaded.isOk()) << loaded.unwrapErr();
     expectSameSong(song, loaded.unwrap());
 
     // Saving again replaces the file
-    const auto savedAgain = saveSong(createExampleSong(), path);
+    const auto savedAgain = SongSerializer::save(createExampleSong(), path);
     ASSERT_TRUE(savedAgain.isOk()) << savedAgain.unwrapErr();
     std::ifstream file(path, std::ios::binary);
     const std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -477,7 +475,8 @@ TEST(SongSerializerTest, SaveAndLoadFile)
 
 TEST(SongSerializerTest, LoadMissingFile)
 {
-    const auto result = loadSong(std::filesystem::temp_directory_path() / "ocf_no_such_song.json");
+    const auto result =
+        SongSerializer::load(std::filesystem::temp_directory_path() / "ocf_no_such_song.json");
     ASSERT_TRUE(result.isErr());
     EXPECT_NE(result.unwrapErr().find("cannot open"), std::string::npos);
 }
@@ -504,7 +503,7 @@ TEST(SongSerializerTest, ReadsDpcmSamplesAndKeys)
     const std::string json =
         exampleWithDpcm(std::string(R"({ "index": 1, "name": "Snare", "data": ")") + SAMPLE_17_BYTES + "\" }",
                         R"({ "note": "C-3", "sample": 1, "rate": 9, "loop": true }, { "note": "D-3", "sample": 0 })");
-    const auto result = loadSongFromString(json);
+    const auto result = SongSerializer::loadFromString(json);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
     const Song& song = result.unwrap();
 
@@ -523,11 +522,11 @@ TEST(SongSerializerTest, ReadsDpcmSamplesAndKeys)
 
 TEST(SongSerializerTest, WritesDpcmOnlyWhenUsed)
 {
-    const std::string json = saveSongToString(createExampleSong());
+    const std::string json = SongSerializer::saveToString(createExampleSong());
     EXPECT_EQ(json.find("dpcmSamples"), std::string::npos);
     EXPECT_EQ(json.find(R"("dpcm": [)"), std::string::npos);
 
-    const std::string full = saveSongToString(createFullSong());
+    const std::string full = SongSerializer::saveToString(createFullSong());
     EXPECT_NE(full.find(R"({ "note": "C-3", "sample": 0, "rate": 13 })"), std::string::npos) << full;
     EXPECT_NE(full.find(R"({ "note": "B-7", "sample": 2, "rate": 0, "loop": true })"), std::string::npos) << full;
     EXPECT_NE(full.find(R"({ "index": 1, "name": "", "rate": 15, "restLevel": 64, "data": "" })"), std::string::npos) << full;
@@ -575,7 +574,8 @@ TEST(SongSerializerTest, RejectsDpcmSamplesBeyondTheMemory)
     for (DpcmSample& sample : song.dpcmSamples) {
         sample.data.assign(DPCM_MAX_SAMPLE_BYTES, 0x55);
     }
-    EXPECT_EQ(loadError(saveSongToString(song)), "/dpcmSamples: the samples take 20480 bytes, more than 16384");
+    EXPECT_EQ(loadError(SongSerializer::saveToString(song)),
+              "/dpcmSamples: the samples take 20480 bytes, more than 16384");
     song.dpcmSamples.pop_back();
-    EXPECT_TRUE(loadSongFromString(saveSongToString(song)).isOk());
+    EXPECT_TRUE(SongSerializer::loadFromString(SongSerializer::saveToString(song)).isOk());
 }

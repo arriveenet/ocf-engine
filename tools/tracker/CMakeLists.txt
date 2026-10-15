@@ -13,6 +13,7 @@ set(HDRS
     FileDialog.h
     FrameEditor.h
     InstrumentEditor.h
+    PathUtility.h
     PatternEditor.h
     TrackerAudio.h
     TrackerScene.h
@@ -25,6 +26,7 @@ set(SRCS
     FrameEditor.cpp
     InstrumentEditor.cpp
     main.cpp
+    PathUtility.cpp
     PatternEditor.cpp
     TrackerScene.cpp
 )

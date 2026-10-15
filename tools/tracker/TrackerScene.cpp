@@ -2,6 +2,7 @@
 #include "TrackerScene.h"
 
 #include "DemoSong.h"
+#include "PathUtility.h"
 #include "TrackerAudio.h"
 
 #include <ocf/audio/tracker/SongSerializer.h>
@@ -495,7 +496,7 @@ void TrackerScene::saveAs()
 
 void TrackerScene::saveTo(const std::filesystem::path& path)
 {
-    const auto result = audio::tracker::saveSong(m_state.song, path);
+    const auto result = audio::tracker::SongSerializer::save(m_state.song, path);
     if (result.isErr()) {
         showError(std::format("Could not save the song.\n\n{}", result.unwrapErr()));
         return;
@@ -506,7 +507,7 @@ void TrackerScene::saveTo(const std::filesystem::path& path)
 
 void TrackerScene::openFrom(const std::filesystem::path& path)
 {
-    auto result = audio::tracker::loadSong(path);
+    auto result = audio::tracker::SongSerializer::load(path);
     if (result.isErr()) {
         showError(std::format("Could not open {}.\n\n{}", pathToUtf8(path.filename()),
                               result.unwrapErr()));

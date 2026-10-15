@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "FileDialog.h"
 
+#include "PathUtility.h"
+
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -18,17 +20,6 @@ namespace {
 constexpr ImVec4 MESSAGE_COLOR(1.0f, 0.4f, 0.4f, 1.0f);
 
 } // namespace
-
-std::string pathToUtf8(const std::filesystem::path& path)
-{
-    const std::u8string text = path.u8string();
-    return std::string(text.begin(), text.end());
-}
-
-std::filesystem::path pathFromUtf8(const std::string& text)
-{
-    return std::filesystem::path(std::u8string(text.begin(), text.end()));
-}
 
 FileDialog::FileDialog(std::string id)
     : m_id(std::move(id))

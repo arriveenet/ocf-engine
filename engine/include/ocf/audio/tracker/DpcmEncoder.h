@@ -12,9 +12,6 @@
 #include <utility>
 #include <vector>
 
-/**
- * Converts a waveform to a DMC sample. See docs/dmc-converter-design.md.
- */
 namespace ocf::audio::tracker {
 
 enum class DpcmEncodeMethod : uint8_t {
@@ -42,26 +39,31 @@ struct DpcmEncodeResult {
     double overloadRatio = 0.0; // Bits that ended more than one step away from the target
 };
 
-/** Converts mono samples (-1.0 to 1.0) at the sample rate. */
-Result<DpcmEncodeResult, std::string> encodeDpcm(std::span<const float> samples, uint32_t sampleRate,
-                                                 const DpcmEncodeOptions& options);
+/** Converts a waveform to a DMC sample. See docs/dmc-converter-design.md. */
+class DpcmEncoder {
+public:
+    DpcmEncoder() = delete;
 
-/** The steps of encodeDpcm(), for tests. */
-namespace detail {
+    /** Converts mono samples (-1.0 to 1.0) at the sample rate. */
+    static Result<DpcmEncodeResult, std::string>
+    encode(std::span<const float> samples, uint32_t sampleRate, const DpcmEncodeOptions& options);
 
-/** The range [first, last) between the first and the last samples above the threshold. */
-std::pair<size_t, size_t> findNonSilentRange(std::span<const float> samples, float thresholdDb);
+    // The steps of encode(), public for the tests
 
-/** Windowed sinc, low-passed below both Nyquist frequencies. */
-std::vector<float> resample(std::span<const float> samples, double fromRate, double toRate);
+    /** The range [first, last) between the first and the last samples above the threshold. */
+    static std::pair<size_t, size_t> findNonSilentRange(std::span<const float> samples,
+                                                        float thresholdDb);
 
-/** One bit (0 or 1) per target level, starting from the level. */
-std::vector<uint8_t> encodeBits(std::span<const float> targets, uint8_t startLevel,
-                                DpcmEncodeMethod method);
+    /** Windowed sinc, low-passed below both Nyquist frequencies. */
+    static std::vector<float> resample(std::span<const float> samples, double fromRate,
+                                       double toRate);
 
-/** Packs the bits, lowest bit first, and pads them to a playable length. */
-std::vector<uint8_t> packBits(std::span<const uint8_t> bits);
+    /** One bit (0 or 1) per target level, starting from the level. */
+    static std::vector<uint8_t> encodeBits(std::span<const float> targets, uint8_t startLevel,
+                                           DpcmEncodeMethod method);
 
-} // namespace detail
+    /** Packs the bits, lowest bit first, and pads them to a playable length. */
+    static std::vector<uint8_t> packBits(std::span<const uint8_t> bits);
+};
 
 } // namespace ocf::audio::tracker
