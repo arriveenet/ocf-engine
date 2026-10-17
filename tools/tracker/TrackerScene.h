@@ -8,11 +8,14 @@
 #include "InstrumentEditor.h"
 #include "PatternEditor.h"
 
+#include <ocf/audio/tracker/SongExporter.h>
 #include <ocf/scene/Scene.h>
 
+#include <atomic>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <thread>
 
 struct ImFont;
 
@@ -44,6 +47,8 @@ private:
     void drawErrorPopup();
     void drawHelpWindow();
     void drawFileDialog();
+    void drawExportPopup();
+    void drawExportProgress();
 
     /** Asks for confirmation first when the song has unsaved changes. */
     void requestAction(PendingAction action);
@@ -55,6 +60,10 @@ private:
     void openFrom(const std::filesystem::path& path);
     std::filesystem::path getSongDirectory() const;
     void showError(std::string message);
+
+    void openExportPopup();
+    void startExport(const std::filesystem::path& path);
+    void finishExport();
 
     void undo();
     void redo();
@@ -72,12 +81,27 @@ private:
     InstrumentEditor m_instrumentEditor;
     DpcmEditor m_dpcmEditor;
     FileDialog m_fileDialog{"SongDialog"};
+    FileDialog m_exportDialog{"ExportDialog"};
 
     PendingAction m_pendingAction = PendingAction::None;
     bool m_openConfirmPopup = false;
     std::string m_errorMessage;
     bool m_openErrorPopup = false;
     bool m_showHelp = false;
+
+    // WAV export, rendered on a worker thread
+    audio::tracker::WavExportOptions m_exportOptions;
+    audio::tracker::WavExportLength m_exportLength;
+    bool m_openExportPopup = false;
+    std::thread m_exportThread;
+    std::atomic<double> m_exportProgress = 0.0;
+    std::atomic<bool> m_exportCancelled = false;
+    std::atomic<bool> m_exportFinished = false;
+    bool m_exporting = false;
+    bool m_openExportProgress = false;
+    std::filesystem::path m_exportPath;
+    std::string m_exportError; // Written by the worker before m_exportFinished
+    bool m_exportSucceeded = false;
     int m_rowsInput = DEFAULT_ROWS_PER_PATTERN;
     bool m_editingRows = false;
 };

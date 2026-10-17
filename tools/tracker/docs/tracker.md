@@ -141,8 +141,10 @@ ImGuiの標準では `Tab` でウィジェット間のフォーカスが移動�
 | `engine/include/ocf/audio/tracker/SongNotation.h` | ノート・エフェクト・シーケンスの文字列表記。ファイルフォーマットとエディタで共通 |
 | `engine/include/ocf/audio/tracker/SongSerializer.h` | 曲のJSONの読み書き（実装は `engine/src/audio/tracker/SongSerializer.cpp`、yyjsonを使用） |
 | `engine/src/audio/tracker/SongPlayer.h` / `.cpp` | 曲を再生する。1tickごとに行を進め、APUのレジスタを書く |
+| `engine/src/audio/tracker/SongSynthesizer.h` / `.cpp` | APUと `SongPlayer` を持ち、1サンプルずつ音を作る（APUのクロック、tick、DCカット）。リアルタイム再生と書き出しで共用 |
+| `engine/include/ocf/audio/tracker/SongExporter.h` | 曲をWAVに書き出す。ループ回数とフェードアウトを指定でき、進捗の通知と中止ができる |
 | `engine/src/audio/tracker/NoteTable.h` / `.cpp` | ノートからAPUのタイマー周期への変換（NTSC） |
-| `engine/src/audio/AudioTrackerSource.h` / `.cpp` | 専用のAPUを持つオーディオソース。オーディオスレッドで `SongPlayer` を動かす |
+| `engine/src/audio/AudioTrackerSource.h` / `.cpp` | 専用の `SongSynthesizer` を持つオーディオソース。メインスレッドからの操作を、オーディオスレッドで反映する |
 | `engine/include/ocf/audio/AudioSystem.h` | `createTrackerSource()` と `tracker_*()` 関数 |
 
 ### 使い方（ゲームから再生する）
@@ -215,5 +217,6 @@ AudioSystem::update()
 | `engine/test/test_apu.cpp` | APUの矩形波・三角波・スイープ（周期、`$4002` だけでの周期変更、ミュート条件） |
 | `engine/test/test_song_serializer.cpp` | JSONの読み書き（設計書の例と同じ文字列になるか、往復、検証エラーとメッセージ、ファイル） |
 | `engine/test/test_sample_songs.cpp` | `assets/songs` のサンプル曲（読み込めるか、書き出し形式のままか、ループの流れ） |
+| `engine/test/test_song_exporter.cpp` | WAVの書き出し（長さの見積もり、ループ回数と `Bxx`、ヘッダー、フェードアウト、中止、リアルタイム再生と同じサンプルになるか） |
 
 `SongPlayer` などの内部クラスをテストするため、テストのターゲットには `engine/src` もインクルードパスに入れています。

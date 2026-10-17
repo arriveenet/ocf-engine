@@ -34,6 +34,17 @@ constexpr const char* SONG_DIRECTORY = "songs";
 constexpr const char* DEFAULT_FILE_NAME = "untitled.json";
 constexpr const char* SONG_EXTENSION = ".json";
 
+constexpr const char* EXPORT_POPUP = "Export WAV";
+constexpr const char* EXPORT_PROGRESS_POPUP = "Exporting";
+constexpr const char* WAV_EXTENSION = ".wav";
+constexpr uint32_t EXPORT_SAMPLE_RATES[] = {48000, 44100};
+
+std::string formatDuration(double seconds)
+{
+    const auto total = static_cast<int>(seconds + 0.5);
+    return std::format("{}:{:02}", total / 60, total % 60);
+}
+
 struct KeyHelp {
     const char* keys;
     const char* description;
@@ -87,6 +98,10 @@ void TrackerScene::onEnter()
 
 void TrackerScene::onExit()
 {
+    if (m_exportThread.joinable()) {
+        m_exportCancelled = true;
+        m_exportThread.join();
+    }
     m_audio.reset();
 }
 
@@ -138,6 +153,11 @@ void TrackerScene::onImGui()
 
     drawConfirmPopup();
     drawFileDialog();
+    drawExportPopup();
+    if (m_exportDialog.draw()) {
+        startExport(m_exportDialog.getPath());
+    }
+    drawExportProgress();
     drawErrorPopup();
     drawHelpWindow();
 
@@ -247,6 +267,10 @@ void TrackerScene::drawMenuBar()
         }
         if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
             saveAs();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Export WAV...", nullptr, false, !m_exporting)) {
+            openExportPopup();
         }
         ImGui::EndMenu();
     }
@@ -403,6 +427,143 @@ void TrackerScene::drawErrorPopup()
         }
         ImGui::EndPopup();
     }
+}
+
+void TrackerScene::openExportPopup()
+{
+    m_exportLength = audio::tracker::SongExporter::measure(m_state.song, m_exportOptions);
+    m_openExportPopup = true;
+}
+
+void TrackerScene::drawExportPopup()
+{
+    if (m_openExportPopup) {
+        ImGui::OpenPopup(EXPORT_POPUP);
+        m_openExportPopup = false;
+    }
+    if (!ImGui::BeginPopupModal(EXPORT_POPUP, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        return;
+    }
+
+    bool changed = false;
+    int rateIndex = (m_exportOptions.sampleRate == EXPORT_SAMPLE_RATES[1]) ? 1 : 0;
+    ImGui::SetNextItemWidth(160.0f);
+    if (ImGui::Combo("Sample rate", &rateIndex, "48000 Hz\0" "44100 Hz\0")) {
+        m_exportOptions.sampleRate = EXPORT_SAMPLE_RATES[rateIndex];
+    }
+
+    ImGui::BeginDisabled(!m_exportLength.loops);
+    ImGui::SetNextItemWidth(160.0f);
+    changed |= ImGui::SliderInt("Play count", &m_exportOptions.playCount, 1,
+                                audio::tracker::SongExporter::MAX_PLAY_COUNT);
+    ImGui::SetItemTooltip("How many times the song plays, counting each jump back as a new play");
+    ImGui::SetNextItemWidth(160.0f);
+    changed |= ImGui::SliderFloat("Fade out", &m_exportOptions.fadeOutSeconds, 0.0f, 10.0f, "%.1f s");
+    ImGui::SetItemTooltip("0 cuts the audio exactly where the last play ends, e.g. for a game loop");
+    ImGui::EndDisabled();
+
+    if (changed) {
+        m_exportLength = audio::tracker::SongExporter::measure(m_state.song, m_exportOptions);
+    }
+
+    ImGui::Separator();
+    if (m_exportLength.loops) {
+        ImGui::TextUnformatted("The song loops: it plays the given number of times, then fades out.");
+    }
+    else {
+        ImGui::TextUnformatted("The song stops at Cxx.");
+    }
+    ImGui::Text("Length: %s", formatDuration(m_exportLength.seconds).c_str());
+    ImGui::TextDisabled("All channels are exported, also the muted ones.");
+
+    if (ImGui::Button("Export...", ImVec2(120.0f, 0.0f))) {
+        const std::string fileName =
+            (m_state.filePath.empty() ? std::string("untitled")
+                                      : pathToUtf8(m_state.filePath.stem())) +
+            WAV_EXTENSION;
+        m_exportDialog.open(FileDialog::Mode::Save, "Export WAV", getSongDirectory(), {WAV_EXTENSION},
+                            fileName);
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f))) {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+void TrackerScene::startExport(const std::filesystem::path& path)
+{
+    if (m_exportThread.joinable()) {
+        m_exportThread.join();
+    }
+
+    m_exportPath = path;
+    m_exportProgress = 0.0;
+    m_exportCancelled = false;
+    m_exportFinished = false;
+    m_exportError.clear();
+    m_exportSucceeded = false;
+    m_exporting = true;
+    m_openExportProgress = true;
+
+    // The worker gets its own copy, so that the song can be edited meanwhile
+    auto song = std::make_shared<const Song>(m_state.song);
+    const audio::tracker::WavExportOptions options = m_exportOptions;
+    m_exportThread = std::thread([this, song, path, options]() {
+        const auto result = audio::tracker::SongExporter::exportWav(
+            *song, path, options, [this](double progress) {
+                m_exportProgress = progress;
+                return !m_exportCancelled.load();
+            });
+        if (result.isErr()) {
+            m_exportError = result.unwrapErr();
+        }
+        m_exportFinished = true;
+    });
+}
+
+void TrackerScene::finishExport()
+{
+    m_exportThread.join();
+    m_exporting = false;
+    m_exportSucceeded = m_exportError.empty();
+    if (!m_exportSucceeded && !m_exportCancelled) {
+        ImGui::CloseCurrentPopup();
+        showError(std::format("Could not export the song.\n\n{}", m_exportError));
+    }
+    else if (!m_exportSucceeded) {
+        ImGui::CloseCurrentPopup();
+    }
+}
+
+void TrackerScene::drawExportProgress()
+{
+    if (m_openExportProgress) {
+        ImGui::OpenPopup(EXPORT_PROGRESS_POPUP);
+        m_openExportProgress = false;
+    }
+    if (!ImGui::BeginPopupModal(EXPORT_PROGRESS_POPUP, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        return;
+    }
+
+    ImGui::TextUnformatted(pathToUtf8(m_exportPath).c_str());
+    if (m_exporting) {
+        ImGui::ProgressBar(static_cast<float>(m_exportProgress.load()), ImVec2(400.0f, 0.0f));
+        if (ImGui::Button("Cancel", ImVec2(120.0f, 0.0f))) {
+            m_exportCancelled = true;
+        }
+        if (m_exportFinished) {
+            finishExport();
+        }
+    }
+    else {
+        ImGui::TextUnformatted("Exported.");
+        if (ImGui::Button("OK", ImVec2(120.0f, 0.0f))) {
+            ImGui::CloseCurrentPopup();
+        }
+    }
+    ImGui::EndPopup();
 }
 
 void TrackerScene::drawFileDialog()
