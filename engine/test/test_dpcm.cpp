@@ -3,6 +3,7 @@
 #include <ocf/audio/tracker/Dpcm.h>
 #include <ocf/audio/tracker/DpcmEncoder.h>
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 #include <vector>
