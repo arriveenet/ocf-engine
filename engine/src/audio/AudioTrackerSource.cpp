@@ -1,19 +1,11 @@
 // SPDX-License-Identifier: MIT
 #include "audio/AudioTrackerSource.h"
 
-#include "audio/apu/Apu.h"
-
-#include <algorithm>
+#include "ocf/audio/AudioEnums.h"
 
 namespace ocf::audio {
 
 namespace {
-
-constexpr uint16_t STATUS_REGISTER = 0x4015;
-
-// The APU output is always positive. This first order high-pass filter (about 38 Hz at 48 kHz)
-// removes the DC offset, which would otherwise click when the song starts and stops
-constexpr float HIGH_PASS_COEFFICIENT = 0.995f;
 
 constexpr uint32_t STATUS_PLAYING_BIT = 0x80000000u;
 
@@ -26,12 +18,8 @@ uint32_t packStatus(const tracker::PlaybackStatus& status)
 } // namespace
 
 AudioTrackerSource::AudioTrackerSource()
-    : m_apu(std::make_unique<Apu>())
-    , m_player([this](uint16_t address, uint8_t data) { writeRegister(address, data); })
+    : m_synthesizer(InternalSampleRate)
 {
-    // The triangle rests at a non-zero level. Starting the filter there avoids a click
-    m_previousInput = m_apu->getOutput();
-
     // Avoid allocating on the audio thread in the common case
     m_pendingCommands.reserve(64);
     m_processingCommands.reserve(64);
@@ -60,31 +48,14 @@ void AudioTrackerSource::render(float* output, uint32_t frameCount, uint32_t cha
 {
     processCommands();
 
-    const double cyclesPerSample = AudioNesApu::CPU_FREQUENCY / static_cast<double>(InternalSampleRate);
     for (uint32_t i = 0; i < frameCount; i++) {
-        m_cpuRemainder += cyclesPerSample;
-        while (m_cpuRemainder >= 1.0) {
-            m_tickRemainder -= 1.0;
-            if (m_tickRemainder <= 0.0) {
-                m_player.tick();
-                m_tickRemainder += CYCLES_PER_TICK;
-            }
-            m_apu->clock();
-            m_cpuRemainder -= 1.0;
-        }
-
-        const float input = m_apu->getOutput();
-        const float filtered = input - m_previousInput + HIGH_PASS_COEFFICIENT * m_previousOutput;
-        m_previousInput = input;
-        m_previousOutput = filtered;
-
-        const float sample = std::clamp(filtered, -1.0f, 1.0f);
+        const float sample = m_synthesizer.renderSample();
         for (uint32_t c = 0; c < channels; c++) {
             output[i * channels + c] = sample;
         }
     }
 
-    m_status.store(packStatus(m_player.getStatus()), std::memory_order_relaxed);
+    m_status.store(packStatus(m_synthesizer.getPlayer().getStatus()), std::memory_order_relaxed);
 }
 
 void AudioTrackerSource::setSong(std::shared_ptr<const tracker::Song> song)
@@ -169,56 +140,31 @@ void AudioTrackerSource::processCommands()
         std::swap(m_pendingCommands, m_processingCommands);
     }
 
+    tracker::SongPlayer& player = m_synthesizer.getPlayer();
     for (Command& command : m_processingCommands) {
         switch (command.type) {
         case Command::Type::SetSong: {
-            std::shared_ptr<const tracker::Song> previous = m_player.setSong(std::move(command.song));
-            loadDpcmSamples();
+            std::shared_ptr<const tracker::Song> previous =
+                m_synthesizer.setSong(std::move(command.song));
             if (previous) {
                 std::lock_guard<std::mutex> lock(m_retiredMutex);
                 m_retiredSongs.push_back(std::move(previous));
             }
             break;
         }
-        case Command::Type::PlaySong: m_player.play(command.frame, command.row); break;
-        case Command::Type::PlayDpcmSample: m_player.playDpcmSample(command.dpcmKey); break;
-        case Command::Type::StopSong: m_player.stop(); break;
+        case Command::Type::PlaySong: player.play(command.frame, command.row); break;
+        case Command::Type::PlayDpcmSample: player.playDpcmSample(command.dpcmKey); break;
+        case Command::Type::StopSong: player.stop(); break;
         case Command::Type::PlayNote:
-            m_player.playNote(command.channel, command.note, command.instrument);
+            player.playNote(command.channel, command.note, command.instrument);
             break;
-        case Command::Type::StopNote: m_player.stopNote(command.channel); break;
+        case Command::Type::StopNote: player.stopNote(command.channel); break;
         case Command::Type::SetMuted:
-            m_player.setChannelMuted(command.channel, command.muted);
+            player.setChannelMuted(command.channel, command.muted);
             break;
         }
     }
     m_processingCommands.clear();
-}
-
-void AudioTrackerSource::loadDpcmSamples()
-{
-    // A sample that is playing keeps playing from the new memory, which is the same unless the
-    // samples were changed
-    m_apu->setDmcMemory({});
-    const tracker::Song* song = m_player.getSong();
-    if (song == nullptr) {
-        return;
-    }
-    for (size_t i = 0; i < song->dpcmSamples.size(); i++) {
-        if (const std::optional<size_t> offset = song->getDpcmSampleOffset(i)) {
-            m_apu->writeDmcMemory(*offset, song->dpcmSamples[i].data);
-        }
-    }
-}
-
-void AudioTrackerSource::writeRegister(uint16_t address, uint8_t data)
-{
-    if (address == STATUS_REGISTER) {
-        m_apu->writeStatusRegister(data);
-    }
-    else {
-        m_apu->writeRegister(address, data);
-    }
 }
 
 } // namespace ocf::audio

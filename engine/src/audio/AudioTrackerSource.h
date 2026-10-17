@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "audio/AudioNesApu.h"
 #include "audio/AudioSource.h"
-#include "audio/tracker/SongPlayer.h"
+#include "audio/tracker/SongSynthesizer.h"
 
 #include <atomic>
 #include <memory>
@@ -10,8 +9,6 @@
 #include <vector>
 
 namespace ocf::audio {
-
-class Apu;
 
 /**
  * Plays a tracker song on its own APU. The song functions may be called from the main thread:
@@ -23,9 +20,6 @@ class Apu;
  */
 class AudioTrackerSource : public AudioSource {
 public:
-    // The player is ticked once per NTSC frame
-    static constexpr double CYCLES_PER_TICK = AudioNesApu::CPU_FREQUENCY / 60.0988;
-
     AudioTrackerSource();
     ~AudioTrackerSource() override;
 
@@ -83,15 +77,8 @@ private:
 
     // Audio thread
     void processCommands();
-    void loadDpcmSamples();
-    void writeRegister(uint16_t address, uint8_t data);
 
-    std::unique_ptr<Apu> m_apu;
-    tracker::SongPlayer m_player;
-    double m_cpuRemainder = 0.0;
-    double m_tickRemainder = 0.0;
-    float m_previousInput = 0.0f;
-    float m_previousOutput = 0.0f;
+    tracker::SongSynthesizer m_synthesizer; // Audio thread only
 
     std::mutex m_commandMutex;
     std::vector<Command> m_pendingCommands;
