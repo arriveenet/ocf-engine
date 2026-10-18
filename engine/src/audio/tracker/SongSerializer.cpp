@@ -6,6 +6,7 @@
 
 #include <yyjson.h>
 
+#include <algorithm>
 #include <bitset>
 #include <climits>
 #include <cstdlib>
