@@ -315,6 +315,7 @@ BGMで前奏だけを飛ばしてループしたいときは、最後のフレ�
 | ファイル | 内容 |
 | --- | --- |
 | `assets/songs/canon_in_d.json` | パッヘルベルの「カノン」。Pulse 2 が Pulse 1 を2小節遅れで追いかけ、Triangle がグラウンドベースを弾きます |
+| `assets/songs/air_on_the_g_string.json` | バッハの「G線上のアリア」（管弦楽組曲第3番 BWV 1068 より Air）。Pulse 1 が旋律、Pulse 2 が内声、Triangle がオクターブを跳ぶ8分音符のベースを弾きます。前半・後半をそれぞれ繰り返し、最後は少しずつ遅くして止まります |
 
 ## WAVに書き出す
 

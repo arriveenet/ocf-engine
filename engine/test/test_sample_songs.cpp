@@ -16,8 +16,9 @@ using namespace ocf::audio::tracker;
 
 namespace {
 
-const std::filesystem::path CANON_IN_D =
-    std::filesystem::path(OCF_TEST_ASSETS_DIR) / "songs" / "canon_in_d.json";
+const std::filesystem::path SONGS_DIR = std::filesystem::path(OCF_TEST_ASSETS_DIR) / "songs";
+const std::filesystem::path CANON_IN_D = SONGS_DIR / "canon_in_d.json";
+const std::filesystem::path AIR_ON_THE_G_STRING = SONGS_DIR / "air_on_the_g_string.json";
 
 /** With LF line endings, as the serializer writes, even if the checkout converted them. */
 std::string readFile(const std::filesystem::path& path)
@@ -28,12 +29,10 @@ std::string readFile(const std::filesystem::path& path)
     return text;
 }
 
-} // namespace
-
-TEST(SampleSongTest, CanonInDIsValidAndCanonical)
+void expectValidAndCanonical(const std::filesystem::path& path)
 {
-    const std::string json = readFile(CANON_IN_D);
-    ASSERT_FALSE(json.empty()) << CANON_IN_D;
+    const std::string json = readFile(path);
+    ASSERT_FALSE(json.empty()) << path;
 
     const auto result = SongSerializer::loadFromString(json);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
@@ -42,18 +41,23 @@ TEST(SampleSongTest, CanonInDIsValidAndCanonical)
     EXPECT_EQ(SongSerializer::saveToString(result.unwrap()), json);
 }
 
-TEST(SampleSongTest, CanonInDPlaysEveryFrameAndStopsAfterTheLastChord)
+struct PlayedSong {
+    std::shared_ptr<const Song> song;
+    std::vector<int> frames; ///< Frames in the order they were played
+    PlaybackStatus lastPlayed;
+};
+
+/** Plays the song from the start until it stops. */
+void playUntilStop(const std::filesystem::path& path, PlayedSong& played)
 {
-    auto result = SongSerializer::load(CANON_IN_D);
+    auto result = SongSerializer::load(path);
     ASSERT_TRUE(result.isOk()) << result.unwrapErr();
-    const auto song = std::make_shared<const Song>(std::move(result).unwrap());
+    played.song = std::make_shared<const Song>(std::move(result).unwrap());
 
     SongPlayer player([](uint16_t, uint8_t) {});
-    player.setSong(song);
+    player.setSong(played.song);
     player.play(0, 0);
 
-    std::vector<int> frames;
-    PlaybackStatus lastPlayed;
     for (int tick = 0; tick == 0 || player.getStatus().playing; tick++) {
         ASSERT_LT(tick, 100000) << "the song does not stop";
         player.tick();
@@ -61,19 +65,56 @@ TEST(SampleSongTest, CanonInDPlaysEveryFrameAndStopsAfterTheLastChord)
         if (!status.playing) {
             break;
         }
-        lastPlayed = status;
-        if (frames.empty() || frames.back() != status.frame) {
-            frames.push_back(status.frame);
+        played.lastPlayed = status;
+        if (played.frames.empty() || played.frames.back() != status.frame) {
+            played.frames.push_back(status.frame);
         }
     }
+}
 
-    std::vector<int> expectedFrames(song->frames.size());
-    for (size_t i = 0; i < expectedFrames.size(); i++) {
-        expectedFrames[i] = static_cast<int>(i);
+std::vector<int> allFrames(const Song& song)
+{
+    std::vector<int> frames(song.frames.size());
+    for (size_t i = 0; i < frames.size(); i++) {
+        frames[i] = static_cast<int>(i);
     }
-    EXPECT_EQ(frames, expectedFrames);
+    return frames;
+}
+
+} // namespace
+
+TEST(SampleSongTest, CanonInDIsValidAndCanonical)
+{
+    expectValidAndCanonical(CANON_IN_D);
+}
+
+TEST(SampleSongTest, CanonInDPlaysEveryFrameAndStopsAfterTheLastChord)
+{
+    PlayedSong played;
+    ASSERT_NO_FATAL_FAILURE(playUntilStop(CANON_IN_D, played));
+
+    EXPECT_EQ(played.frames, allFrames(*played.song));
 
     // The last frame holds the final half note (16 rows), then the song stops
-    EXPECT_EQ(lastPlayed.frame, song->frames.size() - 1);
-    EXPECT_EQ(lastPlayed.row, 15);
+    EXPECT_EQ(played.lastPlayed.frame, played.song->frames.size() - 1);
+    EXPECT_EQ(played.lastPlayed.row, 15);
+}
+
+TEST(SampleSongTest, AirOnTheGStringIsValidAndCanonical)
+{
+    expectValidAndCanonical(AIR_ON_THE_G_STRING);
+}
+
+TEST(SampleSongTest, AirOnTheGStringPlaysBothHalvesTwiceAndStopsAfterTheLastChord)
+{
+    PlayedSong played;
+    ASSERT_NO_FATAL_FAILURE(playUntilStop(AIR_ON_THE_G_STRING, played));
+
+    // Each half is repeated by listing its frames twice, so every frame plays once in order
+    EXPECT_EQ(played.frames, allFrames(*played.song));
+    ASSERT_EQ(played.song->frames.size(), 18u);
+
+    // The last frame holds the final whole note to the end of the pattern, then the song stops
+    EXPECT_EQ(played.lastPlayed.frame, played.song->frames.size() - 1);
+    EXPECT_EQ(played.lastPlayed.row, 63);
 }

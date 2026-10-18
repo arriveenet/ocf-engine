@@ -18,7 +18,7 @@ build/tools/tracker/Debug/ocf_tracker.exe
 
 ImGuiを使うので、`OCF_ENABLE_IMGUI=OFF` のときはビルドされません。
 起動するとデモ曲が読み込まれた状態になります（`File` → `Open Demo Song` でも開けます）。F5で再生できます。
-サンプル曲として、パッヘルベルの「カノン」（`assets/songs/canon_in_d.json`）もあります。`File` → `Open...` で開けます。
+サンプル曲として、パッヘルベルの「カノン」（`assets/songs/canon_in_d.json`）と、バッハの「G線上のアリア」（`assets/songs/air_on_the_g_string.json`）もあります。`File` → `Open...` で開けます。
 
 ## 画面
 
