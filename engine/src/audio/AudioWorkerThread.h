@@ -25,6 +25,7 @@ public:
 
     void addStreamBuffer(AudioStreamBuffer* buffer);
 
+    /** Once this returns, the worker thread no longer uses the buffer. */
     void removeStreamBuffer(AudioStreamBuffer* buffer);
 
 private:

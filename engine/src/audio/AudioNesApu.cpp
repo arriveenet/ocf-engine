@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "audio/AudioNesApu.h"
 
 #include "audio/apu/Apu.h"

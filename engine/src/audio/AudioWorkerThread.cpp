@@ -51,21 +51,17 @@ void AudioWorkerThread::removeStreamBuffer(AudioStreamBuffer* buffer)
 
 void AudioWorkerThread::threadMain()
 {
-    std::vector<AudioStreamBuffer*> localStreams;
-
     while (m_running.load(std::memory_order_relaxed)) {
-        // Copying the managed list
+        // Stream decode and fill buffer. The lock is held while decoding, so that a buffer is
+        // no longer in use once removeStreamBuffer() returns
         {
             std::lock_guard<std::mutex> lock(m_streamsMutex);
-            localStreams = m_streams;
-        }
-
-        // Stream decode and fill buffer
-       for (auto* buffer : localStreams) {
-            if (buffer->needsMoreData()) {
-                buffer->decodeTask();
+            for (auto* buffer : m_streams) {
+                if (buffer->needsMoreData()) {
+                    buffer->decodeTask();
+                }
             }
-       }
+        }
 
         // Sleep
         {

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ocf/audio/AudioEnums.h"
+#include "ocf/audio/tracker/TrackerTypes.h"
 
 #include <cstdint>
 #include <memory>
@@ -9,6 +10,11 @@
 
 namespace ocf {
 namespace audio {
+
+namespace tracker {
+struct DpcmKey;
+struct Song;
+}
 
 class AudioSystem {
 public:
@@ -55,6 +61,29 @@ public:
     uint8_t apu_readStatusRegister(AudioSourceHandle handle);
 
     void apu_writeStatusRegister(AudioSourceHandle handle, uint8_t data);
+
+    // Tracker specific functions. The song plays on its own APU, on the audio thread
+    AudioSourceHandle createTrackerSource();
+
+    /** The song is shared with the audio thread, so it must not be changed afterwards. */
+    void tracker_setSong(AudioSourceHandle handle, std::shared_ptr<const tracker::Song> song);
+
+    void tracker_play(AudioSourceHandle handle, uint16_t frame = 0, uint16_t row = 0);
+
+    void tracker_stop(AudioSourceHandle handle);
+
+    tracker::PlaybackStatus tracker_getStatus(AudioSourceHandle handle) const;
+
+    void tracker_playNote(AudioSourceHandle handle, tracker::ChannelType channel, uint8_t note,
+                          uint8_t instrument);
+
+    void tracker_stopNote(AudioSourceHandle handle, tracker::ChannelType channel);
+
+    /** Plays a DPCM sample of the song without an instrument, for previews. */
+    void tracker_playDpcmSample(AudioSourceHandle handle, const tracker::DpcmKey& key);
+
+    void tracker_setChannelMuted(AudioSourceHandle handle, tracker::ChannelType channel,
+                                 bool muted);
 
 private:
     struct Impl;

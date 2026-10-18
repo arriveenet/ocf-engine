@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: MIT
 #pragma once
+#include "LengthCounter.h"
+
 #include <stdint.h>
 
 namespace ocf::audio {
@@ -20,7 +23,7 @@ struct TriangleChannel {
 
 private:
     uint16_t m_frequency = 0;
-    uint8_t m_lengthCounter = 0;
+    LengthCounter m_lengthCounter;
 
     uint16_t m_timer = 0;
     uint16_t m_timerCounter = 0;

@@ -4,6 +4,7 @@
 #include "ocf/audio/AudioEnums.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 
 namespace ocf {
@@ -11,6 +12,10 @@ namespace audio {
 
 class AudioBuffer;
 
+/**
+ * The state, volume and looping flag are atomic: the main thread sets them while the audio
+ * thread (AudioMixer::render()) reads them.
+ */
 class AudioSource {
 public:
     AudioSource() = default;
@@ -49,9 +54,9 @@ public:
     void setLooping(bool looping) noexcept { m_looping = looping; }
 
 protected:
-    AudioState m_state = AudioState::Initial;
-    float m_volume = 1.0f;
-    bool m_looping = false;
+    std::atomic<AudioState> m_state = AudioState::Initial;
+    std::atomic<float> m_volume = 1.0f;
+    std::atomic<bool> m_looping = false;
     AudioBuffer* m_buffer = nullptr;
 };
 

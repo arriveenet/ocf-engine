@@ -1,0 +1,862 @@
+{
+  "format": "ocf-tracker-song",
+  "version": 1,
+  "title": "All That I Needed Was You",
+  "author": "",
+  "speed": 3,
+  "tempo": 150,
+  "rowsPerPattern": 64,
+  "channels": [
+    { "type": "pulse1", "effectColumns": 1 },
+    { "type": "pulse2", "effectColumns": 1 },
+    { "type": "triangle", "effectColumns": 1 },
+    { "type": "noise", "effectColumns": 1 },
+    { "type": "dpcm", "effectColumns": 1 }
+  ],
+  "instruments": [
+    {
+      "index": 0,
+      "name": "Instrument",
+      "sequences": {
+        "volume": { "values": [15, 9, 8, 7, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 3], "loop": -1, "release": -1 },
+        "duty": { "values": [1], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 1,
+      "name": "Instrument",
+      "sequences": {
+        "volume": { "values": [15, 9, 8, 7, 7, 7, 7, 6, 6, 6, 5, 5, 5, 4, 4, 3], "loop": -1, "release": -1 },
+        "duty": { "values": [1], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 2,
+      "name": "Instrument",
+      "sequences": {
+        "volume": { "values": [15, 12, 7, 7, 7, 6, 6, 3, 3], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 3,
+      "name": "Hi-hat",
+      "sequences": {
+        "volume": { "values": [10, 6, 3, 1, 0], "loop": -1, "release": -1 }
+      }
+    },
+    {
+      "index": 4,
+      "name": "Instrument",
+      "sequences": {},
+      "dpcm": [
+        { "note": "C-4", "sample": 1, "rate": 12 },
+        { "note": "D-4", "sample": 0, "rate": 12 }
+      ]
+    }
+  ],
+  "frames": [
+    [0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 1],
+    [0, 0, 0, 3, 2],
+    [0, 0, 0, 4, 3],
+    [1, 1, 1, 3, 4],
+    [2, 2, 2, 3, 4],
+    [3, 3, 3, 3, 4],
+    [4, 4, 4, 3, 4],
+    [1, 1, 1, 3, 4],
+    [2, 2, 2, 3, 4],
+    [3, 3, 3, 3, 4],
+    [4, 5, 4, 3, 4],
+    [5, 6, 5, 3, 4],
+    [6, 7, 6, 3, 4],
+    [7, 8, 7, 3, 4],
+    [6, 9, 8, 3, 4],
+    [7, 10, 7, 3, 4],
+    [6, 11, 8, 3, 4],
+    [7, 12, 7, 3, 4],
+    [8, 13, 10, 3, 4],
+    [9, 14, 9, 3, 4],
+    [10, 15, 14, 5, 5]
+  ],
+  "patterns": [
+    {
+      "channel": 0,
+      "index": 0,
+      "rows": [
+        { "row": 0, "note": "A-2", "instrument": 0 },
+        { "row": 12, "note": "G-3", "instrument": 0 },
+        { "row": 32, "note": "A-2", "instrument": 0 },
+        { "row": 44, "note": "G-3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "E-3", "instrument": 0 },
+        { "row": 4, "note": "E-3", "instrument": 0 },
+        { "row": 8, "note": "B-3", "instrument": 0 },
+        { "row": 12, "note": "A-4", "instrument": 0 },
+        { "row": 16, "note": "B-3", "instrument": 0 },
+        { "row": 20, "note": "A-4", "instrument": 0 },
+        { "row": 24, "note": "E-3", "instrument": 0 },
+        { "row": 28, "note": "A-4", "instrument": 0 },
+        { "row": 32, "note": "E-3", "instrument": 0 },
+        { "row": 36, "note": "E-3", "instrument": 0 },
+        { "row": 40, "note": "B-3", "instrument": 0 },
+        { "row": 44, "note": "A-4", "instrument": 0 },
+        { "row": 48, "note": "B-3", "instrument": 0 },
+        { "row": 52, "note": "A-4", "instrument": 0 },
+        { "row": 56, "note": "E-3", "instrument": 0 },
+        { "row": 60, "note": "A-4", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "D#3", "instrument": 0 },
+        { "row": 4, "note": "D#3", "instrument": 0 },
+        { "row": 8, "note": "G#3", "instrument": 0 },
+        { "row": 12, "note": "G#3", "instrument": 0 },
+        { "row": 16, "note": "B-3", "instrument": 0 },
+        { "row": 20, "note": "G#3", "instrument": 0 },
+        { "row": 24, "note": "D#3", "instrument": 0 },
+        { "row": 28, "note": "G#3", "instrument": 0 },
+        { "row": 32, "note": "G#3", "instrument": 0 },
+        { "row": 36, "note": "G#3", "instrument": 0 },
+        { "row": 40, "note": "E-3", "instrument": 0 },
+        { "row": 44, "note": "G#3", "instrument": 0 },
+        { "row": 48, "note": "C#4", "instrument": 0 },
+        { "row": 52, "note": "E-3", "instrument": 0 },
+        { "row": 56, "note": "B-3", "instrument": 0 },
+        { "row": 60, "note": "E-3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "A-3", "instrument": 0 },
+        { "row": 4, "note": "A-3", "instrument": 0 },
+        { "row": 8, "note": "C#3", "instrument": 0 },
+        { "row": 12, "note": "F#3", "instrument": 0 },
+        { "row": 16, "note": "B-3", "instrument": 0 },
+        { "row": 20, "note": "F#3", "instrument": 0 },
+        { "row": 24, "note": "A-3", "instrument": 0 },
+        { "row": 28, "note": "F#3", "instrument": 0 },
+        { "row": 32, "note": "A-3", "instrument": 0 },
+        { "row": 36, "note": "A-3", "instrument": 0 },
+        { "row": 40, "note": "D-3", "instrument": 0 },
+        { "row": 44, "note": "A-3", "instrument": 0 },
+        { "row": 48, "note": "G#3", "instrument": 0 },
+        { "row": 52, "note": "D-3", "instrument": 0 },
+        { "row": 56, "note": "A-3", "instrument": 0 },
+        { "row": 60, "note": "D-3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "C#3", "instrument": 0 },
+        { "row": 4, "note": "C#3", "instrument": 0 },
+        { "row": 8, "note": "E-3", "instrument": 0 },
+        { "row": 12, "note": "A-3", "instrument": 0 },
+        { "row": 16, "note": "B-3", "instrument": 0 },
+        { "row": 20, "note": "E-3", "instrument": 0 },
+        { "row": 24, "note": "A-3", "instrument": 0 },
+        { "row": 28, "note": "E-3", "instrument": 0 },
+        { "row": 32, "note": "G#3", "instrument": 0 },
+        { "row": 36, "note": "G#3", "instrument": 0 },
+        { "row": 40, "note": "G#3", "instrument": 0 },
+        { "row": 44, "note": "E-3", "instrument": 0 },
+        { "row": 48, "note": "A-3", "instrument": 0 },
+        { "row": 52, "note": "E-3", "instrument": 0 },
+        { "row": 56, "note": "B-3", "instrument": 0 },
+        { "row": 60, "note": "E-3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 5,
+      "rows": [
+        { "row": 0, "note": "A-3", "instrument": 0 },
+        { "row": 4, "note": "A-3", "instrument": 0 },
+        { "row": 8, "note": "C#3", "instrument": 0 },
+        { "row": 12, "note": "F#3", "instrument": 0 },
+        { "row": 16, "note": "A-3", "instrument": 0 },
+        { "row": 20, "note": "F#3", "instrument": 0 },
+        { "row": 24, "note": "B-3", "instrument": 0 },
+        { "row": 28, "note": "F#3", "instrument": 0 },
+        { "row": 32, "note": "A-3", "instrument": 0 },
+        { "row": 36, "note": "A-3", "instrument": 0 },
+        { "row": 40, "note": "C#3", "instrument": 0 },
+        { "row": 44, "note": "F#3", "instrument": 0 },
+        { "row": 48, "note": "A-3", "instrument": 0 },
+        { "row": 52, "note": "F#3", "instrument": 0 },
+        { "row": 56, "note": "B-3", "instrument": 0 },
+        { "row": 60, "note": "F#3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 6,
+      "rows": [
+        { "row": 0, "note": "F-3", "instrument": 0 },
+        { "row": 4, "note": "A-3", "instrument": 0 },
+        { "row": 8, "note": "C-4", "instrument": 0 },
+        { "row": 12, "note": "F-4", "instrument": 0 },
+        { "row": 24, "note": "E-4", "instrument": 0 },
+        { "row": 32, "note": "G-3", "instrument": 0 },
+        { "row": 36, "note": "B-3", "instrument": 0 },
+        { "row": 40, "note": "D-4", "instrument": 0 },
+        { "row": 44, "note": "G-4", "instrument": 0 },
+        { "row": 56, "note": "D-4", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 7,
+      "rows": [
+        { "row": 0, "note": "C-3", "instrument": 0 },
+        { "row": 4, "note": "G-3", "instrument": 0 },
+        { "row": 8, "note": "D-4", "instrument": 0 },
+        { "row": 12, "note": "E-4", "instrument": 0 },
+        { "row": 24, "note": "C-4", "instrument": 0 },
+        { "row": 32, "note": "B-3", "instrument": 0 },
+        { "row": 36, "note": "E-3", "instrument": 0 },
+        { "row": 40, "note": "E-3", "instrument": 0 },
+        { "row": 44, "note": "B-3", "instrument": 0 },
+        { "row": 48, "note": "D-4", "instrument": 0 },
+        { "row": 52, "note": "E-3", "instrument": 0 },
+        { "row": 56, "note": "B-3", "instrument": 0 },
+        { "row": 60, "note": "E-3", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 8,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "A-4", "instrument": 0 },
+        { "row": 12, "note": "A-4", "instrument": 0 },
+        { "row": 20, "note": "G-4", "instrument": 0 },
+        { "row": 24, "note": "F-4", "instrument": 0 },
+        { "row": 32, "note": "---" },
+        { "row": 40, "note": "A-4", "instrument": 0 },
+        { "row": 44, "note": "A-4", "instrument": 0 },
+        { "row": 52, "note": "G#4", "instrument": 0 },
+        { "row": 56, "note": "F#4", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 9,
+      "rows": [
+        { "row": 0, "note": "F#4", "instrument": 0 },
+        { "row": 8, "note": "F#4", "instrument": 0 },
+        { "row": 12, "note": "F#4", "instrument": 0 },
+        { "row": 20, "note": "E-4", "instrument": 0 },
+        { "row": 24, "note": "F#4", "instrument": 0 },
+        { "row": 32, "note": "G#4", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 0,
+      "index": 10,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 16, "note": "E-2", "instrument": 0 },
+        { "row": 20, "note": "F#2", "instrument": 0 },
+        { "row": 24, "note": "A-2", "instrument": 0 },
+        { "row": 31, "effects": ["B04"] }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 0,
+      "rows": [
+        { "row": 0, "note": "A-2", "instrument": 1 },
+        { "row": 4, "note": "A-3", "instrument": 1 },
+        { "row": 8, "note": "E-3", "instrument": 1 },
+        { "row": 12, "note": "G-3", "instrument": 1 },
+        { "row": 20, "note": "D-3", "instrument": 1 },
+        { "row": 28, "note": "E-3", "instrument": 1 },
+        { "row": 32, "note": "A-2", "instrument": 1 },
+        { "row": 36, "note": "A-3", "instrument": 1 },
+        { "row": 40, "note": "E-3", "instrument": 1 },
+        { "row": 44, "note": "G-3", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 12, "note": "A-4", "instrument": 1 },
+        { "row": 16, "note": "B-4", "instrument": 1 },
+        { "row": 20, "note": "C#5", "instrument": 1 },
+        { "row": 28, "note": "E-5", "instrument": 1 },
+        { "row": 32, "note": "---" },
+        { "row": 44, "note": "A-4", "instrument": 1 },
+        { "row": 48, "note": "B-4", "instrument": 1 },
+        { "row": 52, "note": "C#5", "instrument": 1 },
+        { "row": 60, "note": "B-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 16, "note": "B-4", "instrument": 1 },
+        { "row": 20, "note": "A-4", "instrument": 1 },
+        { "row": 28, "note": "B-4", "instrument": 1 },
+        { "row": 36, "note": "C#5", "instrument": 1 },
+        { "row": 48, "note": "C#5", "instrument": 1 },
+        { "row": 52, "note": "B-4", "instrument": 1 },
+        { "row": 56, "note": "C#5", "instrument": 1 },
+        { "row": 60, "note": "A-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 3,
+      "rows": [
+        { "row": 16, "note": "C#5", "instrument": 1 },
+        { "row": 20, "note": "B-4", "instrument": 1 },
+        { "row": 24, "note": "C#5", "instrument": 1 },
+        { "row": 28, "note": "A-4", "instrument": 1 },
+        { "row": 48, "note": "F#5", "instrument": 1 },
+        { "row": 52, "note": "E-5", "instrument": 1 },
+        { "row": 56, "note": "F#5", "instrument": 1 },
+        { "row": 60, "note": "E-5", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 4,
+      "rows": [
+        { "row": 16, "note": "C#5", "instrument": 1 },
+        { "row": 20, "note": "B-4", "instrument": 1 },
+        { "row": 24, "note": "A-4", "instrument": 1 },
+        { "row": 28, "note": "B-4", "instrument": 1 },
+        { "row": 48, "note": "---" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 5,
+      "rows": [
+        { "row": 16, "note": "C#5", "instrument": 1 },
+        { "row": 20, "note": "B-4", "instrument": 1 },
+        { "row": 24, "note": "A-4", "instrument": 1 },
+        { "row": 28, "note": "B-4", "instrument": 1 },
+        { "row": 32, "note": "B-4", "instrument": 0 },
+        { "row": 48, "note": "C#5", "instrument": 0 },
+        { "row": 56, "note": "D-5", "instrument": 0 },
+        { "row": 60, "note": "C#5", "instrument": 0 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 6,
+      "rows": [
+        { "row": 32, "note": "---" }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 7,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "C-5", "instrument": 1 },
+        { "row": 16, "note": "C-5", "instrument": 1 },
+        { "row": 24, "note": "C-5", "instrument": 1 },
+        { "row": 32, "note": "B-4", "instrument": 1 },
+        { "row": 40, "note": "B-4", "instrument": 1 },
+        { "row": 44, "note": "B-4", "instrument": 1 },
+        { "row": 52, "note": "A-4", "instrument": 1 },
+        { "row": 56, "note": "B-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 8,
+      "rows": [
+        { "row": 0, "note": "G-4", "instrument": 1 },
+        { "row": 16, "note": "---" },
+        { "row": 20, "note": "C-5", "instrument": 1 },
+        { "row": 24, "note": "D-5", "instrument": 1 },
+        { "row": 28, "note": "E-5", "instrument": 1 },
+        { "row": 32, "note": "G-5", "instrument": 1 },
+        { "row": 48, "note": "E-5", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 9,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "C-5", "instrument": 1 },
+        { "row": 16, "note": "C-5", "instrument": 1 },
+        { "row": 24, "note": "C-5", "instrument": 1 },
+        { "row": 32, "note": "B-4", "instrument": 1 },
+        { "row": 40, "note": "B-4", "instrument": 1 },
+        { "row": 44, "note": "B-4", "instrument": 1 },
+        { "row": 52, "note": "A-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 10,
+      "rows": [
+        { "row": 0, "note": "G-4", "instrument": 1 },
+        { "row": 16, "note": "---" },
+        { "row": 32, "note": "G#4", "instrument": 1 },
+        { "row": 48, "note": "B-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 11,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "C-5", "instrument": 1 },
+        { "row": 16, "note": "C-5", "instrument": 1 },
+        { "row": 24, "note": "C-5", "instrument": 1 },
+        { "row": 32, "note": "B-4", "instrument": 1 },
+        { "row": 40, "note": "B-4", "instrument": 1 },
+        { "row": 44, "note": "B-4", "instrument": 1 },
+        { "row": 52, "note": "A-4", "instrument": 1 },
+        { "row": 56, "note": "B-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 12,
+      "rows": [
+        { "row": 0, "note": "G-4", "instrument": 1 },
+        { "row": 16, "note": "---" },
+        { "row": 20, "note": "C-5", "instrument": 1 },
+        { "row": 24, "note": "D-5", "instrument": 1 },
+        { "row": 28, "note": "E-5", "instrument": 1 },
+        { "row": 32, "note": "G-5", "instrument": 1 },
+        { "row": 48, "note": "E-5", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 13,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "C-5", "instrument": 1 },
+        { "row": 12, "note": "C-5", "instrument": 1 },
+        { "row": 20, "note": "B-4", "instrument": 1 },
+        { "row": 24, "note": "A-4", "instrument": 1 },
+        { "row": 32, "note": "---" },
+        { "row": 40, "note": "C#5", "instrument": 1 },
+        { "row": 44, "note": "C#5", "instrument": 1 },
+        { "row": 52, "note": "B-4", "instrument": 1 },
+        { "row": 56, "note": "A-4", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 14,
+      "rows": [
+        { "row": 0, "note": "D#5", "instrument": 1 },
+        { "row": 8, "note": "D#5", "instrument": 1 },
+        { "row": 12, "note": "D#5", "instrument": 1 },
+        { "row": 20, "note": "C#5", "instrument": 1 },
+        { "row": 24, "note": "D#5", "instrument": 1 },
+        { "row": 32, "note": "E-5", "instrument": 1 }
+      ]
+    },
+    {
+      "channel": 1,
+      "index": 15,
+      "rows": [
+        { "row": 0, "note": "---" }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 0,
+      "rows": [
+        { "row": 0, "note": "---" }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "A-2", "instrument": 2 },
+        { "row": 4, "note": "A-2", "instrument": 2 },
+        { "row": 8, "note": "A-2", "instrument": 2 },
+        { "row": 12, "note": "A-2", "instrument": 2 },
+        { "row": 16, "note": "A-2", "instrument": 2 },
+        { "row": 20, "note": "A-2", "instrument": 2 },
+        { "row": 24, "note": "A-2", "instrument": 2 },
+        { "row": 28, "note": "A-2", "instrument": 2 },
+        { "row": 32, "note": "F#2", "instrument": 2 },
+        { "row": 36, "note": "F#2", "instrument": 2 },
+        { "row": 40, "note": "F#2", "instrument": 2 },
+        { "row": 44, "note": "F#2", "instrument": 2 },
+        { "row": 48, "note": "F#2", "instrument": 2 },
+        { "row": 52, "note": "F#2", "instrument": 2 },
+        { "row": 56, "note": "F#2", "instrument": 2 },
+        { "row": 60, "note": "F#2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "G#2", "instrument": 2 },
+        { "row": 4, "note": "G#2", "instrument": 2 },
+        { "row": 8, "note": "G#2", "instrument": 2 },
+        { "row": 12, "note": "G#2", "instrument": 2 },
+        { "row": 16, "note": "G#2", "instrument": 2 },
+        { "row": 20, "note": "G#2", "instrument": 2 },
+        { "row": 24, "note": "G#2", "instrument": 2 },
+        { "row": 28, "note": "G#2", "instrument": 2 },
+        { "row": 32, "note": "C#3", "instrument": 2 },
+        { "row": 36, "note": "C#3", "instrument": 2 },
+        { "row": 40, "note": "C#3", "instrument": 2 },
+        { "row": 44, "note": "C#3", "instrument": 2 },
+        { "row": 48, "note": "C#3", "instrument": 2 },
+        { "row": 52, "note": "C#3", "instrument": 2 },
+        { "row": 56, "note": "C#3", "instrument": 2 },
+        { "row": 60, "note": "C#3", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "G-2", "instrument": 2 },
+        { "row": 4, "note": "G-2", "instrument": 2 },
+        { "row": 8, "note": "G-2", "instrument": 2 },
+        { "row": 12, "note": "G-2", "instrument": 2 },
+        { "row": 16, "note": "G-2", "instrument": 2 },
+        { "row": 20, "note": "G-2", "instrument": 2 },
+        { "row": 24, "note": "G-2", "instrument": 2 },
+        { "row": 28, "note": "G-2", "instrument": 2 },
+        { "row": 32, "note": "D-3", "instrument": 2 },
+        { "row": 36, "note": "D-3", "instrument": 2 },
+        { "row": 40, "note": "D-3", "instrument": 2 },
+        { "row": 44, "note": "D-3", "instrument": 2 },
+        { "row": 48, "note": "D-3", "instrument": 2 },
+        { "row": 52, "note": "D-3", "instrument": 2 },
+        { "row": 56, "note": "D-3", "instrument": 2 },
+        { "row": 60, "note": "D-3", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "A-2", "instrument": 2 },
+        { "row": 4, "note": "A-2", "instrument": 2 },
+        { "row": 8, "note": "A-2", "instrument": 2 },
+        { "row": 12, "note": "A-2", "instrument": 2 },
+        { "row": 16, "note": "A-2", "instrument": 2 },
+        { "row": 20, "note": "A-2", "instrument": 2 },
+        { "row": 24, "note": "A-2", "instrument": 2 },
+        { "row": 28, "note": "A-2", "instrument": 2 },
+        { "row": 32, "note": "E-2", "instrument": 2 },
+        { "row": 36, "note": "E-2", "instrument": 2 },
+        { "row": 40, "note": "E-2", "instrument": 2 },
+        { "row": 44, "note": "E-2", "instrument": 2 },
+        { "row": 48, "note": "E-2", "instrument": 2 },
+        { "row": 52, "note": "E-2", "instrument": 2 },
+        { "row": 56, "note": "E-2", "instrument": 2 },
+        { "row": 60, "note": "E-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 5,
+      "rows": [
+        { "row": 0, "note": "F#2", "instrument": 2 },
+        { "row": 4, "note": "F#2", "instrument": 2 },
+        { "row": 8, "note": "F#2", "instrument": 2 },
+        { "row": 12, "note": "F#2", "instrument": 2 },
+        { "row": 16, "note": "F#2", "instrument": 2 },
+        { "row": 20, "note": "F#2", "instrument": 2 },
+        { "row": 24, "note": "F#2", "instrument": 2 },
+        { "row": 28, "note": "F#2", "instrument": 2 },
+        { "row": 32, "note": "F#2", "instrument": 2 },
+        { "row": 36, "note": "F#2", "instrument": 2 },
+        { "row": 40, "note": "F#2", "instrument": 2 },
+        { "row": 44, "note": "F#2", "instrument": 2 },
+        { "row": 48, "note": "F#2", "instrument": 2 },
+        { "row": 52, "note": "F#2", "instrument": 2 },
+        { "row": 56, "note": "F#2", "instrument": 2 },
+        { "row": 60, "note": "F#2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 6,
+      "rows": [
+        { "row": 0, "note": "F-2", "instrument": 2 },
+        { "row": 4, "note": "F-2", "instrument": 2 },
+        { "row": 8, "note": "F-2", "instrument": 2 },
+        { "row": 12, "note": "F-2", "instrument": 2 },
+        { "row": 16, "note": "F-2", "instrument": 2 },
+        { "row": 20, "note": "F-2", "instrument": 2 },
+        { "row": 24, "note": "F-2", "instrument": 2 },
+        { "row": 28, "note": "F-2", "instrument": 2 },
+        { "row": 32, "note": "G-2", "instrument": 2 },
+        { "row": 36, "note": "G-2", "instrument": 2 },
+        { "row": 40, "note": "G-2", "instrument": 2 },
+        { "row": 44, "note": "G-2", "instrument": 2 },
+        { "row": 48, "note": "G-2", "instrument": 2 },
+        { "row": 52, "note": "G-2", "instrument": 2 },
+        { "row": 56, "note": "G-2", "instrument": 2 },
+        { "row": 60, "note": "G-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 7,
+      "rows": [
+        { "row": 0, "note": "C-3", "instrument": 2 },
+        { "row": 4, "note": "C-3", "instrument": 2 },
+        { "row": 8, "note": "C-3", "instrument": 2 },
+        { "row": 12, "note": "C-3", "instrument": 2 },
+        { "row": 16, "note": "C-3", "instrument": 2 },
+        { "row": 20, "note": "C-3", "instrument": 2 },
+        { "row": 24, "note": "C-3", "instrument": 2 },
+        { "row": 28, "note": "C-3", "instrument": 2 },
+        { "row": 32, "note": "E-2", "instrument": 2 },
+        { "row": 36, "note": "E-2", "instrument": 2 },
+        { "row": 40, "note": "E-2", "instrument": 2 },
+        { "row": 44, "note": "E-2", "instrument": 2 },
+        { "row": 48, "note": "E-2", "instrument": 2 },
+        { "row": 52, "note": "E-2", "instrument": 2 },
+        { "row": 56, "note": "E-2", "instrument": 2 },
+        { "row": 60, "note": "E-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 8,
+      "rows": [
+        { "row": 0, "note": "F-2", "instrument": 2 },
+        { "row": 4, "note": "F-2", "instrument": 2 },
+        { "row": 8, "note": "F-2", "instrument": 2 },
+        { "row": 12, "note": "F-2", "instrument": 2 },
+        { "row": 16, "note": "F-2", "instrument": 2 },
+        { "row": 20, "note": "F-2", "instrument": 2 },
+        { "row": 24, "note": "F-2", "instrument": 2 },
+        { "row": 28, "note": "F-2", "instrument": 2 },
+        { "row": 32, "note": "G-2", "instrument": 2 },
+        { "row": 36, "note": "G-2", "instrument": 2 },
+        { "row": 40, "note": "G-2", "instrument": 2 },
+        { "row": 44, "note": "G-2", "instrument": 2 },
+        { "row": 48, "note": "G-2", "instrument": 2 },
+        { "row": 52, "note": "G-2", "instrument": 2 },
+        { "row": 56, "note": "G-2", "instrument": 2 },
+        { "row": 60, "note": "G-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 9,
+      "rows": [
+        { "row": 0, "note": "B-2", "instrument": 2 },
+        { "row": 4, "note": "B-2", "instrument": 2 },
+        { "row": 8, "note": "B-2", "instrument": 2 },
+        { "row": 12, "note": "B-2", "instrument": 2 },
+        { "row": 16, "note": "B-2", "instrument": 2 },
+        { "row": 20, "note": "B-2", "instrument": 2 },
+        { "row": 24, "note": "B-2", "instrument": 2 },
+        { "row": 28, "note": "B-2", "instrument": 2 },
+        { "row": 32, "note": "E-2", "instrument": 2 },
+        { "row": 36, "note": "E-2", "instrument": 2 },
+        { "row": 40, "note": "E-2", "instrument": 2 },
+        { "row": 44, "note": "E-2", "instrument": 2 },
+        { "row": 48, "note": "E-2", "instrument": 2 },
+        { "row": 52, "note": "E-2", "instrument": 2 },
+        { "row": 56, "note": "E-2", "instrument": 2 },
+        { "row": 60, "note": "E-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 10,
+      "rows": [
+        { "row": 0, "note": "F-2", "instrument": 2 },
+        { "row": 4, "note": "F-2", "instrument": 2 },
+        { "row": 8, "note": "F-2", "instrument": 2 },
+        { "row": 12, "note": "F-2", "instrument": 2 },
+        { "row": 16, "note": "F-2", "instrument": 2 },
+        { "row": 20, "note": "F-2", "instrument": 2 },
+        { "row": 24, "note": "F-2", "instrument": 2 },
+        { "row": 28, "note": "F-2", "instrument": 2 },
+        { "row": 32, "note": "F#2", "instrument": 2 },
+        { "row": 36, "note": "F#2", "instrument": 2 },
+        { "row": 40, "note": "F#2", "instrument": 2 },
+        { "row": 44, "note": "F#2", "instrument": 2 },
+        { "row": 48, "note": "F#2", "instrument": 2 },
+        { "row": 52, "note": "F#2", "instrument": 2 },
+        { "row": 56, "note": "F#2", "instrument": 2 },
+        { "row": 60, "note": "F#2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 2,
+      "index": 14,
+      "rows": [
+        { "row": 0, "note": "E-2", "instrument": 2 },
+        { "row": 16, "note": "E-2", "instrument": 2 },
+        { "row": 20, "note": "F#2", "instrument": 2 },
+        { "row": 24, "note": "A-2", "instrument": 2 }
+      ]
+    },
+    {
+      "channel": 3,
+      "index": 0,
+      "rows": [
+        { "row": 8, "note": "C-#", "instrument": 3 },
+        { "row": 24, "note": "C-#", "instrument": 3 },
+        { "row": 40, "note": "C-#", "instrument": 3 },
+        { "row": 56, "note": "C-#", "instrument": 3 }
+      ]
+    },
+    {
+      "channel": 3,
+      "index": 1,
+      "rows": [
+        { "row": 0, "note": "---" },
+        { "row": 8, "note": "C-#", "instrument": 3 },
+        { "row": 24, "note": "C-#", "instrument": 3 },
+        { "row": 40, "note": "C-#", "instrument": 3 }
+      ]
+    },
+    {
+      "channel": 3,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "C-#", "instrument": 3 },
+        { "row": 4, "note": "C-#", "instrument": 3 },
+        { "row": 8, "note": "C-#", "instrument": 3 },
+        { "row": 12, "note": "C-#", "instrument": 3 },
+        { "row": 16, "note": "C-#", "instrument": 3 },
+        { "row": 20, "note": "C-#", "instrument": 3 },
+        { "row": 24, "note": "C-#", "instrument": 3 },
+        { "row": 28, "note": "C-#", "instrument": 3 },
+        { "row": 32, "note": "C-#", "instrument": 3 },
+        { "row": 36, "note": "C-#", "instrument": 3 },
+        { "row": 40, "note": "C-#", "instrument": 3 },
+        { "row": 44, "note": "C-#", "instrument": 3 },
+        { "row": 48, "note": "C-#", "instrument": 3 },
+        { "row": 52, "note": "C-#", "instrument": 3 },
+        { "row": 56, "note": "C-#", "instrument": 3 },
+        { "row": 60, "note": "C-#", "instrument": 3 }
+      ]
+    },
+    {
+      "channel": 3,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "C-#", "instrument": 3 },
+        { "row": 4, "note": "C-#", "instrument": 3 },
+        { "row": 8, "note": "C-#", "instrument": 3 },
+        { "row": 12, "note": "C-#", "instrument": 3 },
+        { "row": 16, "note": "C-#", "instrument": 3 },
+        { "row": 20, "note": "C-#", "instrument": 3 },
+        { "row": 24, "note": "C-#", "instrument": 3 },
+        { "row": 28, "note": "C-#", "instrument": 3 },
+        { "row": 32, "note": "---" }
+      ]
+    },
+    {
+      "channel": 3,
+      "index": 5,
+      "rows": [
+        { "row": 0, "note": "C-#", "instrument": 3 },
+        { "row": 4, "note": "---" }
+      ]
+    },
+    {
+      "channel": 4,
+      "index": 1,
+      "rows": [
+        { "row": 48, "note": "C-4", "instrument": 4 },
+        { "row": 50, "note": "C-4", "instrument": 4 },
+        { "row": 52, "note": "D-4", "instrument": 4 },
+        { "row": 54, "note": "D-4", "instrument": 4 },
+        { "row": 56, "note": "C-4", "instrument": 4 }
+      ]
+    },
+    {
+      "channel": 4,
+      "index": 2,
+      "rows": [
+        { "row": 0, "note": "D-4", "instrument": 4 },
+        { "row": 8, "note": "C-4", "instrument": 4 },
+        { "row": 16, "note": "D-4", "instrument": 4 },
+        { "row": 20, "note": "D-4", "instrument": 4 },
+        { "row": 24, "note": "C-4", "instrument": 4 },
+        { "row": 32, "note": "D-4", "instrument": 4 },
+        { "row": 40, "note": "C-4", "instrument": 4 },
+        { "row": 48, "note": "D-4", "instrument": 4 },
+        { "row": 52, "note": "D-4", "instrument": 4 },
+        { "row": 56, "note": "C-4", "instrument": 4 }
+      ]
+    },
+    {
+      "channel": 4,
+      "index": 3,
+      "rows": [
+        { "row": 0, "note": "D-4", "instrument": 4 },
+        { "row": 8, "note": "C-4", "instrument": 4 },
+        { "row": 16, "note": "D-4", "instrument": 4 },
+        { "row": 20, "note": "D-4", "instrument": 4 },
+        { "row": 24, "note": "C-4", "instrument": 4 },
+        { "row": 32, "note": "C-4", "instrument": 4 },
+        { "row": 35, "note": "D-4", "instrument": 4 },
+        { "row": 38, "note": "D-4", "instrument": 4 },
+        { "row": 40, "note": "C-4" },
+        { "row": 43, "note": "D-4" },
+        { "row": 46, "note": "D-4" },
+        { "row": 48, "note": "C-4", "instrument": 4 },
+        { "row": 50, "note": "C-4", "instrument": 4 },
+        { "row": 52, "note": "D-4", "instrument": 4 },
+        { "row": 56, "note": "C-4", "instrument": 4 },
+        { "row": 60, "note": "C-4", "instrument": 4 }
+      ]
+    },
+    {
+      "channel": 4,
+      "index": 4,
+      "rows": [
+        { "row": 0, "note": "D-4", "instrument": 4 },
+        { "row": 8, "note": "C-4", "instrument": 4 },
+        { "row": 16, "note": "D-4", "instrument": 4 },
+        { "row": 24, "note": "C-4", "instrument": 4 },
+        { "row": 32, "note": "D-4", "instrument": 4 },
+        { "row": 40, "note": "C-4", "instrument": 4 },
+        { "row": 48, "note": "D-4", "instrument": 4 },
+        { "row": 56, "note": "C-4", "instrument": 4 }
+      ]
+    },
+    {
+      "channel": 4,
+      "index": 5,
+      "rows": [
+        { "row": 0, "note": "C-4", "instrument": 4 }
+      ]
+    }
+  ],
+  "dpcmSamples": [
+    { "index": 0, "name": "EsperDream2_$E000", "rate": 15, "restLevel": 64, "data": "DX+AFA8AhQgPf4ck/////z8YAO++/wwAsv9/IAAA4P///wP5LwAAAACw//85/v///wYAAAAA+99N+v//AAAAgP2JAAL++///fwAAUSQyAyLs////2Z0ACACa+Rhx7sf4N+bzMxcEAKA2c/nb4eb/PwAAAXHd9acQyfycOu7mMDOgmdnAETlX/ry7NotDIZIh1ow7PT01OnGP50KtRpAA5va6t9uYzYyYOBrEhGe+95g1g1NLmJnjzNIyZmlWmxMdV12ZYzgkym2adY6O2VjZlJmWNlORjcmmTjObDTczM9E0K6WZOWW2azKZ5GzNZEpNyWrNtKUZs3StFZmK1WyS1ezYnNRkpmi1nGqxUalaVVV2zLZajppSkrRks1qzarZZypgqy2mZqkxTs0xVOWvWqqpUpVSqmqZqtapVsypVaWoA" },
+    { "index": 1, "name": "EsperDream2_$E140", "rate": 15, "restLevel": 64, "data": "AAAAAAAAAAAAAAAAAAAAAFVVVZWqKpXgf/zA8QMo/v//8V8/AAAAAAAACIDA8f/Hix//////////q2qbqpJSJZUkJZKASlAFAACAIEIEgOL/AYBtq23fu3d7q6/d1X3dv//vtm1vu22vKpWUJEmSiEKESIgECUmSJFEipZIiSaoA" },
+    { "index": 2, "name": "EsperDream2_$E1C0", "rate": 15, "restLevel": 64, "data": "AAAAAAAAAAAAAAAAAAAAAAcgC/D//+ccAIBjRgD4/5///38AAQCAD9wf6PAfz4AD/vAf3Af8/w/IPQAEAAAA/vj5//H/f8D/BgCfD8SZfwCAbwD5Px9DcDPA+Tz/PwJfgAEABsPx57+P+X7IQB5Gw/84HL/sHDg5hgAXIu4XtOH/e//xAINgTECDj8B8n+czhwj+MK/nP2AfDwFgPOcBfgCN457vvXnjkRmCHBhsn4c9QXjH+PPcABj/+WzAwccORPwPwH8BY8Tn/BPe+PnojgiA8eAxOJz3Obl9JoCHhzOPGdgc8Pz8wzEPQyACv7thw/n3+BaGIGN4mHCOnD85+3CHGD5gsBP231mYxzszgA2HswM/e8TrCfyGGIaPD94cdJgz/MU84oGZD/w5Im4G8XL6NBjA/wHfPbsjwcG5g3DEnBm/cwEvMw7dxmMMPx7HAzw7eNMwH3Egh9fLOHfcmIcxnjFjLGycD8ZJ55HzkXEfzI04h+GOyOhjPuI8dsJxHB4x+D9sJH58ZwCTI/bw8Inwx+wZPC+Y5DhcR90B9jON82GOA8jn4DbM7Y3DczgcODnE4zlfMvDHGCzmuHmcS/wDx5AmM86dm+FwiFzH8RP3TRkMPsI8Y87xMNkDH2d8RmNcMyeYRx6PJzzDTIzDd/gdhodxjHls3BHD5hjHo3eOwfBxY42ZYdcZw2SczPnEA3smfOOBL8x82YEIzH08/sEpYxzG+Qc5PcwwFD64nr9xpAK/DhxH9YPjSA94Z2SWAA==" }
+  ]
+}

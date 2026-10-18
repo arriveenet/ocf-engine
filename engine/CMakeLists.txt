@@ -60,6 +60,7 @@ endfunction( add_filtered_std )
 # ==================================================================================================
 add_filtered_std("audio")
 add_filtered_std("audio/apu")
+add_filtered_std("audio/tracker")
 add_filtered_std("core")
 add_filtered_std("core/event")
 add_filtered_std("core/input")
@@ -130,6 +131,7 @@ target_link_libraries(${TARGET} PRIVATE miniaudio)
 target_link_libraries(${TARGET} PRIVATE stb)
 target_link_libraries(${TARGET} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET} PRIVATE xxHash)
+target_link_libraries(${TARGET} PRIVATE yyjson)
 target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
 
 # Always linked, so that games can use ImGui without checking OCF_ENABLE_IMGUI

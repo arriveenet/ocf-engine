@@ -1,68 +1,56 @@
+// SPDX-License-Identifier: MIT
 #include "SweepUnit.h"
 
 namespace ocf::audio {
 
+static constexpr uint16_t MAX_PERIOD = 0x7FF;
+static constexpr uint16_t MIN_PERIOD = 8;
+
+SweepUnit::SweepUnit(bool onesComplement)
+    : m_onesComplement(onesComplement)
+{
+}
+
 void SweepUnit::clock()
 {
-    if (!m_enabled || m_shiftCount == 0) {
-        return;
-    }
-
-    // Calculate delta
-    uint16_t delta = m_timerReload >> m_shiftCount;
-    m_targetTimer = m_timerReload;
-    if (m_negateFlag) {
-        // Subtract
-        m_targetTimer -= delta;
-    }
-    else {
-        // Add
-        m_targetTimer += delta;
-    }
-
-    m_isMuted = (m_timerReload < 8 || m_targetTimer > 0x7FF);
-
-    if (!m_isMuted) {
-        m_timerReload = m_targetTimer;
+    // Update the period
+    if (m_divider == 0 && m_enabled && m_shiftCount != 0 && !isMuted()) {
+        m_period = getTargetPeriod();
     }
 
     // Update divider
-    if (m_divider == 0) {
+    if (m_divider == 0 || m_reloadFlag) {
         m_divider = m_dividerPeriod;
+        m_reloadFlag = false;
     }
     else {
         m_divider--;
     }
 }
 
-void SweepUnit::setEnabled(bool enabled)
+void SweepUnit::setRegister(uint8_t data)
 {
-    m_enabled = enabled;
+    m_enabled = (data & 0x80) != 0;
+    m_dividerPeriod = (data & 0x70) >> 4;
+    m_negateFlag = (data & 0x08) != 0;
+    m_shiftCount = data & 0x07;
+    m_reloadFlag = true;
 }
 
-void SweepUnit::setNegateFlag(bool negate)
+uint16_t SweepUnit::getTargetPeriod() const
 {
-    m_negateFlag = negate;
+    const int change = m_period >> m_shiftCount;
+    if (!m_negateFlag) {
+        return static_cast<uint16_t>(m_period + change);
+    }
+
+    const int target = m_period - change - (m_onesComplement ? 1 : 0);
+    return static_cast<uint16_t>(target < 0 ? 0 : target);
 }
 
-void SweepUnit::setDividerPeriod(uint8_t period)
+bool SweepUnit::isMuted() const
 {
-    m_dividerPeriod = period;
-}
-
-void SweepUnit::setShiftCount(uint8_t count)
-{
-    m_shiftCount = count;
-}
-
-void SweepUnit::setTimer(uint16_t timer)
-{
-    m_timerReload = timer;
-}
-
-uint16_t SweepUnit::getTargetTimer() const
-{
-    return m_enabled ? m_targetTimer : m_timerReload;
+    return m_period < MIN_PERIOD || getTargetPeriod() > MAX_PERIOD;
 }
 
 } // namespace ocf::audio
