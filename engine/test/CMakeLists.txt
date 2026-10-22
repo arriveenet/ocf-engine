@@ -35,9 +35,6 @@ add_executable(test_${TARGET}
 )
 target_link_libraries(test_${TARGET} PRIVATE gtest ocfengine)
 
-# For tests of internal classes (e.g. audio/tracker/SongPlayer.h)
-target_include_directories(test_${TARGET} PRIVATE ${ocfengine_SOURCE_DIR}/src)
-
 # For tests of the files in assets, wherever the tests run from
 target_compile_definitions(test_${TARGET} PRIVATE OCF_TEST_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
 

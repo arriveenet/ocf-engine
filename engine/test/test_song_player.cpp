@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include <gtest/gtest.h>
 
-#include "audio/tracker/NoteTable.h"
-#include "audio/tracker/SongPlayer.h"
+#include "ocf/audio/tracker/NoteTable.h"
+#include "ocf/audio/tracker/SongPlayer.h"
 
 #include <map>
 #include <optional>

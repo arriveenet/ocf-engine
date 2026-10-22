@@ -13,17 +13,11 @@ find_package(Vulkan REQUIRED)
 # ==================================================================================================
 #  Functions
 # ==================================================================================================
-function( add_filtered_public_h filterName fileString )
+function( add_filtered_h filterName fileString )
     file(GLOB TMP_FILES ${fileString})
-    set(PUBLIC_HEADER_FILES ${PUBLIC_HEADER_FILES} ${TMP_FILES} PARENT_SCOPE)
+    set(HEADER_FILES ${HEADER_FILES} ${TMP_FILES} PARENT_SCOPE)
     source_group(${filterName} FILES ${TMP_FILES})
-endfunction( add_filtered_public_h )
-
-function( add_filtered_private_h filterName fileString )
-    file(GLOB TMP_FILES ${fileString})
-    set(PRIVATE_HEADER_FILES ${PRIVATE_HEADER_FILES} ${TMP_FILES} PARENT_SCOPE)
-    source_group(${filterName} FILES ${TMP_FILES})
-endfunction( add_filtered_private_h )
+endfunction( add_filtered_h )
 
 function( add_filtered_src filterName fileString )
     file(GLOB TMP_FILES ${fileString})
@@ -33,25 +27,19 @@ endfunction( add_filtered_src )
 
 function( add_filtered_std relativePath )
     string(REPLACE "/" "\\" filterPart ${relativePath})
-    # Add public headers
-    add_filtered_public_h(
-        "Public Header Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ocf/${relativePath}/*.h")
-    add_filtered_public_h(
-        "Public Header Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ocf/${relativePath}/*.inl")
-    set(PUBLIC_HEADER_FILES ${PUBLIC_HEADER_FILES} PARENT_SCOPE)
-
-    # Add private headers
-    add_filtered_private_h(
-        "Private Header Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/${relativePath}/*.h")
-    set(PRIVATE_HEADER_FILES ${PRIVATE_HEADER_FILES} PARENT_SCOPE)
+    # Add headers
+    add_filtered_h(
+        "Header Files\\${filterPart}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.h")
+    add_filtered_h(
+        "Header Files\\${filterPart}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.inl")
+    set(HEADER_FILES ${HEADER_FILES} PARENT_SCOPE)
 
     # Add source files
     add_filtered_src(
         "Source Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/${relativePath}/*.cpp")
+        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.cpp")
     set(SOURCE_FILES ${SOURCE_FILES} PARENT_SCOPE)
 endfunction( add_filtered_std )
 
@@ -77,31 +65,31 @@ add_filtered_std("rhi/vulkan/resource")
 
 if (WIN32)
     set(PLATFORM_HEADER_FILES
-        src/rhi/vulkan/platform/VulkanPlatformWindows.h
+        ocf/rhi/vulkan/platform/VulkanPlatformWindows.h
     )
 
     set(PLATFORM_SOURCE_FILES
-        src/rhi/vulkan/platform/VulkanPlatformWindows.cpp
+        ocf/rhi/vulkan/platform/VulkanPlatformWindows.cpp
     )
 
-    list(APPEND PRIVATE_HEADER_FILES ${PLATFORM_HEADER_FILES})
+    list(APPEND HEADER_FILES ${PLATFORM_HEADER_FILES})
     list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
 
-    source_group("Private Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
+    source_group("Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
     source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
 elseif (LINUX)
     set(PLATFORM_HEADER_FILES
-        src/rhi/vulkan/platform/VulkanPlatformLinux.h
+        ocf/rhi/vulkan/platform/VulkanPlatformLinux.h
     )
 
     set(PLATFORM_SOURCE_FILES
-        src/rhi/vulkan/platform/VulkanPlatformLinux.cpp
+        ocf/rhi/vulkan/platform/VulkanPlatformLinux.cpp
     )
 
-    list(APPEND PRIVATE_HEADER_FILES ${PLATFORM_HEADER_FILES})
+    list(APPEND HEADER_FILES ${PLATFORM_HEADER_FILES})
     list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
 
-    source_group("Private Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
+    source_group("Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
     source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
 endif()
 
@@ -109,16 +97,14 @@ endif()
 #  Includes & target definition
 # ==================================================================================================
 #building a library
-add_library(${TARGET} ${PUBLIC_HEADER_FILES} ${PRIVATE_HEADER_FILES} ${SOURCE_FILES})
+add_library(${TARGET} ${HEADER_FILES} ${SOURCE_FILES})
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(${TARGET} PRIVATE OCF_LIBRARY_EXPORTS)
 else()
     target_compile_definitions(${TARGET} PUBLIC OCF_LIBRARY_STATIC)
 endif()
 
-target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_include_directories(${TARGET} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/rhi)
+target_include_directories(${TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_target_properties(${TARGET} PROPERTIES FOLDER Engine)
 

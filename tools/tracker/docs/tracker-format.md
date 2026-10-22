@@ -310,7 +310,7 @@ public:
 
 - エラーは `Result` の `Err` で、[読み込み時の検証](#読み込み時の検証)のメッセージを返します。例外は使いません。
 - `SongSerializer::save()` は、親ディレクトリが無ければ作ります。いったん `<ファイル名>.tmp` に書き出してから置き換えるので、書き込みに失敗しても元のファイルは壊れません。
-- 実装は `engine/src/audio/tracker/SongSerializer.cpp` です。yyjsonはエンジンに `PRIVATE` でリンクし、公開ヘッダにはyyjsonの型を出しません。
+- 実装は `engine/ocf/audio/tracker/SongSerializer.cpp` です。yyjsonはエンジンに `PRIVATE` でリンクし、公開ヘッダにはyyjsonの型を出しません。
 
 ゲームから読み込む例:
 
