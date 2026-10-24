@@ -89,10 +89,10 @@ APUのミキサーでは、Triangle・Noise・DMC が非線形に合成されま
 ## 構成
 
 ```
-engine/include/ocf/audio/tracker/Dpcm.h         定数（レート表・長さの上限）、stepDpcmLevel()、decodeDpcm()
-engine/include/ocf/audio/tracker/DpcmEncoder.h  DpcmEncoder::encode() と変換の設定
-engine/src/audio/tracker/Dpcm.cpp
-engine/src/audio/tracker/DpcmEncoder.cpp        リサンプル、ビット列の決定、長さの調整
+engine/ocf/audio/tracker/Dpcm.h         定数（レート表・長さの上限）、stepDpcmLevel()、decodeDpcm()
+engine/ocf/audio/tracker/DpcmEncoder.h  DpcmEncoder::encode() と変換の設定
+engine/ocf/audio/tracker/Dpcm.cpp
+engine/ocf/audio/tracker/DpcmEncoder.cpp        リサンプル、ビット列の決定、長さの調整
 engine/test/test_dpcm.cpp
 
 tools/dmcconv/                                  コマンドラインツール ocf_dmcconv
@@ -173,8 +173,8 @@ tone_long.wav -> tone_long.dmc  rate 11 (13982.6Hz)  3505 bytes  2.01s  SNR 4.5d
 
 | ヘッダー | 内容 |
 | --- | --- |
-| [Dpcm.h](../engine/include/ocf/audio/tracker/Dpcm.h) | 定数（レート表、`DPCM_MAX_SAMPLE_BYTES`、`DPCM_MEMORY_SIZE` など）、`getDpcmRateFrequency()`、`getDpcmPlayableLength()`、`stepDpcmLevel()`、`decodeDpcm()` |
-| [DpcmEncoder.h](../engine/include/ocf/audio/tracker/DpcmEncoder.h) | `DpcmEncoder::encode()` と、その設定 `DpcmEncodeOptions`・結果 `DpcmEncodeResult` |
+| [Dpcm.h](../engine/ocf/audio/tracker/Dpcm.h) | 定数（レート表、`DPCM_MAX_SAMPLE_BYTES`、`DPCM_MEMORY_SIZE` など）、`getDpcmRateFrequency()`、`getDpcmPlayableLength()`、`stepDpcmLevel()`、`decodeDpcm()` |
+| [DpcmEncoder.h](../engine/ocf/audio/tracker/DpcmEncoder.h) | `DpcmEncoder::encode()` と、その設定 `DpcmEncodeOptions`・結果 `DpcmEncodeResult` |
 
 ```cpp
 /** One bit of the output unit, as the APU does it: +2 for 1, -2 for 0, unchanged at the limits. */
@@ -218,7 +218,7 @@ public:
 
 変換ツールの設計に影響するところだけを決めておきます。詳細はそれぞれの段階で設計します。
 
-### APU（`engine/src/audio/apu/DmcChannel`）
+### APU（`engine/ocf/audio/apu/DmcChannel`）
 
 - `$4010`（IRQ・ループ・レート）、`$4011`（レベルの直接設定）、`$4012`（アドレス）、`$4013`（長さ）と、`$4015` のbit4（開始・停止、残りバイトの有無）を実装する。
 - サンプルのメモリは、APUに16KBのバッファ（`$C000`〜`$FFFF`）として渡す（`Apu::setDmcMemory(std::span<const uint8_t>)`）。CPUがないので、メモリ読み出しによるCPUの停止は真似しない。

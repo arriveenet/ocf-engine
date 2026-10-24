@@ -8,14 +8,14 @@
 #include <ocf/resource/Mesh.h>
 #include <ocf/resource/ModelImporter.h>
 #include <ocf/scene/Camera.h>
-#include <ocf/scene/MeshInstance.h>
+#include <ocf/scene/3d/MeshInstance.h>
 #include <ocf/scene/Node.h>
 #include <ocf/scene/Scene.h>
 #include <ocf/scene/SceneGraph.h>
 #include <ocf/scene/SceneManager.h>
-#include <ocf/scene/Text.h>
+#include <ocf/scene/2d/Text.h>
 #include <ocf/scene/View.h>
-
+    
 #include <imgui.h>
 
 #define _CRTDBG_MAP_ALLOC

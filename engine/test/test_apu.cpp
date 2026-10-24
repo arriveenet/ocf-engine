@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 #include <gtest/gtest.h>
 
-#include "audio/apu/Apu.h"
-#include "audio/apu/DmcChannel.h"
-#include "audio/apu/LengthCounter.h"
-#include "audio/apu/PulseChannel.h"
-#include "audio/apu/SweepUnit.h"
-#include "audio/apu/TriangleChannel.h"
+#include "ocf/audio/apu/Apu.h"
+#include "ocf/audio/apu/DmcChannel.h"
+#include "ocf/audio/apu/LengthCounter.h"
+#include "ocf/audio/apu/PulseChannel.h"
+#include "ocf/audio/apu/SweepUnit.h"
+#include "ocf/audio/apu/TriangleChannel.h"
 
 #include <ocf/audio/tracker/DpcmEncoder.h>
 
