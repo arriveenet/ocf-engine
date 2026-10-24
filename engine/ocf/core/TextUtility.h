@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <string>
 #include <string_view>
 
 namespace ocf {
 
-class TextUtility {
+class OCF_API TextUtility {
 public:
     TextUtility() = delete;
 

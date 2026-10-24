@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -39,7 +41,7 @@ static inline P* align(P* p, size_t alignment, size_t offset)
 
 namespace AreaPolicy {
 
-class StaticArea {
+class OCF_API StaticArea {
 public:
     explicit StaticArea(void* begin, void* end)
         : m_begin(begin)
@@ -60,7 +62,7 @@ private:
 
 };
 
-class HeapArea {
+class OCF_API HeapArea {
 public:
     HeapArea() noexcept = default;
 
@@ -88,7 +90,7 @@ private:
 
 } // namespace AreaPolicy
 
-class FreeList {
+class OCF_API FreeList {
 public:
     struct Node {
         Node* next;
@@ -130,7 +132,7 @@ private:
 template <size_t ELEMENT_SIZE,
           size_t ALIGNMENT = alignof(std::max_align_t),
           size_t OFFSET = 0 >
-class MemoryPool {
+class OCF_API MemoryPool {
 public:
     MemoryPool() = default;
     ~MemoryPool() = default;
@@ -180,7 +182,7 @@ private:
 
 template <typename Allocator,
           typename AreaPolicy = AreaPolicy::HeapArea>
-class LinearAllocator {
+class OCF_API LinearAllocator {
 public:
     template <typename... ARGS>
     LinearAllocator(const char* name, size_t size)

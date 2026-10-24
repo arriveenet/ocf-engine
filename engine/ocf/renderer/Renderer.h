@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
@@ -40,7 +41,7 @@ struct Vertex2 {
     math::vec2 texCoord;
 };
 
-class Renderer {
+class OCF_API Renderer {
 public:
     /**
      * @brief Per-draw data (the model matrix) pushed to every pipeline the renderer draws.

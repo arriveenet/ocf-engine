@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 namespace ocf {
 
 enum class EventType {
@@ -10,7 +12,7 @@ enum class EventType {
     Custom, //!< Events defined by the application
 };
 
-class Event {
+class OCF_API Event {
 public:
     Event(EventType eventType);
     virtual ~Event();

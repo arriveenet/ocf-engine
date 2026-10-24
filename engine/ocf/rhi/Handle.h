@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <cassert>
 #include <cstdint>
 #include <utility>
@@ -20,7 +22,7 @@ struct RHIDescriptorSet;
 struct RHIPipeline;
 struct RHISwapchain;
 
-class HandleBase {
+class OCF_API HandleBase {
 public:
     using HandleId = uint32_t;
     static constexpr HandleId nullid = UINT32_MAX;

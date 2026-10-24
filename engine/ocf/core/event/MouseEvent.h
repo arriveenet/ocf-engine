@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/core/event/Event.h"
 #include "ocf/core/input/Mouse.h"
 #include "ocf/math/vec2.h"
 
 namespace ocf {
 
-class MouseEvent : public Event {
+class OCF_API MouseEvent : public Event {
 public:
     enum class MouseEventType {
         Unknown,

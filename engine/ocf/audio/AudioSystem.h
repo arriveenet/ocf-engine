@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/audio/AudioEnums.h"
 #include "ocf/audio/tracker/TrackerTypes.h"
 
@@ -16,7 +17,7 @@ struct DpcmKey;
 struct Song;
 }
 
-class AudioSystem {
+class OCF_API AudioSystem {
 public:
     AudioSystem();
     ~AudioSystem();

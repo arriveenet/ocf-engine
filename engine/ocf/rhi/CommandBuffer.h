@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/RHIEnums.h"
 
@@ -9,7 +10,7 @@
 
 namespace ocf::rhi {
 
-class CommandBuffer {
+class OCF_API CommandBuffer {
 public:
     virtual ~CommandBuffer() = default;
 

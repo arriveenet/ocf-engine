@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/math/RectBinPack.h"
 
 namespace ocf {
 
-class MaxRectsBinPack : public RectBinPack {
+class OCF_API MaxRectsBinPack : public RectBinPack {
 public:
     enum class FreeRectChoiceHeuristic {
         RectBestsShortSideFit,

@@ -68,7 +68,7 @@ private:
     uint64_t m_id = 0;
 };
 
-class EventDispatcher {
+class OCF_API EventDispatcher {
 public:
     using EventCallback = std::function<void(Event&)>;
 

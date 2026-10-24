@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/math/vec2.h"
 
 namespace ocf {
 namespace math {
 
-class Rect {
+class OCF_API Rect {
 public:
     vec2 m_position;
     vec2 m_size;

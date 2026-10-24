@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "BufferDescriptor.h"
 #include "RHIEnums.h"
 
 namespace ocf::rhi {
 
-class PixelBufferDescriptor : public BufferDescriptor {
+class OCF_API PixelBufferDescriptor : public BufferDescriptor {
 public:
     using PixelDataFormat = rhi::PixelDataFormat;
     using PixelDataType = rhi::PixelDataType;

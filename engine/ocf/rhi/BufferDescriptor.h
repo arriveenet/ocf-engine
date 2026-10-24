@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <cstddef>
 
 namespace ocf::rhi {
 
-class BufferDescriptor {
+class OCF_API BufferDescriptor {
 public:
     using Callback = void (*)(void* buffer, size_t size, void* user);
 

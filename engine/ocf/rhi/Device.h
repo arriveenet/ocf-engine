@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "Handle.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/PipelineState.h"
@@ -97,7 +98,7 @@ struct RHIPipeline : public RHIResourceBase {
 struct RHISwapchain : public RHIResourceBase {
 };
 
-class Device {
+class OCF_API Device {
 public:
     struct DeviceConfig {
         size_t handlePoolSize = 0;

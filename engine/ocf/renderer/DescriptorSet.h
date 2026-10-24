@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/Handle.h"
 
 #include <array>
@@ -14,7 +15,7 @@ class DescriptorSetLayout;
 class Texture;
 class TextureSampler;
 
-class DescriptorSet {
+class OCF_API DescriptorSet {
 public:
     using DescriptorSetHandle = rhi::DescriptorSetHandle;
     using BufferObjectHandle = rhi::BufferObjectHandle;

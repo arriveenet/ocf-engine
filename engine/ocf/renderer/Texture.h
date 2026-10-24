@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/PixelBufferDescriptor.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -13,7 +14,7 @@ namespace ocf {
 
 class Engine;
 
-class Texture {
+class OCF_API Texture {
     struct BuilderDetails;
 
 public:

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/Result.h"
 
 #include <cstdint>
@@ -16,7 +17,7 @@ struct MonoAudio {
 };
 
 /** Reads audio files into memory, to process their samples (not for playing them). */
-class AudioFile {
+class OCF_API AudioFile {
 public:
     AudioFile() = delete;
 

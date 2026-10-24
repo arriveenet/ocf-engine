@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/job/Job.h"
 #include "ocf/core/job/WorkStealingQueue.h"
 
@@ -24,7 +25,7 @@ class JobSystem;
  * Each worker has its own local queue and can steal jobs from other workers
  * when its local queue is empty.
  */
-class Worker {
+class OCF_API Worker {
 public:
     /**
      * @brief Construct a new Worker

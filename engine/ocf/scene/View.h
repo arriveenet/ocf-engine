@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/math/vec4.h"
 
 #include <cstdint>
@@ -19,7 +20,7 @@ class SceneGraph;
  * views before it, which is how a UI is layered on top of the main scene. A view only
  * references its scene graphs and camera; it does not own them.
  */
-class View {
+class OCF_API View {
 public:
     enum class ClearFlags : uint8_t {
         None = 0,

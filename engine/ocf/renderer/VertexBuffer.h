@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/renderer/MaterialEnums.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/rhi/RHIEnums.h"
@@ -8,7 +10,7 @@ namespace ocf {
 
 class Engine;
 
-class VertexBuffer {
+class OCF_API VertexBuffer {
     struct BuilderDetails;
 
 public:

@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec3.h"
 
 namespace ocf {
 namespace math {
 
-class Transform {
+class OCF_API Transform {
 public:
     Transform();
     ~Transform() = default;

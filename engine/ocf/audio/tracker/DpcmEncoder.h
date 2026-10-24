@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/audio/tracker/Dpcm.h"
 #include "ocf/core/Result.h"
 
@@ -40,7 +41,7 @@ struct DpcmEncodeResult {
 };
 
 /** Converts a waveform to a DMC sample. See docs/dmc-converter-design.md. */
-class DpcmEncoder {
+class OCF_API DpcmEncoder {
 public:
     DpcmEncoder() = delete;
 

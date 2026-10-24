@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/resource/Resource.h"
 
 #include <string>
@@ -19,7 +20,7 @@ enum class TextureFilter {
     Nearest, // Sharp texels; suits pixel (retro) fonts
 };
 
-class Font : public Resource {
+class OCF_API Font : public Resource {
 public:
     struct CharacterDefinition {
         float x;

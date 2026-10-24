@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/Variant.h"
 #include "ocf/math/vec4.h"
 #include "ocf/renderer/MaterialEnums.h"
@@ -21,7 +22,7 @@ class VertexBuffer;
 class IndexBuffer;
 class Texture;
 
-class Mesh : public Resource {
+class OCF_API Mesh : public Resource {
 public:
     using PrimitiveType = rhi::PrimitiveType;
     using RasterState = rhi::RasterState;

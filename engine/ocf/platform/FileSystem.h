@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
+
 #include <filesystem>
 #include <string>
 
@@ -7,7 +10,7 @@ namespace ocf {
 
 constexpr std::string_view ASSET_DIRECTORY_NAME = "assets";
 
-class FileSystem {
+class OCF_API FileSystem {
 public:
     static FileSystem* getInstance();
     static void destroyInstance();

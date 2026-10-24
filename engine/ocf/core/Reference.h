@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/core/Object.h"
 #include <atomic>
 #include <utility>
 
 namespace ocf {
 
-class RefCounted : public Object {
+class OCF_API RefCounted : public Object {
 public:
     RefCounted();
     ~RefCounted();

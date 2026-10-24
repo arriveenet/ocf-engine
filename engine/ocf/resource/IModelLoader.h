@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/resource/Mesh.h"
 
 #include <string>
@@ -9,7 +11,7 @@ namespace ocf {
     
 class Engine;
 
-class IModelLoader {
+class OCF_API IModelLoader {
 public:
     IModelLoader() = default;
     virtual ~IModelLoader() = default;

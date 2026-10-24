@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/resource/Resource.h"
 
 #include "ocf/math/vec2.h"
@@ -16,7 +17,7 @@ class Engine;
 class Texture;
 class MaxRectsBinPack;
 
-class FontAtlas : public Resource {
+class OCF_API FontAtlas : public Resource {
 public:
     static constexpr int DEFAULT_TEXTURE_WIDTH = 512;
     static constexpr int DEFAULT_TEXTURE_HEIGHT = 512;

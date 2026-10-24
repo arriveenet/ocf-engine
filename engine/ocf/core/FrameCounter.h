@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <chrono>
 #include <cstdint>
 
@@ -14,7 +16,7 @@ namespace ocf {
  * between frames to provide a frame rate measurement. It is useful for performance monitoring
  * and debugging purposes.
  */
-class FrameCounter {
+class OCF_API FrameCounter {
 public:
     static constexpr float FPS_UPDATE_INTERVAL = 1.0f;
 

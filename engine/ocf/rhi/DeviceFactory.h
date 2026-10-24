@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <memory>
 
 namespace ocf {
@@ -9,7 +11,7 @@ namespace rhi {
 
 class Device;
 
-class DeviceFactory {
+class OCF_API DeviceFactory {
 public:
     static DeviceFactory& getInstance();
 

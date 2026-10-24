@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 namespace ocf {
 namespace rhi {
 
-class Context {
+class OCF_API Context {
 public:
     virtual ~Context() = default;
 };

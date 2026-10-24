@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/math/Rect.h"
 #include "ocf/math/vec2.h"
 #include <vector>
 
 namespace ocf {
 
-class RectBinPack {
+class OCF_API RectBinPack {
 public:
     RectBinPack(): m_binWidth(0.0f), m_binHeight(0.0f) {}
     virtual ~RectBinPack() = default;

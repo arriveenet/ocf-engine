@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/event/Event.h"
 
 namespace ocf {
 
-class WindowResizeEvent : public Event {
+class OCF_API WindowResizeEvent : public Event {
 public:
     WindowResizeEvent(int width, int height)
         : Event(EventType::WindowResizeEvent)

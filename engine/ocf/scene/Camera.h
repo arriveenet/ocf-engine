@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec3.h"
 #include "ocf/scene/Component.h"
 
 namespace ocf {
 
-class Camera : public Component {
+class OCF_API Camera : public Component {
 public:
     enum class Type {
         Perspective,

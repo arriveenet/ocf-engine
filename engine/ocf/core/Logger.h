@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <chrono>
 #include <format>
 #include <iostream>
@@ -23,7 +25,7 @@ enum class LogLevel {
     Fatal   = 5
 };
 
-class LogEvent {
+class OCF_API LogEvent {
 public:
     LogEvent(LogLevel level, const std::string& message)
         : m_level(level)
@@ -57,13 +59,13 @@ constexpr const char* toString(LogLevel level)
     }
 }
 
-class Layout {
+class OCF_API Layout {
 public:
     virtual ~Layout() = default;
     virtual std::string format(const LogEvent& event) = 0;
 };
 
-class PatternLayout : public Layout {
+class OCF_API PatternLayout : public Layout {
 public:
     PatternLayout(const std::string& pattern);
     std::string format(const LogEvent& event) override;
@@ -72,7 +74,7 @@ private:
     std::string m_pattern;
 };
 
-class Appender {
+class OCF_API Appender {
 public:
     virtual ~Appender() = default;
 
@@ -89,7 +91,7 @@ protected:
     std::mutex m_mutex;
 };
 
-class ConsoleAppender : public Appender {
+class OCF_API ConsoleAppender : public Appender {
 public:
     void append(const LogEvent& event) override
     {
@@ -102,7 +104,7 @@ public:
     }
 };
 
-class Logger {
+class OCF_API Logger {
 public:
     static Logger& getInstance();
 

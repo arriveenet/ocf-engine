@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/resource/Font.h"
 
 #include <memory>
@@ -24,7 +25,7 @@ struct FontTrueTypeConfig {
     TextureFilter filter = TextureFilter::Linear;
 };
 
-class FontTrueType : public Font {
+class OCF_API FontTrueType : public Font {
 public:
     static FontTrueType* create(std::string_view fontPath, int fontSize, GlyphCollection glyphs);
 

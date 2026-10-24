@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/math/Rect.h"
 #include "ocf/math/vec2.h"
 
@@ -36,7 +37,7 @@ struct TextLayoutResult {
     int lineCount = 0;
 };
 
-class TextLayout {
+class OCF_API TextLayout {
 public:
     TextLayout() = delete;
 

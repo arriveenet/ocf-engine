@@ -2,13 +2,15 @@
 
 #pragma once
 
+#include "ocf/core/compiler.h"
+
 #include <functional>
 
 namespace ocf {
 
 class Node;
 
-class SceneGraph {
+class OCF_API SceneGraph {
 public:
     SceneGraph();
     virtual ~SceneGraph();

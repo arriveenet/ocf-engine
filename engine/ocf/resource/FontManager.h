@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/resource/Font.h"
 #include "ocf/resource/FontTrueType.h"
 
@@ -22,7 +24,7 @@ class Engine;
  * Removing a font from the cache never invalidates it: holders of a Ref keep it alive, and it
  * is destroyed when the last Ref goes away.
  */
-class FontManager {
+class OCF_API FontManager {
 public:
     explicit FontManager(Engine& engine);
     ~FontManager();

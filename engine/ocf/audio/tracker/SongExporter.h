@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/audio/tracker/Song.h"
 #include "ocf/core/Result.h"
 
@@ -31,7 +32,7 @@ struct WavExportLength {
  * times. A jump back to an earlier position (the wrap after the last frame, or Bxx) counts as
  * the start of the next play.
  */
-class SongExporter {
+class OCF_API SongExporter {
 public:
     static constexpr int MAX_PLAY_COUNT = 16;
     static constexpr float MAX_FADE_OUT_SECONDS = 30.0f;

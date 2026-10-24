@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/renderer/DescriptorSetLayout.h"
 
@@ -14,7 +15,7 @@ namespace ocf {
 class Engine;
 class MaterialInstance;
 
-class Material {
+class OCF_API Material {
     struct BuilderDetails;
 
 public:

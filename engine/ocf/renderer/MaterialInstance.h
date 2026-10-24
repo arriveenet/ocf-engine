@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/math/mat3.h"
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec2.h"
@@ -34,7 +35,7 @@ concept MaterialParameterType =
     std::same_as<T, math::mat3> ||
     std::same_as<T, math::mat4> ;
 
-class MaterialInstance {
+class OCF_API MaterialInstance {
 public:
     MaterialInstance(Material* material);
     virtual ~MaterialInstance();

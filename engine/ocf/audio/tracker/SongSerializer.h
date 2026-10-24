@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/audio/tracker/Song.h"
 #include "ocf/core/Result.h"
 
@@ -13,7 +14,7 @@ namespace ocf::audio::tracker {
 /**
  * Reads and writes songs in the JSON format described in docs/tracker-format.md.
  */
-class SongSerializer {
+class OCF_API SongSerializer {
 public:
     static constexpr const char* FORMAT_NAME = "ocf-tracker-song";
     static constexpr int FORMAT_VERSION = 1;

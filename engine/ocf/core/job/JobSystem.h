@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/job/Job.h"
 #include "ocf/core/job/Worker.h"
 #include "ocf/core/job/WorkStealingQueue.h"
@@ -56,7 +57,7 @@ struct JobSystemConfig {
  * js.shutdown();
  * @endcode
  */
-class JobSystem {
+class OCF_API JobSystem {
 public:
     /**
      * @brief Get the singleton instance

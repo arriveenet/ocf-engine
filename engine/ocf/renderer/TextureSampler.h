@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/RHIEnums.h"
 
 #include <algorithm>
@@ -8,7 +9,7 @@
 
 namespace ocf {
 
-class TextureSampler {
+class OCF_API TextureSampler {
 public:
     using WrapMode = rhi::SamplerWrapMode;
     using MinFilter = rhi::SamplerMinFilter;

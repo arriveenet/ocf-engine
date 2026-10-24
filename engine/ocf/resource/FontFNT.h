@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/Reference.h"
 #include "ocf/math/Rect.h"
 #include "ocf/resource/Resource.h"
@@ -12,7 +13,7 @@
 
 namespace ocf {
 
-class BMFontConfiguration : public Resource {
+class OCF_API BMFontConfiguration : public Resource {
 public:
     struct BMFontDef {
         unsigned int charID = 0;
@@ -52,7 +53,7 @@ public:
     std::vector<std::string> m_atlasNames;
 };
 
-class FontFNT : public Font {
+class OCF_API FontFNT : public Font {
 public:
     static FontFNT* create(std::string_view fntFilePath);
 

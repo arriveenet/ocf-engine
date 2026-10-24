@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/RHIEnums.h"
 #include "ocf/rhi/Handle.h"
 
@@ -32,7 +33,7 @@ struct TextureInfo {
     rhi::ShaderStageFlags shaderStageFlags = rhi::ShaderStageFlags::Fragment;
 };
 
-class DescriptorSetLayout {
+class OCF_API DescriptorSetLayout {
 public:
     using DescriptorSetLayoutHandle = rhi::DescriptorSetLayoutHandle;
 

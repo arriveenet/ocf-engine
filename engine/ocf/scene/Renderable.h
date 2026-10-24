@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/math/vec3.h"
 #include "ocf/renderer/MaterialEnums.h"
@@ -12,7 +13,7 @@ class VertexBuffer;
 class IndexBuffer;
 class MaterialInstance;
 
-class Renderable {
+class OCF_API Renderable {
 public:
     Renderable(VertexBuffer* vertexBuffer, IndexBuffer* indexBuffer,
                MaterialInstance* materialInstance, rhi::PipelineHandle pipelineHandle,

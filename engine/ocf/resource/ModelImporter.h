@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/Result.h"
 #include "ocf/resource/IModelLoader.h"
 
@@ -12,7 +13,7 @@ namespace ocf {
 
 class Mesh;
 
-class ModelImporter {
+class OCF_API ModelImporter {
 public:
     using Result = ocf::Result<Ref<Mesh>, const char*>;
 

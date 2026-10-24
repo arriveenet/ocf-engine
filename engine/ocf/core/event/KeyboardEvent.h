@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/core/event/Event.h"
 #include "ocf/core/input/KeyCode.h"
 
 namespace ocf {
 
-class KeyboardEvent : public Event {
+class OCF_API KeyboardEvent : public Event {
 public:
     KeyboardEvent(KeyCode key, bool isPressed)
         : Event(EventType::KeyboardEvent)

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include "ocf/core/compiler.h"
 #include "ocf/renderer/MaterialEnums.h"
 #include "ocf/rhi/Handle.h"
 #include "ocf/math/mat4.h"
@@ -30,7 +32,7 @@ struct RenderCommand {
     uint32_t vertexOffset = 0;
 };
 
-class RenderQueue {
+class OCF_API RenderQueue {
 public:
     RenderQueue();
     virtual ~RenderQueue();

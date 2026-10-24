@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "ocf/core/compiler.h"
 #include "ocf/core/Reference.h"
 
 #include <string>
 
 namespace ocf {
 
-class Resource : public RefCounted {
+class OCF_API Resource : public RefCounted {
 public:
     Resource() = default;
     virtual ~Resource() = default;

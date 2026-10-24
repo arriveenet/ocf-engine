@@ -1,4 +1,7 @@
 #pragma once
+
+#include "ocf/core/compiler.h"
+
 #include <string>
 #include <unordered_map>
 #include <stdint.h>
@@ -8,7 +11,7 @@ namespace ocf {
 class Engine;
 class Texture;
 
-class TextureManager {
+class OCF_API TextureManager {
 public:
     TextureManager(Engine& engine);
     ~TextureManager();
