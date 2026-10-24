@@ -46,6 +46,8 @@ add_filtered_dir("renderer")
 add_filtered_dir("resource")
 add_filtered_dir("rhi")
 add_filtered_dir("scene")
+add_filtered_dir("scene/2d")
+add_filtered_dir("scene/3d")
 
 add_filtered_dir("rhi/vulkan")
 add_filtered_dir("rhi/vulkan/resource")

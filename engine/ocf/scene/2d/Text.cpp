@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "ocf/scene/Text.h"
+#include "ocf/scene/2d/Text.h"
 
 #include "ocf/core/Engine.h"
 #include "ocf/core/Logger.h"

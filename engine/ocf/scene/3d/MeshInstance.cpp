@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "ocf/scene/MeshInstance.h"
+#include "ocf/scene/3d/MeshInstance.h"
 
 #include "ocf/core/Engine.h"
 #include "ocf/renderer/Material.h"
