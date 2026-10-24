@@ -13,91 +13,60 @@ find_package(Vulkan REQUIRED)
 # ==================================================================================================
 #  Functions
 # ==================================================================================================
-function( add_filtered_h filterName fileString )
-    file(GLOB TMP_FILES ${fileString})
-    set(HEADER_FILES ${HEADER_FILES} ${TMP_FILES} PARENT_SCOPE)
-    source_group(${filterName} FILES ${TMP_FILES})
-endfunction( add_filtered_h )
+# Adds the files to ENGINE_FILES and puts them in the IDE filter for relativePath (e.g. audio\apu)
+function( add_filtered_files relativePath )
+    string(REPLACE "/" "\\" filterName ${relativePath})
+    source_group(${filterName} FILES ${ARGN})
+    set(ENGINE_FILES ${ENGINE_FILES} ${ARGN} PARENT_SCOPE)
+endfunction( add_filtered_files )
 
-function( add_filtered_src filterName fileString )
-    file(GLOB TMP_FILES ${fileString})
-    set(SOURCE_FILES ${SOURCE_FILES} ${TMP_FILES} PARENT_SCOPE)
-    source_group(${filterName} FILES ${TMP_FILES})
-endfunction( add_filtered_src )
-
-function( add_filtered_std relativePath )
-    string(REPLACE "/" "\\" filterPart ${relativePath})
-    # Add headers
-    add_filtered_h(
-        "Header Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.h")
-    add_filtered_h(
-        "Header Files\\${filterPart}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.inl")
-    set(HEADER_FILES ${HEADER_FILES} PARENT_SCOPE)
-
-    # Add source files
-    add_filtered_src(
-        "Source Files\\${filterPart}"
+# Adds all headers and sources in ocf/<relativePath> (not recursive)
+function( add_filtered_dir relativePath )
+    file(GLOB TMP_FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.inl"
         "${CMAKE_CURRENT_SOURCE_DIR}/ocf/${relativePath}/*.cpp")
-    set(SOURCE_FILES ${SOURCE_FILES} PARENT_SCOPE)
-endfunction( add_filtered_std )
+    add_filtered_files(${relativePath} ${TMP_FILES})
+    set(ENGINE_FILES ${ENGINE_FILES} PARENT_SCOPE)
+endfunction( add_filtered_dir )
 
 # ==================================================================================================
 #  Sources and headers
 # ==================================================================================================
-add_filtered_std("audio")
-add_filtered_std("audio/apu")
-add_filtered_std("audio/tracker")
-add_filtered_std("core")
-add_filtered_std("core/event")
-add_filtered_std("core/input")
-add_filtered_std("core/job")
-add_filtered_std("math")
-add_filtered_std("platform")
-add_filtered_std("renderer")
-add_filtered_std("resource")
-add_filtered_std("rhi")
-add_filtered_std("scene")
+add_filtered_dir("audio")
+add_filtered_dir("audio/apu")
+add_filtered_dir("audio/tracker")
+add_filtered_dir("core")
+add_filtered_dir("core/event")
+add_filtered_dir("core/input")
+add_filtered_dir("core/job")
+add_filtered_dir("math")
+add_filtered_dir("platform")
+add_filtered_dir("renderer")
+add_filtered_dir("resource")
+add_filtered_dir("rhi")
+add_filtered_dir("scene")
 
-add_filtered_std("rhi/vulkan")
-add_filtered_std("rhi/vulkan/resource")
+add_filtered_dir("rhi/vulkan")
+add_filtered_dir("rhi/vulkan/resource")
 
 if (WIN32)
-    set(PLATFORM_HEADER_FILES
+    add_filtered_files("rhi/vulkan/platform"
         ocf/rhi/vulkan/platform/VulkanPlatformWindows.h
-    )
-
-    set(PLATFORM_SOURCE_FILES
         ocf/rhi/vulkan/platform/VulkanPlatformWindows.cpp
     )
-
-    list(APPEND HEADER_FILES ${PLATFORM_HEADER_FILES})
-    list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
-
-    source_group("Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
-    source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
 elseif (LINUX)
-    set(PLATFORM_HEADER_FILES
+    add_filtered_files("rhi/vulkan/platform"
         ocf/rhi/vulkan/platform/VulkanPlatformLinux.h
-    )
-
-    set(PLATFORM_SOURCE_FILES
         ocf/rhi/vulkan/platform/VulkanPlatformLinux.cpp
     )
-
-    list(APPEND HEADER_FILES ${PLATFORM_HEADER_FILES})
-    list(APPEND SOURCE_FILES ${PLATFORM_SOURCE_FILES})
-
-    source_group("Header Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_HEADER_FILES})
-    source_group("Source Files\\rhi\\vulkan\\platform" FILES ${PLATFORM_SOURCE_FILES})
 endif()
 
 # ==================================================================================================
 #  Includes & target definition
 # ==================================================================================================
 #building a library
-add_library(${TARGET} ${HEADER_FILES} ${SOURCE_FILES})
+add_library(${TARGET} ${ENGINE_FILES})
 if(BUILD_SHARED_LIBS)
     target_compile_definitions(${TARGET} PRIVATE OCF_LIBRARY_EXPORTS)
 else()
