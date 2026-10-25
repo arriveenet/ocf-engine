@@ -66,7 +66,6 @@ bool Engine::init()
     // Setup Logger
     auto consoleAppender = std::make_unique<ConsoleAppender>();
     Logger::getInstance().addAppender(std::move(consoleAppender));
-    Logger::getInstance().setLogLevel(LogLevel::Trace);
 
     OCF_LOG_INFO("Window platform: {}", Window::platformToString(m_window->getPlatform()));
 

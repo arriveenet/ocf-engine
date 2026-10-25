@@ -6,7 +6,6 @@
 #include "ocf/core/FrameCounter.h"
 #include "ocf/math/vec2.h"
 
-#include <chrono>
 #include <functional>
 #include <memory>
 #include <vector>
