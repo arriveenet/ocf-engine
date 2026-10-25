@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ocf/core/compiler.h"
+#include "ocf/renderer/TextureSampler.h"
 #include "ocf/resource/Resource.h"
 
 #include <string>
@@ -11,14 +12,6 @@ namespace ocf {
 
 class Engine;
 class FontAtlas;
-
-/**
- * @brief How the glyphs of a font are sampled from its atlas.
- */
-enum class TextureFilter {
-    Linear,  // Smooth edges; suits regular fonts drawn at arbitrary scales
-    Nearest, // Sharp texels; suits pixel (retro) fonts
-};
 
 class OCF_API Font : public Resource {
 public:

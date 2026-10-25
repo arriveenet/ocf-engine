@@ -6,10 +6,10 @@
 #include "ocf/math/mat4.h"
 #include "ocf/math/vec2.h"
 #include "ocf/math/vec3.h"
-#include "ocf/rhi/Handle.h"
-#include "ocf/rhi/PipelineState.h"
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/RenderQueue.h"
+#include "ocf/rhi/Handle.h"
+#include "ocf/rhi/PipelineState.h"
 
 #include <memory>
 #include <vector>
@@ -34,11 +34,6 @@ struct Vertex {
     math::vec3 position;
     math::vec3 normal;
     math::vec3 color;
-};
-
-struct Vertex2 {
-    math::vec3 position;
-    math::vec2 texCoord;
 };
 
 class OCF_API Renderer {
