@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "ocf/math/rect.h"
+#include "ocf/math/Rect.h"
 #include "ocf/scene/2d/Drawable2D.h"
 
 namespace ocf {
