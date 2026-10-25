@@ -13,6 +13,8 @@
 #include <ocf/scene/Scene.h>
 #include <ocf/scene/SceneGraph.h>
 #include <ocf/scene/SceneManager.h>
+#include <ocf/resource/TextureManager.h>
+#include <ocf/scene/2d/Sprite.h>
 #include <ocf/scene/2d/Text.h>
 #include <ocf/scene/View.h>
     
@@ -92,6 +94,20 @@ protected:
         text->setAnchor(anchor);
         text->setString(string);
         return text;
+    }
+
+    Sprite* addSprite(const math::vec2& position, const math::vec2& anchor,
+                      std::string_view texturePath)
+    {
+        Texture* texture = getEngine().getTextureManager().addImage(texturePath);
+
+        Node* node = m_ui->getRoot()->createChild();
+        node->setPosition(math::vec3(position.x, position.y, 0.0f));
+
+        Sprite* sprite = node->addComponent<Sprite>(getEngine(), texture);
+        sprite->setPixelsPerUnit(1.0f);
+        sprite->setAnchor(anchor);
+        return sprite;
     }
 
     math::vec2 getScreenSize() const
@@ -342,6 +358,8 @@ public:
         setupUI(View::ClearFlags::All);
 
         const math::vec2 center = getScreenSize() * 0.5f;
+        addSprite(center + math::vec2(0.0f, 0.0f), math::vec2(1.5f, 1.5f),
+                  "textures/test-texture.png");
         addText(center + math::vec2(0.0f, 40.0f), math::vec2(0.5f, 0.5f), "OCF Engine Sandbox");
         addText(center - math::vec2(0.0f, 40.0f), math::vec2(0.5f, 0.5f), "Press Enter to start",
                 24);

@@ -9,6 +9,16 @@
 
 namespace ocf {
 
+/**
+ * @brief How a texture is filtered when it is magnified or minified.
+ *
+ * A simplified choice for high-level components such as Font, Text and Sprite.
+ */
+enum class TextureFilter {
+    Linear,  // Smooth; suits regular fonts and images drawn at arbitrary scales
+    Nearest, // Sharp texels; suits pixel (retro) fonts and pixel art
+};
+
 class OCF_API TextureSampler {
 public:
     using WrapMode = rhi::SamplerWrapMode;
