@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <gtest/gtest.h>
 
-#include "audio/tracker/SongPlayer.h"
+#include "ocf/audio/tracker/SongPlayer.h"
 
 #include <ocf/audio/tracker/SongSerializer.h>
 

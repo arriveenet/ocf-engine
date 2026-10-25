@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <gtest/gtest.h>
 
-#include "audio/AudioTrackerSource.h"
+#include "ocf/audio/AudioTrackerSource.h"
 
 #include <cmath>
 #include <vector>

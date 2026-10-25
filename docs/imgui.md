@@ -132,8 +132,8 @@ ImGuiのウィンドウの外でマウスのボタンを押し始めた場合は
 
 | ファイル | 内容 |
 | --- | --- |
-| `engine/src/renderer/ImGuiLayer.h` / `.cpp` | ImGuiのコンテキスト、GLFW・Vulkanとの接続、フレームの開始と描画、入力の横取り |
-| `engine/src/renderer/Renderer.cpp` | `Renderer::renderImGui()`: Viewの上にImGuiを描く描画パス |
-| `engine/src/core/Engine.cpp` | ImGuiLayerの作成・破棄、1フレームの流れ、`Engine::configureImGui()` |
-| `engine/src/scene/SceneManager.cpp` | `SceneManager::updateImGui()`: 有効な各シーンの `onImGui()` を呼ぶ |
+| `engine/ocf/renderer/ImGuiLayer.h` / `.cpp` | ImGuiのコンテキスト、GLFW・Vulkanとの接続、フレームの開始と描画、入力の横取り |
+| `engine/ocf/renderer/Renderer.cpp` | `Renderer::renderImGui()`: Viewの上にImGuiを描く描画パス |
+| `engine/ocf/core/Engine.cpp` | ImGuiLayerの作成・破棄、1フレームの流れ、`Engine::configureImGui()` |
+| `engine/ocf/scene/SceneManager.cpp` | `SceneManager::updateImGui()`: 有効な各シーンの `onImGui()` を呼ぶ |
 | `third-party/imgui/ocf/CMakeLists.txt` | `imgui`（本体）と `imgui_backend`（GLFW・Vulkanとの接続）のビルド設定 |
