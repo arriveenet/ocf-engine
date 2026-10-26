@@ -68,9 +68,8 @@ void Drawable2D::setColor(const math::vec4& color)
 {
     m_color = color;
 
-    for (MaterialInstance* materialInstance : m_materialInstances) {
-        materialInstance->setParameter("color", m_color);
-        materialInstance->commit(m_engine);
+    for (const MaterialEntry& entry : m_materialInstances) {
+        applyColor(entry);
     }
 }
 
@@ -90,13 +89,32 @@ void Drawable2D::setPixelsPerUnit(float pixelsPerUnit)
     }
 }
 
-MaterialInstance* Drawable2D::createMaterialInstance()
+MaterialInstance* Drawable2D::createMaterialInstance(float opacity)
 {
-    MaterialInstance* materialInstance = m_material->createInstance();
-    materialInstance->setParameter("color", m_color);
-    materialInstance->commit(m_engine);
-    m_materialInstances.push_back(materialInstance);
-    return materialInstance;
+    const MaterialEntry& entry =
+        m_materialInstances.emplace_back(MaterialEntry{m_material->createInstance(), opacity});
+    applyColor(entry);
+    return entry.materialInstance;
+}
+
+void Drawable2D::setMaterialOpacity(MaterialInstance* materialInstance, float opacity)
+{
+    for (MaterialEntry& entry : m_materialInstances) {
+        if (entry.materialInstance == materialInstance) {
+            if (entry.opacity != opacity) {
+                entry.opacity = opacity;
+                applyColor(entry);
+            }
+            return;
+        }
+    }
+}
+
+void Drawable2D::applyColor(const MaterialEntry& entry)
+{
+    const math::vec4 color(m_color.x, m_color.y, m_color.z, m_color.w * entry.opacity);
+    entry.materialInstance->setParameter("color", color);
+    entry.materialInstance->commit(m_engine);
 }
 
 void Drawable2D::bindTexture(MaterialInstance* materialInstance, Texture* texture,
@@ -123,15 +141,23 @@ void Drawable2D::appendQuad(std::vector<VertexPositionTexCoord>& vertices,
                             const math::vec2& size, const math::vec2& uv0,
                             const math::vec2& uv1) const
 {
+    appendQuad(vertices, indices, position, size,
+               {math::vec2(uv0.x, uv0.y), math::vec2(uv0.x, uv1.y), math::vec2(uv1.x, uv1.y),
+                math::vec2(uv1.x, uv0.y)});
+}
+
+void Drawable2D::appendQuad(std::vector<VertexPositionTexCoord>& vertices,
+                            std::vector<uint32_t>& indices, const math::vec2& position,
+                            const math::vec2& size, const std::array<math::vec2, 4>& uvs) const
+{
     const math::vec2 topLeft = toLocal(position);
     const math::vec2 bottomRight = toLocal(position + size);
 
     const uint32_t base = static_cast<uint32_t>(vertices.size());
-    vertices.push_back({math::vec3(topLeft.x, topLeft.y, 0.0f), math::vec2(uv0.x, uv0.y)});
-    vertices.push_back({math::vec3(topLeft.x, bottomRight.y, 0.0f), math::vec2(uv0.x, uv1.y)});
-    vertices.push_back(
-        {math::vec3(bottomRight.x, bottomRight.y, 0.0f), math::vec2(uv1.x, uv1.y)});
-    vertices.push_back({math::vec3(bottomRight.x, topLeft.y, 0.0f), math::vec2(uv1.x, uv0.y)});
+    vertices.push_back({math::vec3(topLeft.x, topLeft.y, 0.0f), uvs[0]});
+    vertices.push_back({math::vec3(topLeft.x, bottomRight.y, 0.0f), uvs[1]});
+    vertices.push_back({math::vec3(bottomRight.x, bottomRight.y, 0.0f), uvs[2]});
+    vertices.push_back({math::vec3(bottomRight.x, topLeft.y, 0.0f), uvs[3]});
 
     indices.insert(indices.end(), {base, base + 1, base + 2, base, base + 2, base + 3});
 }
