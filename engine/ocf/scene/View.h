@@ -83,7 +83,7 @@ protected:
     int m_order = 0;
     ClearFlags m_clearFlags = ClearFlags::All;
     SortMode m_sortMode = SortMode::Distance;
-    math::vec4 m_clearColor = math::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    math::vec4 m_clearColor = math::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 };
 
 constexpr View::ClearFlags operator|(View::ClearFlags lhs, View::ClearFlags rhs)

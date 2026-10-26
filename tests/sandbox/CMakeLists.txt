@@ -7,9 +7,19 @@ set(TARGET sandbox)
 # Sources and headers
 # ==================================================================================================
 set(HDRS
+    AudioSystemTest.h
+    MainScene.h
+    MeshInstanceTest.h
+    SpriteTest.h
+    TestBaseScene.h
 )
 
 set(SRCS
+    AudioSystemTest.cpp
+    MainScene.cpp
+    MeshInstanceTest.cpp
+    TestBaseScene.cpp
+    SpriteTest.cpp
     main.cpp
 )
 
