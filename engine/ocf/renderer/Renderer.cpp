@@ -170,7 +170,12 @@ void Renderer::render(const View* view)
     m_commandBuffer->beginRendering(info);
     m_passCount++;
 
+    const uint32_t frameIndex = m_device->getCurrentFrameIndex();
     for (const auto& cmd : m_renderQueue.getRenderCommands()) {
+        // The fence of this frame was waited, so its copy of the material can be written
+        cmd.materialInstance->setFrameIndex(frameIndex);
+        cmd.materialInstance->commit(m_engine);
+
         // Bind pipeline, descriptor sets, vertex/index buffers, and draw
         m_commandBuffer->bindPipeline(cmd.pipelineHandle);
         m_commandBuffer->bindDescriptorSets(cmd.pipelineHandle, viewDescriptorSet, 0, 1);

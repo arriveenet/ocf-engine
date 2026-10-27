@@ -113,8 +113,8 @@ void Drawable2D::setMaterialOpacity(MaterialInstance* materialInstance, float op
 void Drawable2D::applyColor(const MaterialEntry& entry)
 {
     const math::vec4 color(m_color.x, m_color.y, m_color.z, m_color.w * entry.opacity);
+    // The renderer commits the change for each frame
     entry.materialInstance->setParameter("color", color);
-    entry.materialInstance->commit(m_engine);
 }
 
 void Drawable2D::bindTexture(MaterialInstance* materialInstance, Texture* texture,

@@ -22,11 +22,11 @@ void DescriptorSet::create(Engine& engine, const DescriptorSetLayout& layout)
     for (const auto& [blockName, blockInfo] : blocks) {
         uint32_t binding = blockInfo.binding;
         m_buffers[binding].resize(blockInfo.totalSize, 0);
-        m_dirtyFlags[binding] = false;
+        m_dirtyFlags[binding] = DirtyFlags{};
     }
 
     // Create buffers and descriptor sets for each frame (double buffering)
-    for (size_t frameIndex = 0; frameIndex < 2; ++frameIndex) {
+    for (size_t frameIndex = 0; frameIndex < FRAME_COUNT; ++frameIndex) {
         // Create uniform buffer object for each binding
         for (const auto& [blockName, blockInfo] : blocks) {
             uint32_t binding = blockInfo.binding;
@@ -83,28 +83,31 @@ void DescriptorSet::uploadUniformBuffer(uint32_t binding, size_t offset, const v
     // Copy data to internal buffer at specified offset
     std::memcpy(it->second.data() + offset, data, size);
     
-    // Mark as dirty
-    m_dirtyFlags[binding] = true;
+    // Every frame's copy has to be updated
+    m_dirtyFlags[binding].fill(true);
 }
 
-void DescriptorSet::updateTextureDescriptor(Engine& engine, uint32_t binding, Texture* texture, const TextureSampler& sampler)
-{ 
+void DescriptorSet::updateTextureDescriptor(uint32_t binding, Texture* texture, const TextureSampler& sampler)
+{
     if (!texture) {
         return;
     }
 
-    Engine::Device& device = engine.getDevice();
-    device.updateDescriptorSetTexture(m_descriptorSets[0], texture->getHandle(), sampler.getParams(), binding);
-    device.updateDescriptorSetTexture(m_descriptorSets[1], texture->getHandle(), sampler.getParams(), binding);
+    // A descriptor set used by a pending command buffer must not be written, so commit()
+    // writes each frame's copy when that frame is drawn
+    TextureBinding& textureBinding = m_textures[binding];
+    textureBinding.texture = texture->getHandle();
+    textureBinding.sampler = sampler.getParams();
+    textureBinding.dirty.fill(true);
 }
 
 void DescriptorSet::commit(Engine& engine, uint32_t frameIndex)
 {
     Engine::Device& device = engine.getDevice();
 
-    // Upload all dirty buffers to GPU for the current frame
-    for (auto& [binding, isDirty] : m_dirtyFlags) {
-        if (isDirty) {
+    // Upload the buffers changed since this frame's copy was last written
+    for (auto& [binding, dirty] : m_dirtyFlags) {
+        if (dirty[frameIndex]) {
             auto& buffer = m_buffers[binding];
             auto& uniformBuffer = m_uniformBuffers[binding][frameIndex];
             
@@ -114,7 +117,15 @@ void DescriptorSet::commit(Engine& engine, uint32_t frameIndex)
                 buffer.size(),
                 0
             );
-            isDirty = false;
+            dirty[frameIndex] = false;
+        }
+    }
+
+    for (auto& [binding, textureBinding] : m_textures) {
+        if (textureBinding.dirty[frameIndex]) {
+            device.updateDescriptorSetTexture(m_descriptorSets[frameIndex], textureBinding.texture,
+                                              textureBinding.sampler, binding);
+            textureBinding.dirty[frameIndex] = false;
         }
     }
 }

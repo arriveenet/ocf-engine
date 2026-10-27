@@ -44,6 +44,12 @@ public:
 
     void terminate(Engine& engine);
 
+    /**
+     * @brief Write the parameters set since the last commit to the copy of the current frame.
+     *
+     * The renderer commits every instance it draws with once the GPU is done with the copy of
+     * the frame, so setParameter() alone is enough elsewhere.
+     */
     void commit(Engine& engine);
 
     void setFrameIndex(uint32_t index) { m_frameIndex = index; }
