@@ -98,6 +98,24 @@ struct RHIPipeline : public RHIResourceBase {
 struct RHISwapchain : public RHIResourceBase {
 };
 
+struct RHIRenderTarget : public RHIResourceBase {
+    uint32_t width = 0;
+    uint32_t height = 0;
+
+    RHIRenderTarget() noexcept = default;
+    RHIRenderTarget(uint32_t width, uint32_t height)
+        : width(width)
+        , height(height)
+    {
+    }
+};
+
+/** @brief A texture attached to a render target. A null handle leaves the attachment unused. */
+struct TargetBufferInfo {
+    TextureHandle handle;
+    uint8_t level = 0; ///< Mipmap level rendered to. Only level 0 is supported for now.
+};
+
 class OCF_API Device {
 public:
     struct DeviceConfig {
@@ -121,7 +139,8 @@ public:
     virtual BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) = 0;
 
     virtual TextureHandle createTexture(SamplerType target, uint8_t levels, TextureFormat format,
-                                        uint32_t width, uint32_t height, uint32_t depth) = 0;
+                                        uint32_t width, uint32_t height, uint32_t depth,
+                                        TextureUsage usage = TextureUsage::Default) = 0;
 
     virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                                   const char* entryPoint = "main") = 0;
@@ -136,6 +155,19 @@ public:
                                             bool vsync) = 0;
 
     virtual TextureHandle createDepthBuffer(uint32_t width, uint32_t height) = 0;
+
+    /**
+     * @brief Create a render target that draws into textures.
+     *
+     * The textures must have the matching attachment usage and are not owned by the render target.
+     * Either attachment may be left unused, e.g. a depth-only target for a shadow map.
+     */
+    virtual RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height,
+                                                  TargetBufferInfo color,
+                                                  TargetBufferInfo depth) = 0;
+
+    /** @brief Create the render target that draws into the swapchain and its depth buffer. */
+    virtual RenderTargetHandle createDefaultRenderTarget() = 0;
 
     virtual void destroyVertexBufferInfo(VertexBufferInfoHandle handle) = 0;
 
@@ -154,6 +186,8 @@ public:
     virtual void destroyDescriptorSet(DescriptorSetHandle handle) = 0;
 
     virtual void destroyPipeline(PipelineHandle handle) = 0;
+
+    virtual void destroyRenderTarget(RenderTargetHandle handle) = 0;
 
     virtual void updateBufferData(VertexBufferHandle handle, const void* data, size_t size,
                                   size_t offset) = 0;

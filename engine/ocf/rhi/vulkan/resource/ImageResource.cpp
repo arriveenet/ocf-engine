@@ -103,15 +103,13 @@ void Texture2D::cleanup()
     m_memory = VK_NULL_HANDLE;
 }
 
-bool Texture2D::initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels)
+bool Texture2D::initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels,
+                          VkImageUsageFlags usage)
 {
     m_device = device;
     m_extent = extent;
     m_format = format;
     m_mipLevels = mipLevels;
-
-    VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
-    usageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     VkImageCreateInfo createInfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -122,7 +120,7 @@ bool Texture2D::initalize(VkDevice device, VkExtent2D extent, VkFormat format, u
         .arrayLayers = 1,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = usageFlags,
+        .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
@@ -148,8 +146,11 @@ bool Texture2D::initalize(VkDevice device, VkExtent2D extent, VkFormat format, u
         return false;
     }
 
+    const VkImageAspectFlags aspectMask = VulkanUtility::isDepthFormat(format)
+                                              ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                              : VK_IMAGE_ASPECT_COLOR_BIT;
     m_subresourceRange = {
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .aspectMask = aspectMask,
         .baseMipLevel = 0, .levelCount = mipLevels,
         .baseArrayLayer = 0, .layerCount = 1,
     };

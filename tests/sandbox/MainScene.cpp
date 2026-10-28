@@ -3,6 +3,7 @@
 
 #include "AudioSystemTest.h"
 #include "MeshInstanceTest.h"
+#include "RenderTargetTest.h"
 #include "SpriteTest.h"
 
 #include <ocf/scene/SceneManager.h>
@@ -30,6 +31,10 @@ void MainScene::onImGui()
 
     if (ImGui::Button("Sprite Test")) {
         getSceneManager().change<SpriteTest>();
+    }
+
+    if (ImGui::Button("RenderTarget Test")) {
+        getSceneManager().change<RenderTargetTest>();
     }
 
     ImGui::End();

@@ -8,6 +8,33 @@
 #include "ocf/rhi/vulkan/VulkanUtility.h"
 #include "ocf/rhi/vulkan/resource/ImageResource.h"
 
+namespace {
+
+struct AttachmentAccess {
+    VkPipelineStageFlags2 stage;
+    VkAccessFlags2 access;
+};
+
+/** The work that last used an attachment of an offscreen render target in the layout */
+AttachmentAccess getLastAccess(VkImageLayout layout)
+{
+    switch (layout) {
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return {VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT};
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        return {VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                    VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT};
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return {VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT};
+    default:
+        return {VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE};
+    }
+}
+
+} // namespace
+
 namespace ocf::rhi {
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandBuffer commandBuffer)
@@ -52,10 +79,10 @@ void VulkanCommandBuffer::reset()
     vkResetCommandBuffer(m_commandBuffer, 0);
 }
 
-void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
+void VulkanCommandBuffer::beginRendering(RenderTargetHandle rth, const RenderingInfo& info)
 {
-    auto swapchain = m_device.getSwapchain();
-    auto depthBuffer = m_device.getDepthBuffer();
+    VulkanRenderTarget* target = m_device.handle_cast<VulkanRenderTarget*>(rth);
+    m_currentTarget = target;
 
     // A previous pass in this command buffer wrote the same attachments, so its writes must
     // finish before this pass loads or clears them
@@ -85,50 +112,134 @@ void VulkanCommandBuffer::beginRendering(const RenderingInfo& info)
     }
     m_renderingCount++;
 
+    VkImageView colorView = VK_NULL_HANDLE;
+    VkImageView depthView = VK_NULL_HANDLE;
+    VkExtent2D extent{};
+    bool clearColor = info.clearColorBuffer;
+    bool clearDepth = info.clearDepthBuffer;
+    m_colorFormat = VK_FORMAT_UNDEFINED;
+    m_depthFormat = VK_FORMAT_UNDEFINED;
+
+    if (target->isDefault) {
+        // The renderer moves the swapchain image and the depth buffer to the attachment layouts
+        const VulkanSwapchain* swapchain = m_device.getSwapchain();
+        colorView = swapchain->getCurrentImageView();
+        m_colorFormat = swapchain->getImageFormat().format;
+        extent = swapchain->getExtent();
+
+        if (info.useDepthBuffer) {
+            const auto depthBuffer = m_device.getDepthBuffer();
+            depthView = depthBuffer->getImageView();
+            m_depthFormat = depthBuffer->getFormat();
+        }
+    }
+    else {
+        extent = VkExtent2D{target->width, target->height};
+
+        // An attachment is undefined until a pass has drawn it, so it is cleared rather than loaded
+        if (target->color) {
+            IImageResource& image = *target->color;
+            clearColor = clearColor || image.getLayout() == VK_IMAGE_LAYOUT_UNDEFINED;
+            transitionAttachment(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                 VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                     VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+            colorView = image.getImageView();
+            m_colorFormat = image.getFormat();
+        }
+
+        if (target->depth && info.useDepthBuffer) {
+            IImageResource& image = *target->depth;
+            clearDepth = clearDepth || image.getLayout() == VK_IMAGE_LAYOUT_UNDEFINED;
+            transitionAttachment(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                 VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                                     VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                     VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+            depthView = image.getImageView();
+            m_depthFormat = image.getFormat();
+        }
+    }
+
     const math::vec4 color = info.clearColor;
 
     // Color
     VkRenderingAttachmentInfo colorAttachment{
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = swapchain->getCurrentImageView(),
+        .imageView = colorView,
         .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .loadOp = info.clearColorBuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
+        .loadOp = clearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = VkClearValue{.color = {color.x, color.y, color.z, color.w}},
     };
     // Depth
     VkRenderingAttachmentInfo depthAttachment{
         .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = depthBuffer->getImageView(),
+        .imageView = depthView,
         .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        .loadOp = info.clearDepthBuffer ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
+        .loadOp = clearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .clearValue = {.depthStencil{1.0f, 0}}
     };
 
+    const bool hasColor = colorView != VK_NULL_HANDLE;
+    const bool hasDepth = depthView != VK_NULL_HANDLE;
     VkRenderingInfo renderingInfo{
         .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .renderArea = {{0, 0}, swapchain->getExtent()},
+        .renderArea = {{0, 0}, extent},
         .layerCount = 1,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &colorAttachment,
-        .pDepthAttachment = info.useDepthBuffer ? &depthAttachment : nullptr,
+        .colorAttachmentCount = hasColor ? 1u : 0u,
+        .pColorAttachments = hasColor ? &colorAttachment : nullptr,
+        .pDepthAttachment = hasDepth ? &depthAttachment : nullptr,
     };
 
     vkCmdBeginRendering(m_commandBuffer, &renderingInfo);
+
+    // Vertical inversion by VK_KHR_Maintenance1
+    const VkViewport viewport{
+        .x = 0.0f,
+        .y = float(extent.height),
+        .width = float(extent.width),
+        .height = -float(extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+    const VkRect2D scissor{
+        .offset = {0, 0},
+        .extent = extent,
+    };
+    vkCmdSetViewport(m_commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 }
 
 void VulkanCommandBuffer::endRendering()
 {
     vkCmdEndRendering(m_commandBuffer);
+
+    VulkanRenderTarget* target = m_currentTarget;
+    m_currentTarget = nullptr;
+    if (target == nullptr || target->isDefault) {
+        return;
+    }
+
+    // Later passes may sample what this pass drew
+    constexpr VkImageLayout readLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (target->color && target->colorSampleable && target->color->getLayout() != readLayout) {
+        transitionAttachment(*target->color, readLayout, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                             VK_ACCESS_2_SHADER_READ_BIT);
+    }
+    if (target->depth && target->depthSampleable && target->depth->getLayout() != readLayout) {
+        transitionAttachment(*target->depth, readLayout, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                             VK_ACCESS_2_SHADER_READ_BIT);
+    }
 }
 
 void VulkanCommandBuffer::bindPipeline(PipelineHandle ph)
 {
     VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
+    VkPipeline vkPipeline = m_device.getPipelineVariant(*pipeline, m_colorFormat, m_depthFormat);
 
-    vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk.pipeline);
-
+    vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline);
 }
 
 void VulkanCommandBuffer::bindDescriptorSets(PipelineHandle ph, DescriptorSetHandle dsh,
@@ -256,6 +367,38 @@ void VulkanCommandBuffer::transitionLayout(TextureHandle texture, ResourceState 
                                     .imageMemoryBarrierCount = 1,
                                     .pImageMemoryBarriers = &imageBarrier};
     vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
+}
+
+void VulkanCommandBuffer::transitionAttachment(IImageResource& image, VkImageLayout newLayout,
+                                               VkPipelineStageFlags2 dstStage,
+                                               VkAccessFlags2 dstAccess)
+{
+    // The layout is tracked while recording, which is the order the GPU runs the passes in.
+    // The barrier is issued even when the layout does not change, since the previous use of the
+    // image (possibly in the previous frame) must finish first.
+    const VkImageLayout oldLayout = image.getLayout();
+    const AttachmentAccess src = getLastAccess(oldLayout);
+
+    VkImageMemoryBarrier2 imageBarrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask = src.stage,
+        .srcAccessMask = src.access,
+        .dstStageMask = dstStage,
+        .dstAccessMask = dstAccess,
+        .oldLayout = oldLayout,
+        .newLayout = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image.getImage(),
+        .subresourceRange = image.getSubresourceRange(),
+    };
+
+    VkDependencyInfo dependencyInfo{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                    .imageMemoryBarrierCount = 1,
+                                    .pImageMemoryBarriers = &imageBarrier};
+    vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
+
+    image.setLayout(newLayout);
 }
 
 } // namespace ocf::rhi

@@ -15,6 +15,7 @@ struct Texture::BuilderDetails {
     uint8_t levels = 1;
     InternalFormat format = InternalFormat::RGBA8;
     Sampler sampler = Sampler::Sampler2D;
+    Usage usage = Usage::Default;
 };
 
 
@@ -64,6 +65,12 @@ Texture::Builder& Texture::Builder::sampler(Sampler sampler)
     return *this;
 }
 
+Texture::Builder& Texture::Builder::usage(Usage usage)
+{
+    m_impl->usage = usage;
+    return *this;
+}
+
 Texture* Texture::Builder::build(Engine& engine)
 {
     uint8_t mipLevels = Texture::calculateMipLevels(m_impl->width, m_impl->height);
@@ -81,9 +88,11 @@ Texture::Texture(Engine& engine, const Builder& builder)
     , m_levelCount(builder->levels)
     , m_format(builder->format)
     , m_sampler(builder->sampler)
+    , m_usage(builder->usage)
 {
     Engine::Device& device = engine.getDevice();
-    m_handle = device.createTexture(m_sampler, m_levelCount, m_format, m_width, m_height, m_depth);
+    m_handle = device.createTexture(m_sampler, m_levelCount, m_format, m_width, m_height, m_depth,
+                                    m_usage);
 }
 
 void Texture::terminate(Engine& engine)

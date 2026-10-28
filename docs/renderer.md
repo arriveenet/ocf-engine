@@ -26,9 +26,47 @@
 * オブジェクトの親子関係に基づくワールド行列の更新を行う。
 
 2. **View の設定**
-* カメラのパラメータ（投影行列・ビュー行列）やビューポート設定、出力先ターゲット（画面フレームバッファまたはレンダーテクスチャ）を指定する。
+* カメラのパラメータ（投影行列・ビュー行列）やビューポート設定、出力先ターゲット（画面フレームバッファまたは RenderTarget）を指定する。
 
 3. **Renderer への情報渡すと描画処理**
 * **可視判定（Culling）**: Viewの視体積（Frustum）に基づき、Sceneから描画領域内にある可視ノードのみを抽出する。
 * **描画最適化（Sorting）**: パイプライン切り替えの低減や不透明・半透明の適切な描画順序を確保するため、ノードを整列する。
 * **描画コマンド発行**: Viewで指定された描画ターゲットに対して、メッシュおよびマテリアル情報を元に描画処理を実行する。
+
+---
+
+## レンダーターゲット
+
+`RenderTarget` は、View の描画先をスワップチェーンからテクスチャに切り替えるためのクラスである。シャドウマップや、シーンをテクスチャへ描いて別の View で使う用途を想定している。設計は Google Filament の `RenderTarget` に合わせている。
+
+* アタッチメントにするテクスチャは、`Texture::Builder::usage()` で `ColorAttachment` または `DepthAttachment` を指定して作成する。シェーダで読む場合は `Sampleable` も指定する。
+* `RenderTarget` はテクスチャを参照するだけで所有しない。破棄は `RenderTarget::terminate()` とは別に行う。
+* カラーと深度のどちらかは省略できる（例: シャドウマップ用の深度のみのターゲット）。
+* `View::setRenderTarget()` に `nullptr` を設定すると、スワップチェーンに描画する（既定）。
+
+```cpp
+Texture* color = Texture::Builder()
+                     .width(512).height(512)
+                     .format(Texture::InternalFormat::RGBA8)
+                     .usage(Texture::Usage::ColorAttachment | Texture::Usage::Sampleable)
+                     .build(engine);
+Texture* depth = Texture::Builder()
+                     .width(512).height(512)
+                     .format(Texture::InternalFormat::DEPTH32F)
+                     .usage(Texture::Usage::DepthAttachment)
+                     .build(engine);
+RenderTarget* target = RenderTarget::Builder()
+                           .texture(RenderTarget::AttachmentPoint::Color, color)
+                           .texture(RenderTarget::AttachmentPoint::Depth, depth)
+                           .build(engine);
+
+offscreenView->setRenderTarget(target);
+offscreenView->setOrder(-1); // テクスチャを使う View より先に描く
+```
+
+### 利用上の注意
+
+* テクスチャを描く View は、そのテクスチャをサンプリングする View より先に描画されるよう、`View::setOrder()` で順序を指定する。
+* カメラのアスペクト比は、利用側でターゲットのサイズに合わせる。
+* ターゲットの内容はフレームをまたいで保持される。初めて描画するときは、`ClearFlags` に関係なくクリアされる。
+* 使用例は `tests/sandbox/RenderTargetTest.cpp` を参照。

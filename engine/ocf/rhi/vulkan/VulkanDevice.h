@@ -52,7 +52,8 @@ public:
     BufferObjectHandle createBufferObject(BufferType type, uint32_t byteCount) override;
 
     TextureHandle createTexture(SamplerType target, uint8_t levels, TextureFormat format,
-                                uint32_t width, uint32_t height, uint32_t depth) override;
+                                uint32_t width, uint32_t height, uint32_t depth,
+                                TextureUsage usage = TextureUsage::Default) override;
 
     ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
                                           const char* entryPoint = "main") override;
@@ -68,6 +69,11 @@ public:
 
     TextureHandle createDepthBuffer(uint32_t width, uint32_t height) override;
 
+    RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height, TargetBufferInfo color,
+                                          TargetBufferInfo depth) override;
+
+    RenderTargetHandle createDefaultRenderTarget() override;
+
     void destroyVertexBufferInfo(VertexBufferInfoHandle handle) override;
 
     void destroyVertexBuffer(VertexBufferHandle handle) override;
@@ -75,6 +81,8 @@ public:
     void destroyIndexBuffer(IndexBufferHandle handle) override;
 
     void destroyPipeline(PipelineHandle handle) override;
+
+    void destroyRenderTarget(RenderTargetHandle handle) override;
 
     void destroyBufferObject(BufferObjectHandle handle) override;
 
@@ -143,6 +151,7 @@ private:
             Texture,
             DescriptorSet,
             Pipeline,
+            RenderTarget,
         };
 
         Type type;
@@ -181,6 +190,13 @@ private:
     {
         return m_handleAllocator.handle_cast<Dp, B>(handle);
     }
+
+    /** The VkPipeline of the pipeline for the attachment formats, built on first use */
+    VkPipeline getPipelineVariant(VulkanPipeline& pipeline, VkFormat colorFormat,
+                                  VkFormat depthFormat);
+
+    VkPipeline buildPipeline(const VulkanPipeline& pipeline, VkFormat colorFormat,
+                             VkFormat depthFormat);
 
     VulkanResult createLogicalDevice();
 
@@ -233,6 +249,8 @@ private:
     void destroyDescriptorSetNow(DescriptorSetHandle handle);
 
     void destroyPipelineNow(PipelineHandle handle);
+
+    void destroyRenderTargetNow(RenderTargetHandle handle);
 
 private:
     static VkPhysicalDeviceMemoryProperties s_memoryProperties;

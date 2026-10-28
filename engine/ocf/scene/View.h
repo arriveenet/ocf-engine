@@ -11,14 +11,16 @@
 namespace ocf {
 
 class Camera;
+class RenderTarget;
 class SceneGraph;
 
 /**
- * @brief A render pass: draws scene graphs from a camera into the frame.
+ * @brief A render pass: draws scene graphs from a camera into the frame or a render target.
  *
  * Views are drawn in ascending order. A view that does not clear color is drawn over the
- * views before it, which is how a UI is layered on top of the main scene. A view only
- * references its scene graphs and camera; it does not own them.
+ * views before it, which is how a UI is layered on top of the main scene. A view that draws
+ * into a render target must come before the views that sample its textures. A view only
+ * references its scene graphs, camera and render target; it does not own them.
  */
 class OCF_API View {
 public:
@@ -61,9 +63,19 @@ public:
     int getOrder() const noexcept { return m_order; }
 
     /**
+     * @brief Draw into the render target instead of the swapchain.
+     *
+     * nullptr draws into the swapchain. The camera's aspect ratio should match the target size.
+     */
+    void setRenderTarget(RenderTarget* renderTarget) { m_renderTarget = renderTarget; }
+
+    RenderTarget* getRenderTarget() const noexcept { return m_renderTarget; }
+
+    /**
      * @brief Set which attachments are cleared before the view is drawn.
      *
-     * The first view of a frame always clears both, since the attachments start undefined.
+     * The first view of a frame drawn into the swapchain always clears both, since the
+     * attachments start undefined. So does the first view ever drawn into a render target.
      */
     void setClearFlags(ClearFlags flags) { m_clearFlags = flags; }
 
@@ -80,6 +92,7 @@ public:
 protected:
     std::vector<SceneGraph*> m_sceneGraphs;
     Camera* m_camera = nullptr;
+    RenderTarget* m_renderTarget = nullptr;
     int m_order = 0;
     ClearFlags m_clearFlags = ClearFlags::All;
     SortMode m_sortMode = SortMode::Distance;

@@ -10,6 +10,7 @@
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/MaterialInstance.h"
 #include "ocf/renderer/RenderQueue.h"
+#include "ocf/renderer/RenderTarget.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/rhi/CommandBuffer.h"
 #include "ocf/rhi/Device.h"
@@ -30,6 +31,8 @@ Renderer::Renderer(Engine& engine, rhi::Device* device)
 
 Renderer::~Renderer()
 {
+    m_device->destroyRenderTarget(m_defaultRenderTarget);
+
     m_material->terminate(m_engine);
     delete m_material;
 }
@@ -37,6 +40,7 @@ Renderer::~Renderer()
 bool Renderer::init()
 {
     m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
+    m_defaultRenderTarget = m_device->createDefaultRenderTarget();
 
     // The model matrix is not here: it changes per draw and is a push constant
     m_material = Material::Builder()
@@ -76,7 +80,7 @@ void Renderer::endFrame()
     if (m_passCount == 0) {
         rhi::RenderingInfo info;
         info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
-        m_commandBuffer->beginRendering(info);
+        m_commandBuffer->beginRendering(m_defaultRenderTarget, info);
         m_commandBuffer->endRendering();
     }
 
@@ -160,15 +164,22 @@ void Renderer::render(const View* view)
     viewUniforms->commit(m_engine);
     const rhi::DescriptorSetHandle viewDescriptorSet = viewUniforms->getDescriptorSetHandle();
 
-    // The attachments are undefined at the start of a frame, so the first pass always clears
-    const bool isFirstPass = (m_passCount == 0);
+    // The swapchain attachments are undefined at the start of a frame, so the first pass into
+    // them always clears. A render target keeps its contents, and the device clears it the first
+    // time it is drawn.
+    const RenderTarget* renderTarget = view->getRenderTarget();
+    const bool isDefaultTarget = (renderTarget == nullptr);
+    const bool isFirstPass = isDefaultTarget && (m_passCount == 0);
     const View::ClearFlags clearFlags = view->getClearFlags();
     rhi::RenderingInfo info;
     info.clearColor = view->getClearColor();
     info.clearColorBuffer = isFirstPass || hasFlag(clearFlags, View::ClearFlags::Color);
     info.clearDepthBuffer = isFirstPass || hasFlag(clearFlags, View::ClearFlags::Depth);
-    m_commandBuffer->beginRendering(info);
-    m_passCount++;
+    m_commandBuffer->beginRendering(
+        isDefaultTarget ? m_defaultRenderTarget : renderTarget->getHandle(), info);
+    if (isDefaultTarget) {
+        m_passCount++;
+    }
 
     for (const auto& cmd : m_renderQueue.getRenderCommands()) {
         // Bind pipeline, descriptor sets, vertex/index buffers, and draw
@@ -203,7 +214,7 @@ void Renderer::renderImGui(ImGuiLayer& imGuiLayer)
     info.clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
     info.clearColorBuffer = (m_passCount == 0);
     info.useDepthBuffer = false;
-    m_commandBuffer->beginRendering(info);
+    m_commandBuffer->beginRendering(m_defaultRenderTarget, info);
     m_passCount++;
 
     imGuiLayer.render(*m_commandBuffer);

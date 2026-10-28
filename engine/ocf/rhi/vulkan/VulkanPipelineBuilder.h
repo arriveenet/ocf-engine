@@ -26,6 +26,9 @@ public:
     VulkanPipelineBuilder& setViewport(VkExtent2D extent);
     VulkanPipelineBuilder& setViewport(VkViewport& viewport, VkRect2D scissor);
 
+    // Leaves the viewport and scissor to be set by the command buffer
+    VulkanPipelineBuilder& useDynamicViewport();
+
 
     // Sets the color blend attachment state
     void setColorBlendAttachmentState(const VkPipelineColorBlendAttachmentState& state);
@@ -42,7 +45,8 @@ public:
     // Sets the render pass and subpass
     VulkanPipelineBuilder& useRenderPass(VkRenderPass renderPass, uint32_t subpass);
 
-    // Sets dynamic rendering with specified formats
+    // Sets dynamic rendering with specified formats. VK_FORMAT_UNDEFINED leaves the attachment
+    // unused, e.g. no color attachment for a depth-only pass.
     VulkanPipelineBuilder& useDynamicRendering(VkFormat colorFormat,
                                            VkFormat depthFormat = VK_FORMAT_UNDEFINED);
 
@@ -66,6 +70,8 @@ private:
     VkPipelineColorBlendAttachmentState m_colorBlendAttachment{};
     VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
     VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
+    VkPipelineDynamicStateCreateInfo m_dynamicState{};
+    std::vector<VkDynamicState> m_dynamicStates;
 
     bool m_tessellationEnabled = false;
     VkPipelineTessellationStateCreateInfo m_tessellationState{};

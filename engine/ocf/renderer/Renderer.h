@@ -62,7 +62,10 @@ public:
     /** @brief Finish recording and present the frame. */
     void endFrame();
 
-    /** @brief Record one rendering pass that draws the view over the passes before it. */
+    /**
+     * @brief Record one rendering pass that draws the view over the passes before it into the
+     *        same target (the swapchain, or the view's render target).
+     */
     void render(const View* view);
 
 #if OCF_ENABLE_IMGUI
@@ -81,6 +84,7 @@ private:
     Engine& m_engine;
     rhi::Device* m_device = nullptr;
     rhi::TextureHandle m_depthTexture;
+    rhi::RenderTargetHandle m_defaultRenderTarget; // The swapchain and m_depthTexture
     VertexBuffer* m_vertexBuffer = nullptr;
     IndexBuffer* m_indexBuffer = nullptr;
     Texture* m_texture = nullptr;
@@ -93,7 +97,7 @@ private:
     // instance, so they are pooled and reused every frame.
     std::vector<MaterialInstance*> m_viewUniforms;
     size_t m_viewCount = 0; // Views drawn so far in the current frame
-    size_t m_passCount = 0; // Rendering passes recorded so far in the current frame
+    size_t m_passCount = 0; // Passes into the swapchain recorded so far in the current frame
 };
 
 } // namespace ocf

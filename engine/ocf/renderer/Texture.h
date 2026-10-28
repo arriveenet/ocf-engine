@@ -25,6 +25,7 @@ public:
     using Type = rhi::PixelDataType;
     using InternalFormat = rhi::TextureFormat;
     using Sampler = rhi::SamplerType;
+    using Usage = rhi::TextureUsage;
     using PixelBufferDescriptor = rhi::PixelBufferDescriptor;
 
     class Builder {
@@ -40,6 +41,8 @@ public:
         Builder& levels(uint8_t levels);
         Builder& format(InternalFormat format);
         Builder& sampler(Sampler sampler);
+        /** @brief Attachment usages make the texture usable by a RenderTarget. */
+        Builder& usage(Usage usage);
 
         Texture* build(Engine& engine);
 
@@ -83,6 +86,8 @@ public:
 
     Sampler getSampler() const { return m_sampler; }
 
+    Usage getUsage() const { return m_usage; }
+
     void setImage(Engine& engine, size_t level, uint32_t xoffset, uint32_t yoffset, uint32_t zoffset,
                   uint32_t width, uint32_t height, uint32_t depth,
                   PixelBufferDescriptor&& buffer) const;
@@ -101,6 +106,7 @@ private:
     uint8_t m_levelCount = 1;
     InternalFormat m_format = InternalFormat::RGBA8;
     Sampler m_sampler = Sampler::Sampler2D;
+    Usage m_usage = Usage::Default;
 };
 
 } // namespace ocf

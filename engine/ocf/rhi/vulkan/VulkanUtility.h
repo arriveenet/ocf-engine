@@ -140,10 +140,45 @@ constexpr VkFormat getTextureFormat(TextureFormat format)
     case TextureFormat::RG8:    return VK_FORMAT_R8G8_UNORM;
     case TextureFormat::RGB8:   return VK_FORMAT_R8G8B8_UNORM;
     case TextureFormat::RGBA8:  return VK_FORMAT_R8G8B8A8_UNORM;
+    case TextureFormat::RGBA16F: return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case TextureFormat::DEPTH32F: return VK_FORMAT_D32_SFLOAT;
     default:
         assert(false && "Unknown TextureFormat");
         return VK_FORMAT_UNDEFINED;
     }
+}
+
+constexpr bool isDepthFormat(VkFormat format)
+{
+    switch (format) {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_X8_D24_UNORM_PACK32:
+    case VK_FORMAT_D32_SFLOAT:
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return true;
+    default:
+        return false;
+    }
+}
+
+constexpr VkImageUsageFlags getImageUsageFlags(TextureUsage usage)
+{
+    VkImageUsageFlags flags = 0;
+    if (usage & TextureUsage::Sampleable) {
+        flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+    if (usage & TextureUsage::Uploadable) {
+        flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
+    if (usage & TextureUsage::ColorAttachment) {
+        flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+    if (usage & TextureUsage::DepthAttachment) {
+        flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    }
+    return flags;
 }
 
 constexpr VkDescriptorType getDescriptorType(DescriptorType type)
