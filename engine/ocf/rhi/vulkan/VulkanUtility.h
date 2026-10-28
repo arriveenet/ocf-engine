@@ -244,6 +244,20 @@ constexpr VkCullModeFlags getCullMode(CullingMode mode)
     }
 }
 
+constexpr VkPrimitiveTopology getPrimitiveTopology(PrimitiveType type)
+{
+    switch (type) {
+    case PrimitiveType::Points:        return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case PrimitiveType::Lines:         return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case PrimitiveType::LineStrip:     return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+    case PrimitiveType::Triangles:     return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case PrimitiveType::TriangleStrip: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    default:
+        assert(false && "Unknown PrimitiveType");
+        return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+    }
+}
+
 constexpr VkFilter getMagFilter(SamplerMagFilter filter)
 {
     switch (filter) {

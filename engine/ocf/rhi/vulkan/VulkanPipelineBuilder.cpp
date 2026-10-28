@@ -159,6 +159,13 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::setViewport(VkViewport& viewport, 
     return *this;
 }
 
+VulkanPipelineBuilder& VulkanPipelineBuilder::setPrimitiveTopology(VkPrimitiveTopology topology)
+{
+    m_inputAssemblyState.topology = topology;
+
+    return *this;
+}
+
 VulkanPipelineBuilder& VulkanPipelineBuilder::useDynamicViewport()
 {
     m_viewportState = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,

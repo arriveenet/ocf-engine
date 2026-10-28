@@ -22,6 +22,9 @@ public:
                                       const VkVertexInputAttributeDescription* attributes,
                                       uint32_t attributeCount);
 
+    // Sets the primitive topology (triangle list by default)
+    VulkanPipelineBuilder& setPrimitiveTopology(VkPrimitiveTopology topology);
+
     // Sets the viewport and scissor
     VulkanPipelineBuilder& setViewport(VkExtent2D extent);
     VulkanPipelineBuilder& setViewport(VkViewport& viewport, VkRect2D scissor);

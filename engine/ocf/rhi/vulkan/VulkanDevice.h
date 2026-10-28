@@ -191,12 +191,9 @@ private:
         return m_handleAllocator.handle_cast<Dp, B>(handle);
     }
 
-    /** The VkPipeline of the pipeline for the attachment formats, built on first use */
-    VkPipeline getPipelineVariant(VulkanPipeline& pipeline, VkFormat colorFormat,
-                                  VkFormat depthFormat);
-
-    VkPipeline buildPipeline(const VulkanPipeline& pipeline, VkFormat colorFormat,
-                             VkFormat depthFormat);
+    /** The VkPipeline of the pipeline for the attachment formats, from the pipeline cache */
+    VkPipeline getPipeline(const VulkanPipeline& pipeline, VkFormat colorFormat,
+                           VkFormat depthFormat);
 
     VulkanResult createLogicalDevice();
 
@@ -274,6 +271,8 @@ private:
     std::shared_ptr<DepthBuffer> m_depthBuffer;
     TextureHandle m_depthBufferHandle;
     std::unique_ptr<SamplerCache> m_samplerCache;
+    std::unique_ptr<VulkanPipelineCache> m_pipelineCache;
+    uint32_t m_nextObjectId = 1; // Ids of shader modules and pipeline layouts in pipeline keys
 
     VkPhysicalDeviceFeatures2 m_physicalDeviceFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};

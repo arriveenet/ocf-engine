@@ -237,7 +237,7 @@ void VulkanCommandBuffer::endRendering()
 void VulkanCommandBuffer::bindPipeline(PipelineHandle ph)
 {
     VulkanPipeline* pipeline = m_device.handle_cast<VulkanPipeline*>(ph);
-    VkPipeline vkPipeline = m_device.getPipelineVariant(*pipeline, m_colorFormat, m_depthFormat);
+    VkPipeline vkPipeline = m_device.getPipeline(*pipeline, m_colorFormat, m_depthFormat);
 
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline);
 }

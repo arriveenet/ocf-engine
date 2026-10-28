@@ -106,6 +106,8 @@ bool VulkanDevice::initialize()
     m_samplerCache =
         std::make_unique<SamplerCache>(m_device, m_deviceProperties.limits.maxSamplerAnisotropy);
 
+    m_pipelineCache = std::make_unique<VulkanPipelineCache>(m_device);
+
     OCF_LOG_INFO("Selected GPU: {} (type: {})", m_deviceProperties.deviceName,
                  VulkanUtility::getPhysicalDeviceTypeString(m_deviceProperties.deviceType));
     return true;
@@ -134,6 +136,10 @@ void VulkanDevice::terminate()
 
     if (m_samplerCache) {
         m_samplerCache.reset();
+    }
+
+    if (m_pipelineCache) {
+        m_pipelineCache.reset();
     }
 
     destroyFrameContexts();
@@ -262,7 +268,8 @@ ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::stri
     VkShaderModule module = VK_NULL_HANDLE;
     VkResult result = vkCreateShaderModule(m_device, &createInfo, nullptr, &module);
     VK_CHECK_RESULT(result);
-    shader->module = std::make_shared<VulkanShaderModuleObject>(m_device, module);
+    shader->module =
+        std::make_shared<VulkanShaderModuleObject>(m_device, module, m_nextObjectId++);
  
     return Handle<RHIShaderModule>{handle.getId()};
 }
@@ -351,7 +358,8 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
 
     // The VkPipeline depends on the render target it is drawn into, so it is built when bound.
     // The description keeps the shader modules alive until then.
-    VulkanPipeline::Description& description = pipeline->description;
+    pipeline->description = std::make_unique<VulkanPipeline::Description>();
+    VulkanPipeline::Description& description = *pipeline->description;
 
     VulkanShaderModule* vs = handle_cast<VulkanShaderModule*>(state.vertexShader);
     VulkanShaderModule* fs = handle_cast<VulkanShaderModule*>(state.fragmentShader);
@@ -360,112 +368,49 @@ PipelineHandle VulkanDevice::createPipeline(const PipelineState& state)
     description.fragmentShader = fs->module;
     description.fragmentEntryPoint = fs->entryPoint;
 
+    // Everything in the key but the attachment formats, which are set when bound
+    VulkanPipelineCache::PipelineKey& key = description.key;
+    key.vertexShader = vs->module->getId();
+    key.fragmentShader = fs->module->getId();
+    key.layout = m_nextObjectId++;
+    key.rasterState = state.rasterState.value;
+    key.topology = VulkanUtility::getPrimitiveTopology(state.primitiveType);
+
     VulkanVertexBufferInfo* vbi = handle_cast<VulkanVertexBufferInfo*>(state.vertexBufferInfo);
-    uint32_t stride = 0;
-    std::vector<VkVertexInputAttributeDescription>& attributeDescriptions = description.attributes;
     for (size_t i = 0, n = vbi->attributes.size(); i < n; i++) {
         const auto& attribute = vbi->attributes[i];
         const uint8_t buffer = attribute.buffer;
         if (buffer != Attribute::BUFFER_UNUSED) {
-            VkVertexInputAttributeDescription attributeDescription{
+            key.attributes[key.attributeCount++] = VulkanPipelineCache::VertexAttribute{
                 .location = uint32_t(i),
-                .binding = 0,
                 .format = VulkanUtility::getElementType(attribute.type),
-                .offset = attribute.offset
+                .offset = attribute.offset,
             };
-            attributeDescriptions.push_back(attributeDescription);
 
-            stride = attribute.stride;
+            key.vertexStride = attribute.stride;
         }
     }
-
-    VkVertexInputBindingDescription bindingDescription{
-        .binding = 0,
-        .stride = stride,
-        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
-    description.bindings.push_back(bindingDescription);
-
-    description.rasterState = state.rasterState;
 
     return Handle<RHIPipeline>{handle.getId()};
 }
 
-VkPipeline VulkanDevice::getPipelineVariant(VulkanPipeline& pipeline, VkFormat colorFormat,
-                                            VkFormat depthFormat)
+VkPipeline VulkanDevice::getPipeline(const VulkanPipeline& pipeline, VkFormat colorFormat,
+                                     VkFormat depthFormat)
 {
-    for (const auto& variant : pipeline.variants) {
-        if (variant.colorFormat == colorFormat && variant.depthFormat == depthFormat) {
-            return variant.pipeline;
-        }
-    }
+    const VulkanPipeline::Description& description = *pipeline.description;
 
-    VkPipeline vkPipeline = buildPipeline(pipeline, colorFormat, depthFormat);
-    if (vkPipeline == VK_NULL_HANDLE) {
-        OCF_LOG_ERROR("Failed to create pipeline");
-    }
+    VulkanPipelineCache::PipelineKey key = description.key;
+    key.colorFormat = colorFormat;
+    key.depthFormat = depthFormat;
 
-    pipeline.variants.push_back(VulkanPipeline::Variant{
-        .colorFormat = colorFormat,
-        .depthFormat = depthFormat,
-        .pipeline = vkPipeline,
-    });
-    return vkPipeline;
-}
-
-VkPipeline VulkanDevice::buildPipeline(const VulkanPipeline& pipeline, VkFormat colorFormat,
-                                       VkFormat depthFormat)
-{
-    const VulkanPipeline::Description& description = pipeline.description;
-    const RasterState& rasterState = description.rasterState;
-
-    // Depth buffer settings
-    VkPipelineDepthStencilStateCreateInfo depthStencilState{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = rasterState.bits.depthWriteEnable ? VK_TRUE : VK_FALSE,
-        .depthCompareOp = VulkanUtility::getDepthFunc(rasterState.bits.depthFunc),
+    const VulkanPipelineCache::PipelineObjects objects{
+        .vertexShader = description.vertexShader->get(),
+        .vertexEntryPoint = description.vertexEntryPoint,
+        .fragmentShader = description.fragmentShader->get(),
+        .fragmentEntryPoint = description.fragmentEntryPoint,
+        .layout = pipeline.vk.layout,
     };
-
-    // Culling settings
-    VkPipelineRasterizationStateCreateInfo rasterizerState{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .depthClampEnable = VK_FALSE,
-        .rasterizerDiscardEnable = VK_FALSE,
-        .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VulkanUtility::getCullMode(rasterState.bits.culling),
-        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-        .depthBiasEnable = VK_FALSE,
-        .lineWidth = 1.0f,
-    };
-
-    // Color blending settings
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{
-        .blendEnable = rasterState.hasBlending() ? VK_TRUE : VK_FALSE,
-        .srcColorBlendFactor = VulkanUtility::getBlendFunction(rasterState.bits.blendFunctionSrcColor),
-        .dstColorBlendFactor = VulkanUtility::getBlendFunction(rasterState.bits.blendFunctionDstColor),
-        .colorBlendOp = VulkanUtility::getBlendEquation(rasterState.bits.blendEquationColor),
-        .srcAlphaBlendFactor = VulkanUtility::getBlendFunction(rasterState.bits.blendFunctionSrcAlpha),
-        .dstAlphaBlendFactor = VulkanUtility::getBlendFunction(rasterState.bits.blendFunctionDstAlpha),
-        .alphaBlendOp = VulkanUtility::getBlendEquation(rasterState.bits.blendEquationAlpha),
-        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-    };
-
-    // Build pipeline
-    VulkanPipelineBuilder builder{};
-    builder.addShaderStage(VK_SHADER_STAGE_VERTEX_BIT, description.vertexShader->get(),
-                           description.vertexEntryPoint);
-    builder.addShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, description.fragmentShader->get(),
-                           description.fragmentEntryPoint);
-    builder.setVertexInput(description.bindings.data(), uint32_t(description.bindings.size()),
-                           description.attributes.data(), uint32_t(description.attributes.size()));
-    builder.useDynamicViewport();
-    builder.setPipelineLayout(pipeline.vk.layout);
-    builder.setDepthStencilState(depthStencilState);
-    builder.setRasterizationState(rasterizerState);
-    builder.setColorBlendAttachmentState(colorBlendAttachment);
-    builder.useDynamicRendering(colorFormat, depthFormat);
-    return builder.build(m_device);
+    return m_pipelineCache->getPipeline(key, objects, m_currentFrameNumber);
 }
 
 SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, uint32_t height,
@@ -670,13 +615,8 @@ void VulkanDevice::destroyPipelineNow(PipelineHandle handle)
         return;
     }
 
-    for (auto& variant : pipeline->variants) {
-        if (variant.pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(m_device, variant.pipeline, nullptr);
-        }
-    }
-    pipeline->variants.clear();
-
+    // The VkPipelines built from it stay in the pipeline cache until they age out. They can never
+    // be looked up again, as the ids in their keys are not reused.
     if (pipeline->vk.layout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(m_device, pipeline->vk.layout, nullptr);
         pipeline->vk.layout = VK_NULL_HANDLE;
@@ -1140,6 +1080,7 @@ VulkanResult VulkanDevice::acquireNextImage()
     // All work submitted up to this frame has completed, so its resources can be destroyed
     m_completedFrameNumber = std::max(m_completedFrameNumber, frame->frameNumber);
     processDeletionQueue(m_completedFrameNumber);
+    m_pipelineCache->gc(m_currentFrameNumber, m_completedFrameNumber);
 
     auto result = m_swapchain->acquireNextImage();
     if (result.isOk()) {

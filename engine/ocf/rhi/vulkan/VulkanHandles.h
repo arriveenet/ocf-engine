@@ -5,10 +5,10 @@
 #include "ocf/rhi/Device.h"
 
 #include "ocf/rhi/vulkan/VulkanBuffer.h"
+#include "ocf/rhi/vulkan/VulkanPipelineCache.h"
 #include "ocf/rhi/vulkan/resource/ImageResource.h"
 
 #include <memory>
-#include <vector>
 
 namespace  ocf::rhi {
 
@@ -51,9 +51,10 @@ struct VulkanTexture : public RHITexture {
 /** Owns a VkShaderModule, shared by the shader module handle and the pipelines built from it */
 class VulkanShaderModuleObject {
 public:
-    VulkanShaderModuleObject(VkDevice device, VkShaderModule module)
+    VulkanShaderModuleObject(VkDevice device, VkShaderModule module, uint32_t id)
         : m_device(device)
         , m_module(module)
+        , m_id(id)
     {
     }
 
@@ -69,9 +70,13 @@ public:
 
     VkShaderModule get() const noexcept { return m_module; }
 
+    /** Identifies the module in pipeline cache keys. Never reused, unlike the Vulkan handle. */
+    uint32_t getId() const noexcept { return m_id; }
+
 private:
     VkDevice m_device = VK_NULL_HANDLE;
     VkShaderModule m_module = VK_NULL_HANDLE;
+    uint32_t m_id = 0;
 };
 
 struct VulkanShaderModule : public RHIShaderModule {
@@ -80,7 +85,7 @@ struct VulkanShaderModule : public RHIShaderModule {
 
 /**
  * A pipeline description. The VkPipeline depends on the attachment formats of the render target,
- * so one is built for each render target format it is drawn into, when it is first bound.
+ * so it is looked up in the device's VulkanPipelineCache by the full state when bound.
  */
 struct VulkanPipeline : public RHIPipeline {
     /** Everything needed to build a VkPipeline, apart from the attachment formats */
@@ -89,23 +94,15 @@ struct VulkanPipeline : public RHIPipeline {
         std::shared_ptr<VulkanShaderModuleObject> fragmentShader;
         const char* vertexEntryPoint = "main";
         const char* fragmentEntryPoint = "main";
-        std::vector<VkVertexInputBindingDescription> bindings;
-        std::vector<VkVertexInputAttributeDescription> attributes;
-        RasterState rasterState;
-    };
-
-    struct Variant {
-        VkFormat colorFormat = VK_FORMAT_UNDEFINED;
-        VkFormat depthFormat = VK_FORMAT_UNDEFINED;
-        VkPipeline pipeline = VK_NULL_HANDLE;
+        VulkanPipelineCache::PipelineKey key{}; ///< The attachment formats are set when bound
     };
 
     struct VK {
         VkPipelineLayout layout = VK_NULL_HANDLE;
     } vk;
 
-    Description description;
-    std::vector<Variant> variants;
+    // On the heap, as the key does not fit in the handle allocator's buckets
+    std::unique_ptr<Description> description;
 };
 
 struct VulkanRenderTarget : public RHIRenderTarget {
