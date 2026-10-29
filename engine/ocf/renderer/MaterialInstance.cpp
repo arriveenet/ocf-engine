@@ -81,7 +81,7 @@ void MaterialInstance::setParameter(std::string_view name, Texture* texture,
         return;
     }
 
-    m_descriptorSet.updateTextureDescriptor(*m_engine, texInfo->binding, texture, sampler);
+    m_descriptorSet.updateTextureDescriptor(texInfo->binding, texture, sampler);
 }
 
 template void MaterialInstance::setParameter<bool>(std::string_view, const bool&);

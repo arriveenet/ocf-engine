@@ -1,0 +1,14 @@
+{
+ "type": "tileset",
+ "version": "1.10",
+ "name": "props",
+ "tilewidth": 16,
+ "tileheight": 32,
+ "tilecount": 2,
+ "columns": 2,
+ "margin": 0,
+ "spacing": 0,
+ "image": "props.png",
+ "imagewidth": 32,
+ "imageheight": 32
+}

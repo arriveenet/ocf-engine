@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="12" height="8" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="3">
+ <properties>
+  <property name="title" value="Sample"/>
+ </properties>
+ <tileset firstgid="1" name="terrain" tilewidth="16" tileheight="16" tilecount="8" columns="4">
+  <image source="terrain.png" width="64" height="32"/>
+  <tile id="2">
+   <properties>
+    <property name="water" type="bool" value="true"/>
+   </properties>
+  </tile>
+  <tile id="3">
+   <properties>
+    <property name="solid" type="bool" value="true"/>
+   </properties>
+  </tile>
+ </tileset>
+ <tileset firstgid="9" source="props.tsx"/>
+ <layer id="1" name="ground" width="12" height="8">
+  <data encoding="csv">
+4,4,4,4,4,4,1,1,1,1,1,1,
+1,1,1,1,1,1,1,3,3,3,3,1,
+1,1,1,1,1,1,1,3,3,3,3,1,
+1,1,1,1,1,1,1,3,3,3,3,1,
+1,1,1,1,1,1,1,1,1,1,1,1,
+2,2,2,2,2,2,2,2,2,2,2,2,
+1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1
+</data>
+ </layer>
+ <group id="2" name="decor">
+  <layer id="3" name="deco" width="12" height="8">
+   <data encoding="base64" compression="zlib">
+   eJxjYKA9YENis5OhZ7ABDjQ+NreyQnADEDsA8QEgVgDiBUCcAMQPYOoAYWADyg==
+   </data>
+  </layer>
+  <layer id="4" name="trees" width="12" height="8" opacity="0.85">
+   <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,9,0,9,0,0,10,0,0,0,0,9,
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0
+</data>
+  </layer>
+ </group>
+ <objectgroup id="5" name="objects">
+  <object id="1" name="spawn" x="40" y="88">
+   <point/>
+  </object>
+  <object id="2" name="pond" type="water" x="112" y="16" width="64" height="48">
+   <properties>
+    <property name="depth" type="float" value="1.5"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

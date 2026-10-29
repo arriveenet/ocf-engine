@@ -8,6 +8,7 @@
 #include "ocf/rhi/Handle.h"
 #include "ocf/scene/Component.h"
 
+#include <array>
 #include <cstdint>
 #include <string_view>
 #include <vector>
@@ -78,8 +79,13 @@ protected:
      *
      * The instance is owned by the material and lives as long as this component, since a
      * Material cannot release a single instance.
+     *
+     * @param opacity Multiplied with the alpha of the color for this instance only.
      */
-    MaterialInstance* createMaterialInstance();
+    MaterialInstance* createMaterialInstance(float opacity = 1.0f);
+
+    /** @brief Change the opacity of an instance made by createMaterialInstance(). */
+    void setMaterialOpacity(MaterialInstance* materialInstance, float opacity);
 
     /** @brief Bind a texture to a material instance with a clamping sampler. */
     static void bindTexture(MaterialInstance* materialInstance, Texture* texture,
@@ -93,6 +99,16 @@ protected:
                     std::vector<uint32_t>& indices, const math::vec2& position,
                     const math::vec2& size, const math::vec2& uv0, const math::vec2& uv1) const;
 
+    /**
+     * @brief Append a quad given in layout pixels with a texture coordinate per corner.
+     *
+     * @param uvs Texture coordinates of the top-left, bottom-left, bottom-right and top-right
+     *        corners, so that the texture can also be rotated.
+     */
+    void appendQuad(std::vector<VertexPositionTexCoord>& vertices,
+                    std::vector<uint32_t>& indices, const math::vec2& position,
+                    const math::vec2& size, const std::array<math::vec2, 4>& uvs) const;
+
     /** @brief Upload the geometry and add a renderable that draws it with the instance. */
     void addGeometry(const std::vector<VertexPositionTexCoord>& vertices,
                      const std::vector<uint32_t>& indices, MaterialInstance* materialInstance);
@@ -105,8 +121,14 @@ private:
         IndexBuffer* indexBuffer = nullptr;
     };
 
+    struct MaterialEntry {
+        MaterialInstance* materialInstance = nullptr;
+        float opacity = 1.0f;
+    };
+
     void releaseGeometry();
     void createPipeline(VertexBuffer* vertexBuffer);
+    void applyColor(const MaterialEntry& entry);
 
     math::vec4 m_color = math::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     math::vec2 m_anchor = math::vec2(0.5f, 0.5f);
@@ -119,7 +141,7 @@ private:
     rhi::PipelineHandle m_pipeline;
     Material* m_material = nullptr;
 
-    std::vector<MaterialInstance*> m_materialInstances;
+    std::vector<MaterialEntry> m_materialInstances;
     std::vector<Geometry> m_geometries;
 };
 
