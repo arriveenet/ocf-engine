@@ -5,6 +5,7 @@
 #include "ocf/rhi/Handle.h"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace ocf {
