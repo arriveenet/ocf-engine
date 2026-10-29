@@ -3,6 +3,7 @@
 
 #include "AudioSystemTest.h"
 #include "MeshInstanceTest.h"
+#include "RenderTargetTest.h"
 #include "SpriteTest.h"
 #include "TileMapTest.h"
 
@@ -33,6 +34,10 @@ void MainScene::onImGui()
         getSceneManager().change<SpriteTest>();
     }
 
+    if (ImGui::Button("RenderTarget Test")) {
+        getSceneManager().change<RenderTargetTest>();
+    }
+  
     if (ImGui::Button("TileMap Test")) {
         getSceneManager().change<TileMapTest>();
     }

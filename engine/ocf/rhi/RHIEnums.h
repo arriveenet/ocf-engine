@@ -76,7 +76,32 @@ enum class TextureFormat : uint16_t {
     RG8,
     RGB8,
     RGBA8,
+    RGBA16F,
+    DEPTH32F,
 };
+
+/**
+ * @brief How a texture is used. A texture attached to a render target needs the attachment usage.
+ */
+enum class TextureUsage : uint8_t {
+    ColorAttachment = 1 << 0, //!< Color attachment of a render target
+    DepthAttachment = 1 << 1, //!< Depth attachment of a render target
+    Sampleable      = 1 << 2, //!< Sampled by shaders
+    Uploadable      = 1 << 3, //!< Image data can be uploaded and mipmaps generated
+    Default         = Sampleable | Uploadable,
+};
+
+constexpr TextureUsage operator|(TextureUsage lhs, TextureUsage rhs)
+{
+    return static_cast<TextureUsage>(static_cast<std::underlying_type_t<TextureUsage>>(lhs) |
+                                     static_cast<std::underlying_type_t<TextureUsage>>(rhs));
+}
+
+constexpr bool operator&(TextureUsage lhs, TextureUsage rhs)
+{
+    return static_cast<std::underlying_type_t<TextureUsage>>(lhs) &
+           static_cast<std::underlying_type_t<TextureUsage>>(rhs);
+}
 
 enum class PixelDataFormat : uint8_t {
     R,

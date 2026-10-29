@@ -10,6 +10,7 @@ set(HDRS
     AudioSystemTest.h
     MainScene.h
     MeshInstanceTest.h
+    RenderTargetTest.h
     SpriteTest.h
     TestBaseScene.h
     TileMapTest.h
@@ -19,6 +20,7 @@ set(SRCS
     AudioSystemTest.cpp
     MainScene.cpp
     MeshInstanceTest.cpp
+    RenderTargetTest.cpp
     TestBaseScene.cpp
     SpriteTest.cpp
     TileMapTest.cpp

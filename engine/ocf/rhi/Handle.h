@@ -21,6 +21,7 @@ struct RHIDescriptorSetLayout;
 struct RHIDescriptorSet;
 struct RHIPipeline;
 struct RHISwapchain;
+struct RHIRenderTarget;
 
 class OCF_API HandleBase {
 public:
@@ -107,6 +108,7 @@ using DescriptorSetLayoutHandle =  Handle<RHIDescriptorSetLayout>;
 using DescriptorSetHandle = Handle<RHIDescriptorSet>;
 using PipelineHandle = Handle<RHIPipeline>;
 using SwapchainHandle = Handle<RHISwapchain>;
+using RenderTargetHandle = Handle<RHIRenderTarget>;
 
 } // namespace rhi
 } // namespace ocf

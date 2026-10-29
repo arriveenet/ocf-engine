@@ -9,6 +9,8 @@
 namespace ocf::rhi {
 
 class VulkanDevice;
+class IImageResource;
+struct VulkanRenderTarget;
 
 class VulkanCommandBuffer : public CommandBuffer {
 public:
@@ -23,7 +25,7 @@ public:
 
     void reset() override;
 
-    void beginRendering(const RenderingInfo& info) override;
+    void beginRendering(RenderTargetHandle rth, const RenderingInfo& info) override;
 
     void endRendering() override;
 
@@ -57,9 +59,18 @@ public:
     operator VkCommandBuffer() const noexcept { return m_commandBuffer; }
 
 private:
+    /** Moves an attachment of an offscreen render target from its tracked layout to newLayout */
+    void transitionAttachment(IImageResource& image, VkImageLayout newLayout,
+                              VkPipelineStageFlags2 dstStage, VkAccessFlags2 dstAccess);
+
     VulkanDevice& m_device;
     VkCommandBuffer m_commandBuffer;
     uint32_t m_renderingCount = 0; // Rendering passes recorded since begin()
+
+    // The rendering pass being recorded. Pipelines are bound for its attachment formats.
+    VulkanRenderTarget* m_currentTarget = nullptr;
+    VkFormat m_colorFormat = VK_FORMAT_UNDEFINED;
+    VkFormat m_depthFormat = VK_FORMAT_UNDEFINED;
 };
 
 } // namespace ocf::rhi

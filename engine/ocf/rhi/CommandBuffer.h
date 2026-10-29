@@ -20,7 +20,13 @@ public:
 
     virtual void reset() = 0;
 
-    virtual void beginRendering(const RenderingInfo& info) = 0;
+    /**
+     * @brief Begin a rendering pass into the render target.
+     *
+     * The attachments of an offscreen target are transitioned for rendering, and sampleable ones
+     * become readable by shaders again at endRendering().
+     */
+    virtual void beginRendering(RenderTargetHandle rth, const RenderingInfo& info) = 0;
 
     virtual void endRendering() = 0;
 

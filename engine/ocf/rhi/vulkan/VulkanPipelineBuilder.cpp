@@ -159,6 +159,27 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::setViewport(VkViewport& viewport, 
     return *this;
 }
 
+VulkanPipelineBuilder& VulkanPipelineBuilder::setPrimitiveTopology(VkPrimitiveTopology topology)
+{
+    m_inputAssemblyState.topology = topology;
+
+    return *this;
+}
+
+VulkanPipelineBuilder& VulkanPipelineBuilder::useDynamicViewport()
+{
+    m_viewportState = {.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                       .viewportCount = 1,
+                       .pViewports = nullptr,
+                       .scissorCount = 1,
+                       .pScissors = nullptr};
+
+    m_dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+    m_dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
+    return *this;
+}
+
 void VulkanPipelineBuilder::setColorBlendAttachmentState(
     const VkPipelineColorBlendAttachmentState& state)
 {
@@ -203,6 +224,9 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::useDynamicRendering(VkFormat color
 
 VkPipeline VulkanPipelineBuilder::build(VkDevice device)
 {
+    const bool hasColorAttachment = m_useRenderPass || m_colorFormat != VK_FORMAT_UNDEFINED;
+    m_colorBlendState.attachmentCount = hasColorAttachment ? 1 : 0;
+
     VkGraphicsPipelineCreateInfo pipelineInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .stageCount = static_cast<uint32_t>(m_shaderStages.size()),
@@ -217,6 +241,15 @@ VkPipeline VulkanPipelineBuilder::build(VkDevice device)
         .layout = m_pipelineLayout,
     };
 
+    if (!m_dynamicStates.empty()) {
+        m_dynamicState = VkPipelineDynamicStateCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .dynamicStateCount = uint32_t(m_dynamicStates.size()),
+            .pDynamicStates = m_dynamicStates.data(),
+        };
+        pipelineInfo.pDynamicState = &m_dynamicState;
+    }
+
     VkPipelineRenderingCreateInfo renderingInfo{};
     if (m_useRenderPass) {
         pipelineInfo.renderPass = m_renderPass;
@@ -225,8 +258,8 @@ VkPipeline VulkanPipelineBuilder::build(VkDevice device)
     else {
         renderingInfo = VkPipelineRenderingCreateInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-            .colorAttachmentCount = 1,
-            .pColorAttachmentFormats = &m_colorFormat,
+            .colorAttachmentCount = hasColorAttachment ? 1u : 0u,
+            .pColorAttachmentFormats = hasColorAttachment ? &m_colorFormat : nullptr,
             .depthAttachmentFormat = m_depthFormat,
         };
         pipelineInfo.pNext = &renderingInfo;

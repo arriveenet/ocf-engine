@@ -93,11 +93,16 @@ class Texture2D : public ImageResource<Texture2D> {
   friend class GpuResourceBase<Texture2D>;
 
 public:
+    static constexpr VkImageUsageFlags DEFAULT_USAGE =
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
     static std::shared_ptr<Texture2D> create(VkDevice device, VkExtent2D extent,
-                                             VkFormat depthFormat, uint32_t mipLevels)
+                                             VkFormat format, uint32_t mipLevels,
+                                             VkImageUsageFlags usage = DEFAULT_USAGE)
     {
         auto image = GpuResourceBase::create();
-        if (!image->initalize(device, extent, depthFormat, mipLevels)) {
+        if (!image->initalize(device, extent, format, mipLevels, usage)) {
             return nullptr;
         }
         return image;
@@ -106,7 +111,9 @@ public:
     ~Texture2D() override { cleanup();}
     void cleanup() override;
 
-    bool initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels);
+    /** A depth format makes a depth image, e.g. a depth attachment that is sampled as a shadow map */
+    bool initalize(VkDevice device, VkExtent2D extent, VkFormat format, uint32_t mipLevels,
+                   VkImageUsageFlags usage);
 
     VkDescriptorImageInfo getDescriptorInfo(VkSampler sampler) const;
 };
