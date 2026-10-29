@@ -27,6 +27,8 @@ add_executable(test_${TARGET}
     test_texture_sampler.cpp
     test_text_layout.cpp
     test_text_utility.cpp
+    test_tilemap.cpp
+    test_tiled_map_loader.cpp
     test_song_exporter.cpp
     test_song_player.cpp
     test_song_serializer.cpp

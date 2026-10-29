@@ -5,6 +5,7 @@
 #include "MeshInstanceTest.h"
 #include "RenderTargetTest.h"
 #include "SpriteTest.h"
+#include "TileMapTest.h"
 
 #include <ocf/scene/SceneManager.h>
 
@@ -35,6 +36,10 @@ void MainScene::onImGui()
 
     if (ImGui::Button("RenderTarget Test")) {
         getSceneManager().change<RenderTargetTest>();
+    }
+  
+    if (ImGui::Button("TileMap Test")) {
+        getSceneManager().change<TileMapTest>();
     }
 
     ImGui::End();

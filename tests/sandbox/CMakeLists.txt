@@ -13,6 +13,7 @@ set(HDRS
     RenderTargetTest.h
     SpriteTest.h
     TestBaseScene.h
+    TileMapTest.h
 )
 
 set(SRCS
@@ -22,6 +23,7 @@ set(SRCS
     RenderTargetTest.cpp
     TestBaseScene.cpp
     SpriteTest.cpp
+    TileMapTest.cpp
     main.cpp
 )
 

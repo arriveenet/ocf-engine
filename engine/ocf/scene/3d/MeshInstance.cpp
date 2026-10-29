@@ -95,8 +95,6 @@ void MeshInstance::setMesh(const Ref<Mesh>& mesh)
                                          subMesh.metallicRoughnessTexture, subMesh.sampler);
         materialInstance->setParameter("normalMapTexture", subMesh.normalMapTexture, subMesh.sampler);
 
-        materialInstance->commit(m_engine);
-
         rhi::PipelineState pipeline;
         pipeline.vertexShader = m_vertexShader;
         pipeline.fragmentShader = m_fragmentShader;
