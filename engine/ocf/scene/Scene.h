@@ -66,6 +66,9 @@ public:
      * @brief Called for input events, from the top layer down.
      *
      * Call event.setHandled(true) to stop the event from reaching the layers below.
+     *
+     * A WindowResizeEvent is passed to every active scene, whatever the handled flag and
+     * setBlocksInput(). A scene that becomes active later reads the size in onEnter().
      */
     virtual void onEvent(Event& /*event*/) {}
 

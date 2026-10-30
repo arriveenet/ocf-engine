@@ -144,7 +144,7 @@ void Renderer::render(const View* view)
 
     // Collect renderable objects from the scene graphs
     for (SceneGraph* sceneGraph : view->getSceneGraphs()) {
-        sceneGraph->traverseNodes(sceneGraph->getRoot(), collect);
+        sceneGraph->traverseVisibleNodes(sceneGraph->getRoot(), collect);
     }
 
     // SubmitOrder keeps the traversal order, so that UI elements later in the tree are on top
