@@ -39,7 +39,8 @@ Renderer::~Renderer()
 
 bool Renderer::init()
 {
-    m_depthTexture = m_device->createDepthBuffer(m_engine.getWindowSize().x, m_engine.getWindowSize().y);
+    m_depthTexture = m_device->createDepthBuffer(m_engine.getFramebufferSize().x,
+                                                 m_engine.getFramebufferSize().y);
     m_defaultRenderTarget = m_device->createDefaultRenderTarget();
 
     // The model matrix is not here: it changes per draw and is a push constant

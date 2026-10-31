@@ -216,7 +216,14 @@ public:
     // @TODO
     virtual uint32_t getCurrentFrameIndex() = 0;
 
-    /** @return false if the frame cannot be rendered (no swapchain image was acquired) */
+    /**
+     * @brief Acquire the swapchain image of the frame.
+     *
+     * The swapchain follows the window by itself: it is recreated with the depth buffer when
+     * the surface size changes or the swapchain is out of date. Their handles stay the same.
+     *
+     * @return false if the frame cannot be rendered (no swapchain image was acquired)
+     */
     virtual bool beginFrame() = 0;
 
     virtual void endFrame() = 0;

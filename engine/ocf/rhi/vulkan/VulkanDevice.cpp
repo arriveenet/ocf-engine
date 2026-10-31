@@ -13,6 +13,7 @@
 #include "ocf/rhi/vulkan/VulkanSwapchain.h"
 
 #include "ocf/core/Logger.h"
+#include "ocf/platform/Window.h"
 
 #include <algorithm>
 #include <cstring>
@@ -421,6 +422,7 @@ SwapchainHandle VulkanDevice::createSwapchain(Window* window, uint32_t width, ui
 
     if (m_swapchain == nullptr) {
         m_swapchain = swapchain;
+        m_window = window;
     }
 
     if (m_context.getSurface() == VK_NULL_HANDLE) {
@@ -941,7 +943,26 @@ std::shared_ptr<CommandBuffer> VulkanDevice::getCommandBuffer()
 
 bool VulkanDevice::beginFrame()
 {
-    if (acquireNextImage().isErr()) {
+    // The surface size is checked every frame rather than on window events,
+    // and an out of date swapchain is recreated and acquired once more
+    VulkanResult result = VulkanResult::Ok();
+    for (int tryCount = 0; tryCount < 2; tryCount++) {
+        const uint32_t width = uint32_t(m_window->getFramebufferWidth());
+        const uint32_t height = uint32_t(m_window->getFramebufferHeight());
+        if (m_swapchain->isOutOfDate() || m_swapchain->hasResized(width, height)) {
+            result = recreateSwapchain();
+            if (result.isErr()) {
+                break;
+            }
+        }
+
+        result = acquireNextImage();
+        if (result.isOk() || !m_swapchain->isOutOfDate()) {
+            break;
+        }
+    }
+
+    if (result.isErr()) {
         // Avoid spinning while no image can be acquired (e.g. the window is minimized)
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         return false;
@@ -1071,6 +1092,25 @@ void VulkanDevice::setDebugObjectName(void* objectHandle, VkObjectType type, con
     m_context.setDebugObjectName(m_device, objectHandle, type, name);
 }
 
+VulkanResult VulkanDevice::recreateSwapchain()
+{
+    VulkanResult result = m_swapchain->recreate(uint32_t(m_window->getFramebufferWidth()),
+                                                uint32_t(m_window->getFramebufferHeight()));
+    if (result.isErr()) {
+        return result;
+    }
+
+    // The default render target reads the swapchain extent when it begins rendering, so only
+    // the depth buffer is resized. The texture keeps its handle, which the renderer holds.
+    if (m_depthBufferHandle) {
+        m_depthBuffer = DepthBuffer::create(m_device, m_swapchain->getExtent(),
+                                            VK_FORMAT_D32_SFLOAT);
+        handle_cast<VulkanTexture*>(m_depthBufferHandle)->image = m_depthBuffer;
+    }
+
+    return result;
+}
+
 VulkanResult VulkanDevice::acquireNextImage()
 {
     auto* frame = getCurrentFrameContext();
@@ -1087,11 +1127,8 @@ VulkanResult VulkanDevice::acquireNextImage()
         vkResetFences(m_device, 1, &fence);
     }
     else {
-        auto& error = result.unwrapErr();
-        if (error.result == VK_ERROR_OUT_OF_DATE_KHR) {
-            // TODO
-        }
-        assert(error.result != VK_ERROR_DEVICE_LOST);
+        // VK_ERROR_OUT_OF_DATE_KHR marks the swapchain, so that beginFrame() recreates it
+        assert(result.unwrapErr().result != VK_ERROR_DEVICE_LOST);
     }
 
     // On failure the fence stays signaled, so the frame can be retried
