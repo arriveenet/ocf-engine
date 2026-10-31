@@ -28,6 +28,7 @@ int main()
 
     Application::Config config;
     config.title = "SandBox Test";
+    config.resizeable = true;
 
     Application& app = Application::getInstance();
     app.run(

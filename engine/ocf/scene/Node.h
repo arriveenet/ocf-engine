@@ -4,6 +4,7 @@
 
 #include "ocf/core/Object.h"
 #include "ocf/math/Transform.h"
+#include "ocf/scene/Component.h"
 
 #include <memory>
 #include <vector>
@@ -35,6 +36,7 @@ public:
     {
         auto component = std::make_unique<T>(std::forward<Args>(args)...);
         T* componentPtr = component.get();
+        componentPtr->m_owner = this;
         m_components.push_back(std::move(component));
         return componentPtr;
     }
@@ -61,6 +63,19 @@ public:
 
     math::Transform& getTransform() { return m_transform; }
     const math::Transform& getTransform() const noexcept { return m_transform; }
+
+    /** @brief Local to world matrix, as of the last transform update of the scene graph. */
+    const math::mat4& getWorldMatrix() const { return m_transform.getWorldMatrix(); }
+
+    /**
+     * @brief Show or hide the node and its descendants.
+     *
+     * Hidden nodes are not drawn, but they are still updated.
+     */
+    void setVisible(bool visible) noexcept { m_visible = visible; }
+
+    /** @brief Whether the node itself is visible. Ancestors may still hide it. */
+    bool isVisible() const noexcept { return m_visible; }
 
 protected:
     Node* m_parent = nullptr;

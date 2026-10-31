@@ -113,7 +113,7 @@ public:
                             uint32_t zoffset, uint32_t width, uint32_t height, uint32_t depth,
                             PixelBufferDescriptor&& data) override;
 
-     void generateMipmaps(TextureHandle handle) override;
+    void generateMipmaps(TextureHandle handle) override;
 
     std::shared_ptr<CommandBuffer> getCommandBuffer() override;
 
@@ -207,6 +207,9 @@ private:
 
     void setDebugObjectName(void* objectHandle, VkObjectType type, const char* name);
 
+    /** Recreate the swapchain and the depth buffer at the size of the window surface */
+    VulkanResult recreateSwapchain();
+
     /** Switches the drawable swapchain image */
     VulkanResult acquireNextImage();
 
@@ -261,6 +264,7 @@ private:
     VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
     VkPhysicalDeviceProperties m_deviceProperties{};
     VulkanSwapchain* m_swapchain = nullptr;
+    Window* m_window = nullptr; // Gives the swapchain size when the surface does not
     std::vector<FrameContext> m_frameContext;
     uint32_t m_currentFrameIndex = 0;
     uint64_t m_currentFrameNumber = 1;   // Frame number currently being recorded

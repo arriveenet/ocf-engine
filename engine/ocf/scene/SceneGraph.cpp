@@ -40,4 +40,17 @@ void SceneGraph::traverseNodes(Node* node, const std::function<void(Node*)>& cal
     }
 }
 
+void SceneGraph::traverseVisibleNodes(Node* node, const std::function<void(Node*)>& callback)
+{
+    if (node == nullptr || !node->isVisible()) {
+        return;
+    }
+
+    callback(node);
+
+    for (const auto& child : node->getChildren()) {
+        traverseVisibleNodes(child.get(), callback);
+    }
+}
+
 } // namespace ocf

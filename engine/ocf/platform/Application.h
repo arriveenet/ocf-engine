@@ -23,6 +23,7 @@ public:
 
     struct Config {
         std::string title;
+        bool resizeable = false;
         bool vsync = true;
     };
 

@@ -17,8 +17,10 @@ const char* Window::platformToString(Window::Platform platform)
 
 Window::Window(EventDispatcher& eventDispatcher)
     : m_title("")
-    , m_width(0)
-    , m_height(0)
+    , m_windowWidth(0)
+    , m_windowHeight(0)
+    , m_framebufferWidth(0)
+    , m_framebufferHeight(0)
     , m_eventDispatcher(eventDispatcher)
 {
 }
@@ -33,7 +35,7 @@ std::string Window::getTitle() const
     return m_title;
 }
 
-Window::Platform Window::getPlatform() const
+Window::Platform Window::getPlatform() const noexcept
 {
     return Platform::Unknown;
 }

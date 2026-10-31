@@ -65,6 +65,14 @@ public:
             glfwWindow->onGLFWWindowSizeCallback(window, width, height);
         }
     }
+
+    static void onGLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
+    {
+        GLFWWindow* glfwWindow = static_cast<GLFWWindow*>(glfwGetWindowUserPointer(window));
+        if (glfwWindow != nullptr) {
+            glfwWindow->onGLFWFramebufferSizeCallback(window, width, height);
+        }
+    }
 };
 
 static const std::unordered_map<int, KeyCode> g_keyCodeMap = {
@@ -210,11 +218,11 @@ GLFWWindow::~GLFWWindow()
     glfwTerminate();
 }
 
-bool GLFWWindow::create(const Application::Config& /*config*/, std::string_view title,
+bool GLFWWindow::create(const Application::Config& config, std::string_view title,
                         int width, int height)
 {
-    m_width = width;
-    m_height = height;
+    m_windowWidth = width;
+    m_windowHeight = height;
     m_title = title;
 
     glfwSetErrorCallback([](int error, const char* description) {
@@ -226,20 +234,26 @@ bool GLFWWindow::create(const Application::Config& /*config*/, std::string_view 
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, config.resizeable ? GLFW_TRUE : GLFW_FALSE);
     m_pMainWindow = glfwCreateWindow(width, height, title.data(), nullptr, nullptr);
     if (!m_pMainWindow) {
         glfwTerminate();
         return false;
     }
 
+    // Get the initial framebuffer size
+    glfwGetFramebufferSize(m_pMainWindow, &m_framebufferWidth, &m_framebufferHeight);
+
+    // Set the user pointer to this instance for callback access
     glfwSetWindowUserPointer(m_pMainWindow, this);
 
+    // Set GLFW callbacks
     glfwSetMouseButtonCallback(m_pMainWindow, GLFWEventHandler::onGLFWMouseButtonCallback);
     glfwSetCursorPosCallback(m_pMainWindow, GLFWEventHandler::onGLFWMouseMoveCallback);
     glfwSetScrollCallback(m_pMainWindow, GLFWEventHandler::onGLFWScrollCallback);
     glfwSetKeyCallback(m_pMainWindow, GLFWEventHandler::onGLFWKeyCallback);
     glfwSetWindowSizeCallback(m_pMainWindow, GLFWEventHandler::onGLFWWindowSizeCallback);
+    glfwSetFramebufferSizeCallback(m_pMainWindow, GLFWEventHandler::onGLFWFramebufferSizeCallback);
 
     return true;
 }
@@ -254,7 +268,7 @@ bool GLFWWindow::windowShouldClose() const
     return glfwWindowShouldClose(m_pMainWindow);
 }
 
-Window::Platform GLFWWindow::getPlatform() const
+Window::Platform GLFWWindow::getPlatform() const noexcept
 {
     const int platform = glfwGetPlatform();
 
@@ -345,11 +359,19 @@ void GLFWWindow::onGLFWKeyCallback(GLFWwindow* window, int key, int scancode, in
 
 void GLFWWindow::onGLFWWindowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    m_width = width;
-    m_height = height;
+    m_windowWidth = width;
+    m_windowHeight = height;
 
     WindowResizeEvent event(width, height);
     m_eventDispatcher.dispatch<WindowResizeEvent>(event);
+}
+
+void GLFWWindow::onGLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height)
+{
+    m_framebufferWidth = width;
+    m_framebufferHeight = height;
+    FramebufferResizeEvent event(width, height);
+    m_eventDispatcher.dispatch<FramebufferResizeEvent>(event);
 }
 
 } // namespace ocf

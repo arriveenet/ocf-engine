@@ -19,7 +19,12 @@ public:
 
     const std::vector<Renderable*>& getRenderables() const noexcept { return m_renderables; }
 
+    /** @brief The node this component was added to. Not set yet in the constructor. */
+    Node* getOwner() const noexcept { return m_owner; }
+
 protected:
+    friend class Node;
+
     Node* m_owner = nullptr;
     std::vector<Renderable*> m_renderables;
 };
