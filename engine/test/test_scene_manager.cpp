@@ -274,6 +274,22 @@ TEST(SceneManagerTest, BlocksInputStopsEventsFromReachingTheLayersBelow)
     EXPECT_EQ(log, (Log{"menu.event"}));
 }
 
+TEST(SceneManagerTest, BroadcastReachesEveryActiveSceneFromTheTopDown)
+{
+    Log log;
+    SceneManager manager(nullptr);
+    manager.add<RecordingScene>(0, log, "main");
+    manager.add<RecordingScene>(50, log, "hud")->handlesEvents = true;
+    manager.add<RecordingScene>(100, log, "menu")->setBlocksInput(true);
+    manager.update(0.0f);
+
+    log.clear();
+    TestEvent event;
+    manager.broadcastEvent(event);
+
+    EXPECT_EQ(log, (Log{"menu.event", "hud.event", "main.event"}));
+}
+
 TEST(SceneManagerTest, ChangeRemovesScenesThatAreNotPersistent)
 {
     Log log;

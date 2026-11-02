@@ -24,7 +24,7 @@ public:
 
     bool windowShouldClose() const override;
 
-    Platform getPlatform() const override;
+    Platform getPlatform() const noexcept override;
 
     NativeHandle getNativeHandle() const override;
 
@@ -36,6 +36,7 @@ private:
     void onGLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
     void onGLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void onGLFWWindowSizeCallback(GLFWwindow* window, int width, int height);
+    void onGLFWFramebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 private:
     GLFWwindow* m_pMainWindow = nullptr;

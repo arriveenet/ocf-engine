@@ -4,6 +4,7 @@
 #include "ocf/core/Engine.h"
 #include "ocf/core/event/KeyboardEvent.h"
 #include "ocf/core/event/MouseEvent.h"
+#include "ocf/core/event/WindowEvent.h"
 #include "ocf/core/job/JobSystem.h"
 #include "ocf/scene/SceneGraph.h"
 #include "ocf/scene/View.h"
@@ -58,6 +59,8 @@ SceneManager::SceneManager(Engine* engine)
             [this](KeyboardEvent& event) { dispatchEvent(event); });
         m_mouseSubscription = dispatcher.subscribe<MouseEvent>(
             [this](MouseEvent& event) { dispatchEvent(event); });
+        m_resizeSubscription = dispatcher.subscribe<WindowResizeEvent>(
+            [this](WindowResizeEvent& event) { broadcastEvent(event); });
     }
 }
 
@@ -149,6 +152,16 @@ void SceneManager::dispatchEvent(Event& event)
 
         if (event.isHandled() || scene->m_blocksInput) {
             break;
+        }
+    }
+}
+
+void SceneManager::broadcastEvent(Event& event)
+{
+    for (size_t i = m_scenes.size(); i-- > 0;) {
+        Scene* scene = m_scenes[i].get();
+        if (scene->isActive()) {
+            scene->onEvent(event);
         }
     }
 }

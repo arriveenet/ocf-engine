@@ -22,17 +22,15 @@ VulkanSwapchain::~VulkanSwapchain()
 
 VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height, bool vsync)
 {
+    m_vsync = vsync;
+
     VkPhysicalDevice physicalDevice = m_device.getContext().getPhysicalDevice();
     VkDevice device = m_device.getDevice();
     VkSurfaceKHR surface = m_device.getContext().getSurface();
 
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &caps);
-    VkExtent2D extent = caps.currentExtent;
-    if (extent.width == UINT32_MAX) {
-        extent.width = width;
-        extent.height = height;
-    }
+    const VkExtent2D extent = querySurfaceExtent(width, height);
 
     uint32_t count;
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, nullptr);
@@ -103,6 +101,7 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height, bool vsync
     m_swapchain = swapchain;
     m_imageFormat = format;
     m_imageExtent = extent;
+    m_outOfDate = false;
 
     // Create image views for each swapchain image
     vkGetSwapchainImagesKHR(device, m_swapchain, &count, nullptr);
@@ -142,6 +141,42 @@ VulkanResult VulkanSwapchain::create(uint32_t width, uint32_t height, bool vsync
     return VulkanResult::Ok();
 }
 
+VulkanResult VulkanSwapchain::recreate(uint32_t width, uint32_t height)
+{
+    const VkExtent2D extent = querySurfaceExtent(width, height);
+    if (extent.width == 0 || extent.height == 0) {
+        return VulkanResult::Err(VK_ERROR(VK_ERROR_OUT_OF_DATE_KHR, "Surface has no size"));
+    }
+
+    // The semaphores and image views may still be in use by the frames in flight
+    vkDeviceWaitIdle(m_device.getDevice());
+
+    destroy();
+    return create(width, height, m_vsync);
+}
+
+bool VulkanSwapchain::hasResized(uint32_t width, uint32_t height) const
+{
+    const VkExtent2D extent = querySurfaceExtent(width, height);
+    return extent.width != m_imageExtent.width || extent.height != m_imageExtent.height;
+}
+
+VkExtent2D VulkanSwapchain::querySurfaceExtent(uint32_t width, uint32_t height) const
+{
+    VkSurfaceCapabilitiesKHR caps;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_device.getContext().getPhysicalDevice(),
+                                              m_device.getContext().getSurface(), &caps);
+    if (caps.currentExtent.width != UINT32_MAX) {
+        return caps.currentExtent;
+    }
+
+    // The surface takes the size of the swapchain, e.g. on Wayland
+    return VkExtent2D{
+        .width = std::clamp(width, caps.minImageExtent.width, caps.maxImageExtent.width),
+        .height = std::clamp(height, caps.minImageExtent.height, caps.maxImageExtent.height),
+    };
+}
+
 void VulkanSwapchain::destroy()
 {
     destroyFrameContext();
@@ -168,7 +203,11 @@ VulkanResult VulkanSwapchain::acquireNextImage()
 
     VkResult result = vkAcquireNextImageKHR(device, m_swapchain, UINT64_MAX, acquireSemaphore,
                                             VK_NULL_HANDLE, &m_currentIndex);
-    // VK_SUBOPTIMAL_KHR still acquires the image and signals the semaphore
+    // VK_SUBOPTIMAL_KHR still acquires the image and signals the semaphore, so the frame is
+    // drawn and the swapchain is recreated before the next one
+    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
+        m_outOfDate = true;
+    }
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         // The semaphore was not used, so it can be reused for the next acquire
         m_presentSemaphoreList.push_back(acquireSemaphore);
@@ -194,7 +233,11 @@ VulkanResult VulkanSwapchain::queuePresent(VkQueue queuePresent)
     presentInfo.pWaitSemaphores = &m_frames[m_currentIndex].renderComplete;
 
     VkResult result = vkQueuePresentKHR(queuePresent, &presentInfo);
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
+        m_outOfDate = true;
+        return VulkanResult::Ok();
+    }
+    if (result != VK_SUCCESS) {
         return VulkanResult::Err(VK_ERROR(result, "Failed to queuePresent"));
     }
 

@@ -4,10 +4,11 @@
 #include "ocf/core/Engine.h"
 
 #include "ocf/audio/AudioSystem.h"
-#include "ocf/core/Logger.h"
 #include "ocf/core/job/JobSystem.h"
+#include "ocf/core/Logger.h"
 #include "ocf/platform/FileSystem.h"
 #include "ocf/platform/Window.h"
+#include "ocf/renderer/ImGuiLayer.h"
 #include "ocf/renderer/Renderer.h"
 #include "ocf/resource/FontManager.h"
 #include "ocf/resource/TextureManager.h"
@@ -15,8 +16,6 @@
 #include "ocf/rhi/DeviceFactory.h"
 #include "ocf/scene/SceneManager.h"
 #include "ocf/scene/View.h"
-
-#include "ocf/renderer/ImGuiLayer.h"
 
 #include <imgui.h>
 
@@ -75,7 +74,9 @@ bool Engine::init()
 
     // Create RHI Device
     m_device = DeviceFactory::getInstance().create();
-    m_device->createSwapchain(m_window.get(), m_window->getWidth(), m_window->getHeight(),
+    m_device->createSwapchain(m_window.get(),
+                              m_window->getFramebufferWidth(),
+                              m_window->getFramebufferHeight(),
                               m_vsync);
 
     // Initialize Renderer
@@ -199,7 +200,12 @@ audio::AudioSystem& Engine::getAudioSystem() const
 
 math::ivec2 Engine::getWindowSize() const
 {
-    return math::ivec2(m_window->getWidth(), m_window->getHeight());
+    return math::ivec2(m_window->getWindowWidth(), m_window->getWindowHeight());
+}
+
+math::ivec2 Engine::getFramebufferSize() const
+{
+    return math::ivec2(m_window->getFramebufferWidth(), m_window->getFramebufferHeight());
 }
 
 void Engine::configureImGui([[maybe_unused]] const std::function<void(ImGuiIO&)>& configure)

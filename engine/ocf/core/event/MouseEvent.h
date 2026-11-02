@@ -24,6 +24,8 @@ public:
     {
     }
 
+    MouseEventType getMouseEventType() const { return m_mouseEventType; }
+
     void setMouseButton(MouseButton button) { m_mouseButton = button; }
     MouseButton getMouseButton() const { return m_mouseButton; }
 

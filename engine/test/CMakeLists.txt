@@ -22,6 +22,7 @@ add_executable(test_${TARGET}
     test_reference.cpp
     test_result.cpp
     test_sample_songs.cpp
+    test_scene_graph.cpp
     test_scene_manager.cpp
     test_vec.cpp
     test_texture_sampler.cpp

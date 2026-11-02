@@ -19,6 +19,9 @@ public:
 
     void traverseNodes(Node* node, const std::function<void(Node*)>& callback);
 
+    /** @brief Like traverseNodes(), but skips hidden nodes and their descendants. */
+    void traverseVisibleNodes(Node* node, const std::function<void(Node*)>& callback);
+
     Node* getRoot() const { return m_root; }
 
     void setUpdateCallback(const std::function<void(float deltaTime)>& callback)

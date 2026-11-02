@@ -50,13 +50,18 @@ public:
 
     std::string getTitle() const;
 
-    int getWidth() const { return m_width; }
+    int getWindowWidth() const noexcept { return m_windowWidth; }
 
-    int getHeight() const { return m_height; }
+    int getWindowHeight() const noexcept { return m_windowHeight; }
 
-    virtual Platform getPlatform() const;
+    int getFramebufferWidth() const noexcept { return m_framebufferWidth; }
 
-    virtual bool create(const Application::Config& config, std::string_view title, int width, int height) = 0;
+    int getFramebufferHeight() const noexcept { return m_framebufferHeight; }
+
+    virtual Platform getPlatform() const noexcept;
+
+    virtual bool create(const Application::Config& config, std::string_view title,
+                        int width, int height) = 0;
 
     /** Poll for and process events. */
     virtual void pollEvents() = 0;
@@ -69,8 +74,10 @@ public:
 
 protected:
     std::string m_title;
-    int m_width;
-    int m_height;
+    int m_windowWidth;
+    int m_windowHeight;
+    int m_framebufferWidth;
+    int m_framebufferHeight;
     EventDispatcher& m_eventDispatcher;
 };
 

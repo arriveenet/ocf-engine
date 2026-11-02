@@ -124,6 +124,14 @@ public:
     /** @brief Pass an input event to the active scenes from the top layer down. */
     void dispatchEvent(Event& event);
 
+    /**
+     * @brief Pass an event to every active scene from the top layer down.
+     *
+     * For notifications such as a window resize, which neither the handled flag nor
+     * Scene::setBlocksInput() stops.
+     */
+    void broadcastEvent(Event& event);
+
     /** @brief Fill views with the views of the active scenes, in drawing order. */
     void collectViews(std::vector<View*>& views);
 
@@ -184,6 +192,7 @@ private:
 
     Subscription m_keyboardSubscription;
     Subscription m_mouseSubscription;
+    Subscription m_resizeSubscription;
 };
 
 } // namespace ocf
