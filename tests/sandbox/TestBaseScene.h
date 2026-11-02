@@ -8,10 +8,6 @@
 
 #include <string_view>
 
-class ocf::SceneGraph;
-class ocf::Camera;
-class ocf::View;
-
 class UIScene : public ocf::Scene {
 protected:
     void setupUI(ocf::View::ClearFlags clearFlags);

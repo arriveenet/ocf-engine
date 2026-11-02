@@ -53,8 +53,8 @@ Texture* TextureManager::addImage(std::string_view filePath)
 
         Texture::PixelBufferDescriptor buffer(
             data, size_t(width * height * 4), format, Texture::Type::Ubyte,
-            (Texture::PixelBufferDescriptor::Callback)&stbi_image_free);
-
+            [](void* buffer, size_t size, void* user){ stbi_image_free(buffer); });
+            
         texture = Texture::Builder()
                       .width(uint32_t(width))
                       .height(uint32_t(height))

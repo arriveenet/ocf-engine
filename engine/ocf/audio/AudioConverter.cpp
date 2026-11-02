@@ -59,6 +59,10 @@ size_t AudioConverter::process(const void* inputBuffer, size_t inputFrameCount,
     ma_result result = ma_data_converter_process_pcm_frames(
         &m_converter, inputBuffer, &inFramesProcessed, outputBuffer, &outFramesProcessed);
 
+    if (result != MA_SUCCESS) {
+        return 0;
+    }
+
     return static_cast<size_t>(outFramesProcessed);
 }
 

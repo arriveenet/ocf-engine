@@ -341,14 +341,6 @@ void VulkanCommandBuffer::transitionLayout(TextureHandle texture, ResourceState 
     const auto src = VulkanUtility::getResourceState(oldState);
     const auto dest = VulkanUtility::getResourceState(newState);
 
-    VkImageSubresourceRange range{
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-    };
-
     VkImageMemoryBarrier2 imageBarrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .srcStageMask = src.stageFlags,
