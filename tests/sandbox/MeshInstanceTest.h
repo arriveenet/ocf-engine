@@ -7,9 +7,6 @@
 #include <ocf/resource/Mesh.h>
 #include <ocf/scene/Node.h>
 
-class ocf::SceneGraph;
-class ocf::Camera;
-
 class MeshInstanceTest : public TestBaseScene {
 public:
     void onEnter() override;
