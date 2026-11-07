@@ -2,6 +2,7 @@
 #include "ocf/resource/TiledCommon.h"
 
 #include "ocf/core/base64.h"
+#include "ocf/resource/AssetUtility.h"
 
 #include <stb_image.h>
 
@@ -83,36 +84,22 @@ Result<Ref<TileSet>, std::string> readExternalTileSet(std::string_view source,
 {
     using TileSetResult = Result<Ref<TileSet>, std::string>;
 
-    const std::filesystem::path path = resolvePath(context.baseDirectory, source);
+    const std::filesystem::path path = asset::resolvePath(context.baseDirectory, source);
     const std::optional<std::string> text = context.reader(path);
     if (!text) {
-        return TileSetResult::Err(std::format("cannot read tile set {}", toUtf8(path)));
+        return TileSetResult::Err(std::format("cannot read tile set {}", asset::toUtf8(path)));
     }
 
-    std::string extension = toUtf8(path.extension());
+    std::string extension = asset::toUtf8(path.extension());
     std::transform(extension.begin(), extension.end(), extension.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
     TileSetResult result = extension == ".tsx" ? readTileSetXml(*text, path.parent_path())
                                                : readTileSetJson(*text, path.parent_path());
     if (result.isErr()) {
-        return TileSetResult::Err(std::format("{}: {}", toUtf8(path), result.unwrapErr()));
+        return TileSetResult::Err(std::format("{}: {}", asset::toUtf8(path), result.unwrapErr()));
     }
     return result;
-}
-
-std::string toUtf8(const std::filesystem::path& path)
-{
-    const std::u8string text = path.generic_u8string();
-    return std::string(text.begin(), text.end());
-}
-
-std::filesystem::path resolvePath(const std::filesystem::path& baseDirectory,
-                                  std::string_view relativePath)
-{
-    const std::filesystem::path path(
-        std::u8string(reinterpret_cast<const char8_t*>(relativePath.data()), relativePath.size()));
-    return (baseDirectory / path).lexically_normal();
 }
 
 std::optional<math::vec4> parseColor(std::string_view text)
