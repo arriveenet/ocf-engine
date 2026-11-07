@@ -11,6 +11,7 @@ set(HDRS
     MainScene.h
     MeshInstanceTest.h
     RenderTargetTest.h
+    SpriteSheetTest.h
     SpriteTest.h
     TestBaseScene.h
     TileMapTest.h
@@ -22,6 +23,7 @@ set(SRCS
     MeshInstanceTest.cpp
     RenderTargetTest.cpp
     TestBaseScene.cpp
+    SpriteSheetTest.cpp
     SpriteTest.cpp
     TileMapTest.cpp
     main.cpp

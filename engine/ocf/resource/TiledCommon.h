@@ -44,13 +44,6 @@ Result<Ref<TileSet>, std::string> readTileSetXml(std::string_view text,
 Result<Ref<TileSet>, std::string> readExternalTileSet(std::string_view source,
                                                       const ParseContext& context);
 
-/** The path with '/' separators, encoded as UTF-8. */
-std::string toUtf8(const std::filesystem::path& path);
-
-/** Resolves a path relative to an asset directory into a normalized asset path. */
-std::filesystem::path resolvePath(const std::filesystem::path& baseDirectory,
-                                  std::string_view relativePath);
-
 /** Parses "#RRGGBB" or "#AARRGGBB" (the '#' is optional). */
 std::optional<math::vec4> parseColor(std::string_view text);
 

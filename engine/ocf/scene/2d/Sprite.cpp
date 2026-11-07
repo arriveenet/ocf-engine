@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/scene/2d/Sprite.h"
 
+#include "ocf/core/Logger.h"
 #include "ocf/renderer/Texture.h"
 
 #include <cstdint>
@@ -15,26 +16,55 @@ Sprite::Sprite(Engine& engine, Texture* texture)
     setTexture(texture);
 }
 
+Sprite::Sprite(Engine& engine, const SpriteFrame& frame, Texture* texture)
+    : Drawable2D(engine, "shaders/sprite.frag.spv")
+{
+    setSpriteFrame(frame, texture);
+}
+
 Sprite::~Sprite() = default;
 
 void Sprite::setTexture(Texture* texture)
 {
     m_texture = texture;
     if (m_texture != nullptr) {
-        m_textureRect = math::Rect(0.0f, 0.0f, static_cast<float>(m_texture->getWidth()),
-                                   static_cast<float>(m_texture->getHeight()));
+        m_frame = SpriteFrame::fromRect(
+            math::Rect(0.0f, 0.0f, static_cast<float>(m_texture->getWidth()),
+                       static_cast<float>(m_texture->getHeight())));
     } else {
-        m_textureRect = math::Rect();
+        m_frame = SpriteFrame();
     }
     markDirty();
 }
 
 void Sprite::setTextureRect(const math::Rect& rect)
 {
-    if (!m_textureRect.equals(rect)) {
-        m_textureRect = rect;
+    // A plain region replaces a sprite sheet frame along with its trimming and rotation
+    SpriteFrame frame = SpriteFrame::fromRect(rect);
+    if (m_frame.rotated || !m_frame.textureRect.equals(rect) || m_frame.offset != frame.offset ||
+        m_frame.sourceSize != frame.sourceSize) {
+        m_frame = std::move(frame);
         markDirty();
     }
+}
+
+void Sprite::setSpriteFrame(const SpriteFrame& frame, Texture* texture)
+{
+    m_texture = texture;
+    m_frame = frame;
+    markDirty();
+}
+
+bool Sprite::setSpriteFrame(const SpriteSheet& sheet, std::string_view frameName)
+{
+    const SpriteFrame* frame = sheet.getFrame(frameName);
+    if (frame == nullptr) {
+        OCF_LOG_WARN("Sprite: sprite sheet \"{}\" has no frame \"{}\"", sheet.getName(),
+                     frameName);
+        return false;
+    }
+    setSpriteFrame(*frame, sheet.getTexture());
+    return true;
 }
 
 void Sprite::setFlipX(bool flipX)
@@ -70,27 +100,21 @@ void Sprite::setTextureFilter(TextureFilter filter)
 
 void Sprite::rebuild()
 {
-    if (m_texture == nullptr || m_textureRect.m_size.x <= 0.0f ||
-        m_textureRect.m_size.y <= 0.0f) {
+    if (m_texture == nullptr || m_texture->getWidth() == 0 || m_texture->getHeight() == 0 ||
+        m_frame.textureRect.m_size.x <= 0.0f || m_frame.textureRect.m_size.y <= 0.0f) {
         return;
     }
 
-    setContentSize(m_textureRect.m_size);
+    // The content is the original image, of which the packed part may cover only a region
+    setContentSize(m_frame.sourceSize);
 
-    const float invTexWidth = 1.0f / static_cast<float>(m_texture->getWidth());
-    const float invTexHeight = 1.0f / static_cast<float>(m_texture->getHeight());
-    math::vec2 uv0(m_textureRect.getMinX() * invTexWidth, m_textureRect.getMinY() * invTexHeight);
-    math::vec2 uv1(m_textureRect.getMaxX() * invTexWidth, m_textureRect.getMaxY() * invTexHeight);
-    if (m_flipX) {
-        std::swap(uv0.x, uv1.x);
-    }
-    if (m_flipY) {
-        std::swap(uv0.y, uv1.y);
-    }
+    const math::vec2 textureSize(static_cast<float>(m_texture->getWidth()),
+                                 static_cast<float>(m_texture->getHeight()));
+    const SpriteQuad quad = computeSpriteQuad(m_frame, textureSize, m_flipX, m_flipY);
 
     std::vector<VertexPositionTexCoord> vertices;
     std::vector<uint32_t> indices;
-    appendQuad(vertices, indices, math::vec2(0.0f, 0.0f), m_textureRect.m_size, uv0, uv1);
+    appendQuad(vertices, indices, quad.position, quad.size, quad.uvs);
 
     if (m_materialInstance == nullptr) {
         m_materialInstance = createMaterialInstance();
