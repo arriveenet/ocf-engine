@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/resource/SpriteSheetCommon.h"
 
-#include "ocf/resource/AssetUtility.h"
+#include "ocf/platform/FileSystem.h"
 #include "ocf/resource/JsonUtility.h"
 
 #include <yyjson.h>
@@ -188,7 +188,7 @@ bool JsonReader::readMeta(yyjson_val* root, SpriteSheet& sheet)
         return fail("meta/size", "must not be negative");
     }
 
-    sheet.setImage(asset::toUtf8(asset::resolvePath(m_baseDirectory, getString(image))),
+    sheet.setImage(pathToUtf8(resolveAssetPath(m_baseDirectory, getString(image))),
                    static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y));
     return true;
 }

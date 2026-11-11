@@ -9,6 +9,7 @@ add_executable(test_${TARGET}
     test_base64.cpp
     test_dpcm.cpp
     test_event_dispatcher.cpp
+    test_file_system.cpp
     test_geometric.cpp
     test_imgui.cpp
     test_jobsystem.cpp
