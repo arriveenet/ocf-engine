@@ -1,0 +1,111 @@
+{
+  "frames": {
+    "walk_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 48
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 8,
+        "y": 6,
+        "w": 24,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 64
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 1.0
+      }
+    },
+    "walk_02.png": {
+      "frame": {
+        "x": 26,
+        "y": 0,
+        "w": 24,
+        "h": 48
+      },
+      "rotated": true,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 10,
+        "w": 24,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 64
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 1.0
+      }
+    },
+    "walk_03.png": {
+      "frame": {
+        "x": 76,
+        "y": 0,
+        "w": 24,
+        "h": 48
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 12,
+        "y": 6,
+        "w": 24,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 64
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 1.0
+      }
+    },
+    "walk_04.png": {
+      "frame": {
+        "x": 102,
+        "y": 0,
+        "w": 24,
+        "h": 48
+      },
+      "rotated": true,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 14,
+        "y": 10,
+        "w": 24,
+        "h": 48
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 64
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 1.0
+      }
+    }
+  },
+  "meta": {
+    "app": "ocf-engine sample generator (TexturePacker JSON Hash)",
+    "version": "1.0",
+    "image": "sample.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 160,
+      "h": 64
+    },
+    "scale": "1"
+  }
+}

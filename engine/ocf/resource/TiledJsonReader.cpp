@@ -2,6 +2,8 @@
 #include "ocf/resource/TiledCommon.h"
 
 #include "ocf/core/Logger.h"
+#include "ocf/resource/AssetUtility.h"
+#include "ocf/resource/JsonUtility.h"
 
 #include <yyjson.h>
 
@@ -14,32 +16,8 @@ namespace ocf::tiled {
 
 namespace {
 
-struct DocumentDeleter {
-    void operator()(yyjson_doc* document) const { yyjson_doc_free(document); }
-};
-
-using Document = std::unique_ptr<yyjson_doc, DocumentDeleter>;
-
-Result<Document, std::string> parseDocument(std::string_view json)
-{
-    // A UTF-8 BOM is accepted, since some editors add one
-    const yyjson_read_flag flags = YYJSON_READ_ALLOW_BOM | YYJSON_READ_ALLOW_INVALID_UNICODE;
-    yyjson_read_err error{};
-    // The text is not modified without YYJSON_READ_INSITU
-    Document document(
-        yyjson_read_opts(const_cast<char*>(json.data()), json.size(), flags, nullptr, &error));
-    if (!document) {
-        size_t line = 0;
-        size_t column = 0;
-        size_t character = 0;
-        if (yyjson_locate_pos(json.data(), json.size(), error.pos, &line, &column, &character)) {
-            return Result<Document, std::string>::Err(
-                std::format("invalid JSON at line {}, column {}: {}", line, column, error.msg));
-        }
-        return Result<Document, std::string>::Err(std::format("invalid JSON: {}", error.msg));
-    }
-    return Result<Document, std::string>::Ok(std::move(document));
-}
+using json::Document;
+using json::getString;
 
 std::string memberPath(const std::string& path, std::string_view key)
 {
@@ -49,11 +27,6 @@ std::string memberPath(const std::string& path, std::string_view key)
 std::string itemPath(const std::string& path, size_t index)
 {
     return std::format("{}/{}", path, index);
-}
-
-std::string_view getString(yyjson_val* value)
-{
-    return std::string_view(yyjson_get_str(value), yyjson_get_len(value));
 }
 
 /** Reads a map or tile set, keeping the first error. Every function returns false on error. */
@@ -309,7 +282,8 @@ Ref<TileSet> JsonReader::readTileSet(yyjson_val* object, const std::string& path
 
     Ref<TileSet> tileSet(new TileSet(tileWidth, tileHeight, margin, spacing));
     tileSet->setName(std::move(name));
-    tileSet->setImage(toUtf8(resolvePath(m_baseDirectory, image)), imageWidth, imageHeight);
+    tileSet->setImage(asset::toUtf8(asset::resolvePath(m_baseDirectory, image)), imageWidth,
+                      imageHeight);
 
     uint32_t columns = tileSet->getColumns();
     uint32_t tileCount = tileSet->getTileCount();
@@ -670,7 +644,7 @@ bool JsonReader::readProperties(yyjson_val* object, const std::string& path,
             }
             const std::string_view text = getString(value);
             properties[name] = type == "file" && !text.empty()
-                                   ? toUtf8(resolvePath(m_baseDirectory, text))
+                                   ? asset::toUtf8(asset::resolvePath(m_baseDirectory, text))
                                    : std::string(text);
         }
         else if (type == "class") {
@@ -690,7 +664,7 @@ Result<Ref<TileMap>, std::string> readMapJson(std::string_view text, const Parse
 {
     using MapResult = Result<Ref<TileMap>, std::string>;
 
-    Result<Document, std::string> document = parseDocument(text);
+    Result<Document, std::string> document = json::parse(text);
     if (document.isErr()) {
         return MapResult::Err(document.unwrapErr());
     }
@@ -708,7 +682,7 @@ Result<Ref<TileSet>, std::string> readTileSetJson(std::string_view text,
 {
     using TileSetResult = Result<Ref<TileSet>, std::string>;
 
-    Result<Document, std::string> document = parseDocument(text);
+    Result<Document, std::string> document = json::parse(text);
     if (document.isErr()) {
         return TileSetResult::Err(document.unwrapErr());
     }
