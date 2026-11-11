@@ -56,6 +56,11 @@ Drawable2D::~Drawable2D()
 
 void Drawable2D::update(float /*deltaTime*/)
 {
+    updateGeometry();
+}
+
+void Drawable2D::updateGeometry()
+{
     if (m_dirty) {
         releaseGeometry();
         m_contentSize = math::vec2(0.0f, 0.0f);

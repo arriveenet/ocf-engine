@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "MainScene.h"
 
+#include "AnimationTest.h"
 #include "AudioSystemTest.h"
 #include "MeshInstanceTest.h"
 #include "RenderTargetTest.h"
@@ -37,6 +38,10 @@ void MainScene::onImGui()
 
     if (ImGui::Button("SpriteSheet Test")) {
         getSceneManager().change<SpriteSheetTest>();
+    }
+
+    if (ImGui::Button("Animation Test")) {
+        getSceneManager().change<AnimationTest>();
     }
 
     if (ImGui::Button("RenderTarget Test")) {
