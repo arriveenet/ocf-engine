@@ -44,6 +44,7 @@ SceneManager
 | `engine/ocf/scene/Renderable.h` | `Renderable` |
 | `engine/ocf/scene/2d/` | 2D 描画コンポーネント（`Drawable2D`、`Sprite`、`Text`、`TileMapRenderer`） |
 | `engine/ocf/scene/3d/` | 3D 描画コンポーネント（`MeshInstance`） |
+| `engine/ocf/scene/animation/` | Tween（`Tweener`）。フレームアニメーションの `SpriteAnimator` は `scene/2d/`（[animation.md](animation.md) を参照） |
 
 ---
 
@@ -238,6 +239,8 @@ Sprite* sprite = player->addComponent<Sprite>(getEngine(), texture);
 | `Text` | フォントで文字列を描く。 |
 | `TileMapRenderer` | タイルマップを描く（[tilemap.md](tilemap.md) を参照）。 |
 | `MeshInstance` | 3D メッシュを描く。 |
+
+アニメーションのコンポーネント（`SpriteAnimator`、`Tweener`）は [animation.md](animation.md) を参照。
 
 2D コンポーネントは共通の基底 `Drawable2D` を継承し、ピクセル単位のレイアウト座標（左上原点・y 下向き）を `setAnchor()` と `setPixelsPerUnit()`（既定 100）でノードのローカル空間（y 上向き）に配置する。UI のようにピクセル座標でそのまま置きたい場合は `setPixelsPerUnit(1.0f)` にする。
 

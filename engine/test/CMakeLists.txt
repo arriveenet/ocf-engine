@@ -31,6 +31,8 @@ add_executable(test_${TARGET}
     test_tilemap.cpp
     test_tiled_map_loader.cpp
     test_sprite_sheet.cpp
+    test_sprite_animator.cpp
+    test_tween.cpp
     test_song_exporter.cpp
     test_song_player.cpp
     test_song_serializer.cpp
