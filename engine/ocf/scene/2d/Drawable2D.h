@@ -39,7 +39,17 @@ public:
 
     ~Drawable2D() override;
 
+    /** @brief Calls updateGeometry(). */
     void update(float deltaTime) override;
+
+    /**
+     * @brief Rebuild the geometry now if a property changed since the last rebuild.
+     *
+     * Components on a node are updated in the order they were added, so a component that
+     * changes this one after it was updated calls this to have the change drawn in the same
+     * frame instead of the next.
+     */
+    void updateGeometry();
 
     /** @brief Set the color multiplied with the texture. */
     void setColor(const math::vec4& color);

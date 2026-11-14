@@ -153,6 +153,30 @@ inline qua<T> slerp(const qua<T>& q1, const qua<T>& q2, T t)
     }
 }
 
+template <typename T>
+inline constexpr T lerp(T a, T b, T t)
+{
+    return a + (b - a) * t;
+}
+
+template <typename T>
+inline constexpr vec<2, T> lerp(const vec<2, T>& a, const vec<2, T>& b, T t)
+{
+    return vec<2, T>(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
+}
+
+template <typename T>
+inline constexpr vec<3, T> lerp(const vec<3, T>& a, const vec<3, T>& b, T t)
+{
+    return vec<3, T>(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t));
+}
+
+template <typename T>
+inline constexpr vec<4, T> lerp(const vec<4, T>& a, const vec<4, T>& b, T t)
+{
+    return vec<4, T>(lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t), lerp(a.w, b.w, t));
+}
+
 // Rotation operations
 
 template <typename T>

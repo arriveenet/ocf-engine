@@ -60,6 +60,8 @@ std::vector<const SpriteFrame*> walk = m_sheet->getFramesWithPrefix("walk_");
 sprite->setSpriteFrame(*walk[index], m_sheet->getTexture());
 ```
 
+フレームを時間で切り替えて再生するには `SpriteAnimator` を使う（[animation.md](animation.md) を参照）。
+
 - `Sprite` はフレームを**コピー**して保持するため、`SpriteSheet` を先に解放してもフレーム情報は残る（テクスチャの寿命は `TextureManager` に依存）。
 - `setTexture()` / `setTextureRect()` を呼ぶと、フレームはトリミング・回転なしの通常の矩形に戻る。
 
@@ -109,7 +111,6 @@ TexturePacker は画像を **90° 時計回り**に回転して詰める。JSON 
 
 ## 制限事項・今後の拡張
 
-- アニメーション再生のコンポーネントはない（`getFramesWithPrefix()` とフレーム切り替えで実装できる）。
 - フレームを切り替えるたびに頂点バッファを作り直す。
 - 1 ファイル = 1 テクスチャ。マルチパックは複数の `SpriteSheet` として読み込む。
 - Starling/Sparrow XML、cocos2d の plist 形式、ポリゴンメッシュには未対応。
