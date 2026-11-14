@@ -62,6 +62,19 @@ inline qua<T> inverse(const qua<T>& q);
 template <typename T>
 inline qua<T> slerp(const qua<T>& q1, const qua<T>& q2, T t);
 
+// Linear interpolation: a at t = 0 and b at t = 1. t is not clamped, so it can extrapolate.
+template <typename T>
+inline constexpr T lerp(T a, T b, T t);
+
+template <typename T>
+inline constexpr vec<2, T> lerp(const vec<2, T>& a, const vec<2, T>& b, T t);
+
+template <typename T>
+inline constexpr vec<3, T> lerp(const vec<3, T>& a, const vec<3, T>& b, T t);
+
+template <typename T>
+inline constexpr vec<4, T> lerp(const vec<4, T>& a, const vec<4, T>& b, T t);
+
 // Rotation operations
 template <typename T>
 inline vec<3, T> rotate(const qua<T>& q, const vec<3, T>& v);

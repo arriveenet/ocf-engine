@@ -135,3 +135,28 @@ TEST(GeometricTest, CrossProductRightHandRule)
     EXPECT_FLOAT_EQ(result.y, 2.0f);   // 3*2 - 1*4 = 2
     EXPECT_FLOAT_EQ(result.z, -1.0f);  // 1*3 - 2*2 = -1
 }
+TEST(GeometricTest, LerpScalar)
+{
+    EXPECT_FLOAT_EQ(lerp(2.0f, 6.0f, 0.0f), 2.0f);
+    EXPECT_FLOAT_EQ(lerp(2.0f, 6.0f, 0.25f), 3.0f);
+    EXPECT_FLOAT_EQ(lerp(2.0f, 6.0f, 1.0f), 6.0f);
+    EXPECT_FLOAT_EQ(lerp(2.0f, 6.0f, 1.5f), 8.0f); // Not clamped
+}
+
+TEST(GeometricTest, LerpVectors)
+{
+    const vec2 v2 = lerp(vec2(0.0f, 10.0f), vec2(4.0f, 20.0f), 0.5f);
+    EXPECT_FLOAT_EQ(v2.x, 2.0f);
+    EXPECT_FLOAT_EQ(v2.y, 15.0f);
+
+    const vec3 v3 = lerp(vec3(1.0f, 2.0f, 3.0f), vec3(3.0f, 2.0f, -1.0f), 0.5f);
+    EXPECT_FLOAT_EQ(v3.x, 2.0f);
+    EXPECT_FLOAT_EQ(v3.y, 2.0f);
+    EXPECT_FLOAT_EQ(v3.z, 1.0f);
+
+    const vec4 v4 = lerp(vec4(0.0f), vec4(1.0f, 2.0f, 3.0f, 4.0f), 0.25f);
+    EXPECT_FLOAT_EQ(v4.x, 0.25f);
+    EXPECT_FLOAT_EQ(v4.y, 0.5f);
+    EXPECT_FLOAT_EQ(v4.z, 0.75f);
+    EXPECT_FLOAT_EQ(v4.w, 1.0f);
+}

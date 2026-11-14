@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "ocf/scene/animation/Tween.h"
 
+#include "ocf/math/geometric.h"
 #include "ocf/scene/2d/Drawable2D.h"
 #include "ocf/scene/Node.h"
 
@@ -9,18 +10,6 @@
 namespace ocf {
 
 namespace {
-
-math::vec3 lerp(const math::vec3& from, const math::vec3& to, float t)
-{
-    return math::vec3(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t,
-                      from.z + (to.z - from.z) * t);
-}
-
-math::vec4 lerp(const math::vec4& from, const math::vec4& to, float t)
-{
-    return math::vec4(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t,
-                      from.z + (to.z - from.z) * t, from.w + (to.w - from.w) * t);
-}
 
 /** A tween with a duration that applies an eased progress from 0 to 1. */
 class IntervalTween : public Tween {
@@ -97,7 +86,7 @@ protected:
 
     void apply(Node& node, float progress) override
     {
-        const math::vec3 value = lerp(m_from, m_to, progress);
+        const math::vec3 value = math::lerp(m_from, m_to, progress);
         switch (m_property) {
         case TransformProperty::Position:
             node.setPosition(value);
@@ -156,7 +145,7 @@ protected:
     void apply(Node& /*node*/, float progress) override
     {
         if (m_target != nullptr) {
-            m_target->setColor(lerp(m_from, m_to, progress));
+            m_target->setColor(math::lerp(m_from, m_to, progress));
         }
     }
 
