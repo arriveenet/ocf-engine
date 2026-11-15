@@ -140,8 +140,23 @@ TEST(AudioMixerTest, RemoveSourceWaitsUntilTheSourceIsNotRendered)
         std::vector<float> output(FRAME_COUNT * CHANNELS);
         while (running) {
             mixer.render(output.data(), FRAME_COUNT, CHANNELS);
+            // A device calls render() once per period, not back to back. Without this gap the
+            // thread re-takes the mutex right after unlocking it (std::mutex is not fair), so
+            // removeSource() could wait forever.
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     });
+
+    // Stops and joins the audio thread on every exit path, including a failed ASSERT
+    struct ThreadStopper {
+        std::atomic<bool>& running;
+        std::thread& thread;
+        ~ThreadStopper()
+        {
+            running = false;
+            thread.join();
+        }
+    } stopper{running, audioThread};
 
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
     while (!source.m_rendering && std::chrono::steady_clock::now() < deadline) {
@@ -156,7 +171,4 @@ TEST(AudioMixerTest, RemoveSourceWaitsUntilTheSourceIsNotRendered)
     const int renderCount = source.m_renderCount;
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     EXPECT_EQ(source.m_renderCount, renderCount);
-
-    running = false;
-    audioThread.join();
 }
