@@ -32,7 +32,7 @@ SpriteSheetLoader (.json を解析) ─▶ SpriteSheet (SpriteFrame の集合) �
 | `engine/ocf/resource/SpriteSheetLoader.h` | `SpriteSheetLoader`（公開 API、フォーマット判定） |
 | `engine/ocf/resource/SpriteSheetCommon.h` | 読み込みの内部実装（各フォーマットの reader の宣言、共通の検証 `validateFrame()`） |
 | `engine/ocf/resource/SpriteSheetJsonReader.cpp` | TexturePacker JSON の解析（yyjson） |
-| `engine/ocf/resource/AssetUtility.h` | アセットパスの解決とファイル読み込み（TileMap と共通） |
+| `engine/ocf/platform/FileSystem.h` | アセットパスの解決（`resolveAssetPath()`、`pathToUtf8()`）とファイル読み込み（`FileSystem::readAssetFile()`）。TileMap と共通 |
 | `engine/ocf/resource/JsonUtility.h` | yyjson のパースとエラー位置の整形（内部用、TileMap と共通） |
 | `engine/ocf/scene/2d/Sprite.h` | `Sprite::setSpriteFrame()` |
 | `assets/spritesheets/sample.json` / `sample.png` | 回転・トリミングを含むサンプル |

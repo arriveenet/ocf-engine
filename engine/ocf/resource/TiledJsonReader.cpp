@@ -2,7 +2,7 @@
 #include "ocf/resource/TiledCommon.h"
 
 #include "ocf/core/Logger.h"
-#include "ocf/resource/AssetUtility.h"
+#include "ocf/platform/FileSystem.h"
 #include "ocf/resource/JsonUtility.h"
 
 #include <yyjson.h>
@@ -282,7 +282,7 @@ Ref<TileSet> JsonReader::readTileSet(yyjson_val* object, const std::string& path
 
     Ref<TileSet> tileSet(new TileSet(tileWidth, tileHeight, margin, spacing));
     tileSet->setName(std::move(name));
-    tileSet->setImage(asset::toUtf8(asset::resolvePath(m_baseDirectory, image)), imageWidth,
+    tileSet->setImage(pathToUtf8(resolveAssetPath(m_baseDirectory, image)), imageWidth,
                       imageHeight);
 
     uint32_t columns = tileSet->getColumns();
@@ -644,7 +644,7 @@ bool JsonReader::readProperties(yyjson_val* object, const std::string& path,
             }
             const std::string_view text = getString(value);
             properties[name] = type == "file" && !text.empty()
-                                   ? asset::toUtf8(asset::resolvePath(m_baseDirectory, text))
+                                   ? pathToUtf8(resolveAssetPath(m_baseDirectory, text))
                                    : std::string(text);
         }
         else if (type == "class") {

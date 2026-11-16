@@ -3,10 +3,26 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 
 namespace fs = std::filesystem;
 
 namespace ocf {
+
+std::string pathToUtf8(const std::filesystem::path& path)
+{
+    const std::u8string text = path.generic_u8string();
+    return std::string(text.begin(), text.end());
+}
+
+std::filesystem::path resolveAssetPath(const std::filesystem::path& baseDirectory,
+                                       std::string_view relativePath)
+{
+    const fs::path path(
+        std::u8string(reinterpret_cast<const char8_t*>(relativePath.data()), relativePath.size()));
+    return (baseDirectory / path).lexically_normal();
+}
 
 FileSystem* FileSystem::s_sharedFileSystem = nullptr;
 
@@ -39,6 +55,24 @@ std::string FileSystem::getAssetFullPath(std::string_view fileName)
     }
 
     return "";
+}
+
+std::optional<std::string> FileSystem::readAssetFile(const std::filesystem::path& assetPath)
+{
+    const std::string fullPath = getAssetFullPath(pathToUtf8(assetPath));
+    if (fullPath.empty()) {
+        return std::nullopt;
+    }
+
+    std::ifstream file(fullPath, std::ios::binary);
+    if (!file) {
+        return std::nullopt;
+    }
+    std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    if (file.bad()) {
+        return std::nullopt;
+    }
+    return text;
 }
 
 std::string FileSystem::getParentFullPath(std::string_view filePath)

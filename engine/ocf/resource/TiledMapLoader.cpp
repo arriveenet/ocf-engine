@@ -2,7 +2,7 @@
 #include "ocf/resource/TiledMapLoader.h"
 
 #include "ocf/core/Engine.h"
-#include "ocf/resource/AssetUtility.h"
+#include "ocf/platform/FileSystem.h"
 #include "ocf/resource/TextureManager.h"
 #include "ocf/resource/TiledCommon.h"
 
@@ -14,7 +14,7 @@ Result<Ref<TileMap>, std::string> TiledMapLoader::load(Engine& engine, std::stri
 {
     using MapResult = Result<Ref<TileMap>, std::string>;
 
-    const std::filesystem::path path = asset::resolvePath(std::filesystem::path(), assetPath);
+    const std::filesystem::path path = resolveAssetPath(std::filesystem::path(), assetPath);
     const std::optional<std::string> text = readAssetFile(path);
     if (!text) {
         return MapResult::Err(std::format("cannot read {}", assetPath));
@@ -27,7 +27,7 @@ Result<Ref<TileMap>, std::string> TiledMapLoader::load(Engine& engine, std::stri
     }
 
     Ref<TileMap> map = result.unwrap();
-    map->setName(asset::toUtf8(path));
+    map->setName(pathToUtf8(path));
 
     Result<void, std::string> textures = resolveTextures(*map.ptr(), engine.getTextureManager());
     if (textures.isErr()) {
@@ -70,7 +70,7 @@ Result<void, std::string> TiledMapLoader::resolveTextures(TileMap& map,
 
 std::optional<std::string> TiledMapLoader::readAssetFile(const std::filesystem::path& assetPath)
 {
-    return asset::readFile(assetPath);
+    return FileSystem::getInstance()->readAssetFile(assetPath);
 }
 
 } // namespace ocf
