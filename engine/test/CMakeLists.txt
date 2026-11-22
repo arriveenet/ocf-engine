@@ -16,6 +16,7 @@ add_executable(test_${TARGET}
     test_mat2.cpp
     test_mat3.cpp
     test_mat4.cpp
+    test_noise.cpp
     test_matrix_transform.cpp
     test_quat.cpp
     test_rect.cpp
