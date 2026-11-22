@@ -2,7 +2,7 @@
 #include "ocf/resource/TiledCommon.h"
 
 #include "ocf/core/Logger.h"
-#include "ocf/resource/AssetUtility.h"
+#include "ocf/platform/FileSystem.h"
 
 #include <pugixml.hpp>
 
@@ -292,7 +292,7 @@ Ref<TileSet> XmlReader::readTileSet(const pugi::xml_node& node, const std::strin
 
     Ref<TileSet> tileSet(new TileSet(tileWidth, tileHeight, margin, spacing));
     tileSet->setName(std::move(name));
-    tileSet->setImage(asset::toUtf8(asset::resolvePath(m_baseDirectory, image)), imageWidth,
+    tileSet->setImage(pathToUtf8(resolveAssetPath(m_baseDirectory, image)), imageWidth,
                       imageHeight);
 
     uint32_t columns = tileSet->getColumns();
@@ -608,7 +608,7 @@ bool XmlReader::readProperties(const pugi::xml_node& node, const std::string& pa
         }
         else if (type == "string" || type == "color" || type == "file") {
             properties[name] = type == "file" && !value.empty()
-                                   ? asset::toUtf8(asset::resolvePath(m_baseDirectory, value))
+                                   ? pathToUtf8(resolveAssetPath(m_baseDirectory, value))
                                    : std::string(value);
         }
         else if (type == "class") {

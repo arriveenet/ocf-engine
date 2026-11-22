@@ -2,7 +2,7 @@
 #include "ocf/resource/SpriteSheetLoader.h"
 
 #include "ocf/core/Engine.h"
-#include "ocf/resource/AssetUtility.h"
+#include "ocf/platform/FileSystem.h"
 #include "ocf/resource/SpriteSheetCommon.h"
 #include "ocf/resource/TextureManager.h"
 
@@ -15,8 +15,8 @@ using spritesheet::SheetResult;
 Result<Ref<SpriteSheet>, std::string> SpriteSheetLoader::load(Engine& engine,
                                                               std::string_view assetPath)
 {
-    const std::filesystem::path path = asset::resolvePath(std::filesystem::path(), assetPath);
-    const std::optional<std::string> text = asset::readFile(path);
+    const std::filesystem::path path = resolveAssetPath(std::filesystem::path(), assetPath);
+    const std::optional<std::string> text = FileSystem::getInstance()->readAssetFile(path);
     if (!text) {
         return SheetResult::Err(std::format("cannot read {}", assetPath));
     }
@@ -27,7 +27,7 @@ Result<Ref<SpriteSheet>, std::string> SpriteSheetLoader::load(Engine& engine,
     }
 
     Ref<SpriteSheet> sheet = result.unwrap();
-    sheet->setName(asset::toUtf8(path));
+    sheet->setName(pathToUtf8(path));
 
     Result<void, std::string> texture = resolveTexture(*sheet.ptr(), engine.getTextureManager());
     if (texture.isErr()) {
