@@ -9,6 +9,8 @@ CMakeオプション `OCF_ENABLE_IMGUI`（既定はON）で有効・無効を切
 cmake -S . -B build -DOCF_ENABLE_IMGUI=OFF
 ```
 
+RHIのバックエンドが `D3D12` のときは、まだ対応していないため自動的にOFFになります（[build.md](build.md) を参照）。
+
 ゲーム側のコードは、ON・OFFのどちらでも同じままビルドできます。`#if OCF_ENABLE_IMGUI` で囲む必要はありません。
 その代わりに、ImGuiを使ってよい場所が決まっています（[ルール](#ルール-imguiを使ってよい場所)を参照）。
 

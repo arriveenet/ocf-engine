@@ -3,8 +3,6 @@ project(imgui)
 
 set(OUR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-find_package(Vulkan REQUIRED)
-
 # ==================================================================================================
 #  Core
 # ==================================================================================================
@@ -40,6 +38,13 @@ set_target_properties(${TARGET} PROPERTIES FOLDER ThirdParty)
 # ==================================================================================================
 #  Backends (GLFW + Vulkan)
 # ==================================================================================================
+# TODO: Build the Direct3D 12 backend when ImGuiLayer supports it
+if (OCF_RHI_BACKEND AND NOT OCF_RHI_BACKEND STREQUAL "Vulkan")
+    return()
+endif()
+
+find_package(Vulkan REQUIRED)
+
 set(TARGET imgui_backend)
 
 set(PUBLIC_HDRS

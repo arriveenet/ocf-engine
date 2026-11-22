@@ -213,5 +213,6 @@ private:
 
 using HandleAllocatorGL = HandleAllocator<32, 96, 184>;
 using HandleAllocatorVK = HandleAllocator<32, 96, 184>;
+using HandleAllocatorDX12 = HandleAllocator<32, 96, 184>;
 
 } // namespace ocf::rhi

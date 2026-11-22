@@ -8,7 +8,13 @@ set(TARGET ocfengine)
 # ==================================================================================================
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
-find_package(Vulkan REQUIRED)
+if (NOT OCF_RHI_BACKEND)
+    set(OCF_RHI_BACKEND "Vulkan")
+endif()
+
+if (OCF_RHI_BACKEND STREQUAL "Vulkan")
+    find_package(Vulkan REQUIRED)
+endif()
 
 # ==================================================================================================
 #  Functions
@@ -50,19 +56,23 @@ add_filtered_dir("scene/2d")
 add_filtered_dir("scene/3d")
 add_filtered_dir("scene/animation")
 
-add_filtered_dir("rhi/vulkan")
-add_filtered_dir("rhi/vulkan/resource")
+if (OCF_RHI_BACKEND STREQUAL "Vulkan")
+    add_filtered_dir("rhi/vulkan")
+    add_filtered_dir("rhi/vulkan/resource")
 
-if (WIN32)
-    add_filtered_files("rhi/vulkan/platform"
-        ocf/rhi/vulkan/platform/VulkanPlatformWindows.h
-        ocf/rhi/vulkan/platform/VulkanPlatformWindows.cpp
-    )
-elseif (LINUX)
-    add_filtered_files("rhi/vulkan/platform"
-        ocf/rhi/vulkan/platform/VulkanPlatformLinux.h
-        ocf/rhi/vulkan/platform/VulkanPlatformLinux.cpp
-    )
+    if (WIN32)
+        add_filtered_files("rhi/vulkan/platform"
+            ocf/rhi/vulkan/platform/VulkanPlatformWindows.h
+            ocf/rhi/vulkan/platform/VulkanPlatformWindows.cpp
+        )
+    elseif (LINUX)
+        add_filtered_files("rhi/vulkan/platform"
+            ocf/rhi/vulkan/platform/VulkanPlatformLinux.h
+            ocf/rhi/vulkan/platform/VulkanPlatformLinux.cpp
+        )
+    endif()
+elseif (OCF_RHI_BACKEND STREQUAL "D3D12")
+    add_filtered_dir("rhi/d3d12")
 endif()
 
 # ==================================================================================================
@@ -91,7 +101,15 @@ target_link_libraries(${TARGET} PRIVATE stb)
 target_link_libraries(${TARGET} PRIVATE tinyobjloader)
 target_link_libraries(${TARGET} PRIVATE xxHash)
 target_link_libraries(${TARGET} PRIVATE yyjson)
-target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
+
+# The backend in use is 1 and the others are 0, so that they can be tested with #if
+if (OCF_RHI_BACKEND STREQUAL "Vulkan")
+    target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan)
+    target_compile_definitions(${TARGET} PUBLIC OCF_RHI_VULKAN=1 OCF_RHI_D3D12=0)
+elseif (OCF_RHI_BACKEND STREQUAL "D3D12")
+    target_link_libraries(${TARGET} PRIVATE d3d12 dxgi dxguid)
+    target_compile_definitions(${TARGET} PUBLIC OCF_RHI_VULKAN=0 OCF_RHI_D3D12=1)
+endif()
 
 # Always linked, so that games can use ImGui without checking OCF_ENABLE_IMGUI
 target_link_libraries(${TARGET} PUBLIC imgui)
