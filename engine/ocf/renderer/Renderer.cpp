@@ -65,13 +65,8 @@ bool Renderer::beginFrame()
     m_viewCount = 0;
     m_passCount = 0;
 
+    // Already recording, with the swapchain image and the depth buffer ready to be rendered to
     m_commandBuffer = m_device->getCommandBuffer();
-    m_commandBuffer->begin();
-    // Change to color layout
-    m_commandBuffer->transitionLayout(rhi::ResourceState::Undefined,
-                                      rhi::ResourceState::ColorAttachment);
-    m_commandBuffer->transitionLayout(m_depthTexture, rhi::ResourceState::Undefined,
-                                      rhi::ResourceState::DepthStencilAttachment);
     return true;
 }
 
@@ -85,10 +80,6 @@ void Renderer::endFrame()
         m_commandBuffer->endRendering();
     }
 
-    // Change to present layout
-    m_commandBuffer->transitionLayout(rhi::ResourceState::ColorAttachment,
-                                      rhi::ResourceState::Present);
-    m_commandBuffer->end();
     m_commandBuffer.reset();
 
     m_device->endFrame();

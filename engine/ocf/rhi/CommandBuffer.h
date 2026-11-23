@@ -24,7 +24,8 @@ public:
      * @brief Begin a rendering pass into the render target.
      *
      * The attachments of an offscreen target are transitioned for rendering, and sampleable ones
-     * become readable by shaders again at endRendering().
+     * become readable by shaders again at endRendering(). Those of the default target are
+     * ready to be rendered to for the whole frame, from Device::beginFrame().
      */
     virtual void beginRendering(RenderTargetHandle rth, const RenderingInfo& info) = 0;
 
@@ -48,11 +49,6 @@ public:
 
     virtual void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                            uint32_t vertexOffset, uint32_t firstInstance) = 0;
-
-    virtual void transitionLayout(ResourceState oldState, ResourceState newState) = 0;
-
-    virtual void transitionLayout(TextureHandle texture, ResourceState oldState,
-                                  ResourceState newState) = 0;
 };
 
 } // namespace ocf::rhi

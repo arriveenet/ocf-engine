@@ -5,6 +5,7 @@
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/MaterialInstance.h"
 #include "ocf/renderer/Renderer.h"
+#include "ocf/renderer/ShaderLoader.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/renderer/IndexBuffer.h"
 #include "ocf/resource/Mesh.h"
@@ -18,8 +19,8 @@ MeshInstance::MeshInstance(Engine& engine, std::string_view vertexShaderPath,
     : m_engine(engine)
 {
     auto& device = m_engine.getDevice();
-    m_vertexShader = device.createShaderModule(rhi::ShaderStage::Vertex, vertexShaderPath);
-    m_fragmentShader = device.createShaderModule(rhi::ShaderStage::Fragment, fragmentShaderPath);
+    m_vertexShader = ShaderLoader::load(device, rhi::ShaderStage::Vertex, vertexShaderPath);
+    m_fragmentShader = ShaderLoader::load(device, rhi::ShaderStage::Fragment, fragmentShaderPath);
 
     m_material = Material::Builder()
             .uniformBlock(0, "MaterialParameters", 80)

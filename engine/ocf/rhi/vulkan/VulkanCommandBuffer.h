@@ -48,10 +48,12 @@ public:
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                    uint32_t vertexOffset, uint32_t firstInstance) override;
 
-    void transitionLayout(ResourceState oldState, ResourceState newState) override;
+    /** Moves the current swapchain image between the states of a frame */
+    void transitionSwapchainImage(ResourceState oldState, ResourceState newState);
 
-    void transitionLayout(TextureHandle texture, ResourceState oldState,
-                          ResourceState newState) override;
+    /** Moves an image between the states of a frame, without tracking its layout */
+    void transitionImage(const IImageResource& image, ResourceState oldState,
+                         ResourceState newState);
 
     VkCommandBuffer getHandle() const noexcept { return m_commandBuffer; }
 

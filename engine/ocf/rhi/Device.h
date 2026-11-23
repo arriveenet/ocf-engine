@@ -10,8 +10,8 @@
 #include "ocf/rhi/RHIEnums.h"
 
 #include <cstdint>
+#include <cstddef>
 #include <memory>
-#include <string_view>
 
 namespace ocf {
 class Window;
@@ -21,6 +21,7 @@ namespace ocf::rhi {
 
 class Context;
 class CommandBuffer;
+class ImGuiBackend;
 class Swapchain;
 
 struct RHIResourceBase {};
@@ -142,7 +143,13 @@ public:
                                         uint32_t width, uint32_t height, uint32_t depth,
                                         TextureUsage usage = TextureUsage::Default) = 0;
 
-    virtual ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
+    /**
+     * @brief Create a shader module from its compiled code.
+     *
+     * @param code The bytecode of the backend (e.g. SPIR-V). It is copied, so it can be released
+     *             after the call.
+     */
+    virtual ShaderModuleHandle createShaderModule(ShaderStage stage, const void* code, size_t size,
                                                   const char* entryPoint = "main") = 0;
 
     virtual DescriptorSetLayoutHandle createDescriptorLayoutSet(const DescriptorSetLayout& layout) = 0;
@@ -211,6 +218,7 @@ public:
 
     virtual void generateMipmaps(TextureHandle handle) = 0;
 
+    /** @brief The command buffer of the frame, recording between beginFrame() and endFrame(). */
     virtual std::shared_ptr<CommandBuffer> getCommandBuffer() = 0;
 
     // @TODO
@@ -222,11 +230,29 @@ public:
      * The swapchain follows the window by itself: it is recreated with the depth buffer when
      * the surface size changes or the swapchain is out of date. Their handles stay the same.
      *
+     * The command buffer of the frame then starts recording, with the swapchain image and the
+     * depth buffer ready to be rendered to. Their previous contents are undefined.
+     *
      * @return false if the frame cannot be rendered (no swapchain image was acquired)
      */
     virtual bool beginFrame() = 0;
 
+    /**
+     * @brief Finish recording the frame, then submit it and present the swapchain image.
+     *
+     * Only called after beginFrame() succeeded.
+     */
     virtual void endFrame() = 0;
+
+#if OCF_ENABLE_IMGUI
+    /**
+     * @brief Create the Dear ImGui renderer backend of this device.
+     *
+     * The ImGui context and its platform backend must already be initialized for the window.
+     * The swapchain must have been created.
+     */
+    virtual std::unique_ptr<ImGuiBackend> createImGuiBackend() = 0;
+#endif
 
 protected:
 };

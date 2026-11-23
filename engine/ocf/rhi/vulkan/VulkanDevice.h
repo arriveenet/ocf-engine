@@ -55,7 +55,7 @@ public:
                                 uint32_t width, uint32_t height, uint32_t depth,
                                 TextureUsage usage = TextureUsage::Default) override;
 
-    ShaderModuleHandle createShaderModule(ShaderStage stage, std::string_view filename,
+    ShaderModuleHandle createShaderModule(ShaderStage stage, const void* code, size_t size,
                                           const char* entryPoint = "main") override;
 
     DescriptorSetLayoutHandle createDescriptorLayoutSet(const DescriptorSetLayout& layout) override;
@@ -122,6 +122,10 @@ public:
     bool beginFrame() override;
 
     void endFrame() override;
+
+#if OCF_ENABLE_IMGUI
+    std::unique_ptr<ImGuiBackend> createImGuiBackend() override;
+#endif
 
     VkDevice getDevice() const noexcept { return m_device; }
 

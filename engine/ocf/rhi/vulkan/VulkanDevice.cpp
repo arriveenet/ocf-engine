@@ -9,6 +9,7 @@
 #include "ocf/rhi/vulkan/VulkanBuffer.h"
 #include "ocf/rhi/vulkan/VulkanCommandBuffer.h"
 #include "ocf/rhi/vulkan/VulkanContext.h"
+#include "ocf/rhi/vulkan/VulkanImGuiBackend.h"
 #include "ocf/rhi/vulkan/VulkanPipelineBuilder.h"
 #include "ocf/rhi/vulkan/VulkanSwapchain.h"
 
@@ -17,7 +18,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <fstream>
 #include <thread>
 #include <vulkan/vulkan_core.h>
 
@@ -241,9 +241,15 @@ TextureHandle VulkanDevice::createTexture(SamplerType target, uint8_t levels, Te
     return Handle<TextureHandle>{handle.getId()};
 }
 
-ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::string_view filename,
-                                                    const char* entryPoint)
+ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, const void* code,
+                                                    size_t size, const char* entryPoint)
 {
+    // SPIR-V is a stream of 32-bit words
+    if (code == nullptr || size == 0 || size % sizeof(uint32_t) != 0) {
+        OCF_LOG_ERROR("Invalid SPIR-V code of {} bytes", size);
+        return {};
+    }
+
     Handle<VulkanShaderModule> handle = initHandle<VulkanShaderModule>();
 
     VulkanShaderModule* shader = construct<VulkanShaderModule>(handle);
@@ -251,20 +257,14 @@ ShaderModuleHandle VulkanDevice::createShaderModule(ShaderStage stage, std::stri
     shader->stage = stage;
     shader->entryPoint = entryPoint;
 
-    std::ifstream file(filename.data(), std::ios::ate | std::ios::binary);
-    if (!file.is_open()) {
-        OCF_LOG_ERROR("Failded to open shader file: {}", filename.data());
-    }
-
-    size_t fileSize = static_cast<size_t>(file.tellg());
-    std::vector<char> buffer(fileSize);
-    file.seekg(0).read(buffer.data(), fileSize);
-    file.close();
+    // Copied, as pCode must be aligned to 4 bytes, which the caller's buffer may not be
+    std::vector<uint32_t> words(size / sizeof(uint32_t));
+    std::memcpy(words.data(), code, size);
 
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = buffer.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+    createInfo.codeSize = size;
+    createInfo.pCode = words.data();
 
     VkShaderModule module = VK_NULL_HANDLE;
     VkResult result = vkCreateShaderModule(m_device, &createInfo, nullptr, &module);
@@ -969,13 +969,35 @@ bool VulkanDevice::beginFrame()
     }
 
     m_resourceUploader->submitAndWait();
+
+    // The previous contents are discarded, as every frame redraws the swapchain image
+    auto& commandBuffer = *getCurrentFrameContext()->commandBuffer;
+    commandBuffer.begin();
+    commandBuffer.transitionSwapchainImage(ResourceState::Undefined,
+                                           ResourceState::ColorAttachment);
+    if (m_depthBuffer) {
+        commandBuffer.transitionImage(*m_depthBuffer, ResourceState::Undefined,
+                                      ResourceState::DepthStencilAttachment);
+    }
     return true;
 }
 
 void VulkanDevice::endFrame()
 {
+    auto& commandBuffer = *getCurrentFrameContext()->commandBuffer;
+    commandBuffer.transitionSwapchainImage(ResourceState::ColorAttachment,
+                                           ResourceState::Present);
+    commandBuffer.end();
+
     submitPresent();
 }
+
+#if OCF_ENABLE_IMGUI
+std::unique_ptr<ImGuiBackend> VulkanDevice::createImGuiBackend()
+{
+    return std::make_unique<VulkanImGuiBackend>(*this);
+}
+#endif
 
 VulkanResult VulkanDevice::createLogicalDevice()
 {

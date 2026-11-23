@@ -6,6 +6,8 @@
 
 #include "ocf/core/event/EventDispatcher.h"
 
+#include <memory>
+
 namespace ocf {
 
 class Window;
@@ -13,14 +15,14 @@ class Window;
 namespace rhi {
 class CommandBuffer;
 class Device;
-class VulkanDevice;
+class ImGuiBackend;
 } // namespace rhi
 
 /**
  * @brief Dear ImGui debug UI, drawn over the views every frame.
  *
- * Owns the ImGui context and its GLFW platform and Vulkan renderer backends. Scenes build
- * their windows with the ImGui API in Scene::onImGui().
+ * Owns the ImGui context, its GLFW platform backend and the renderer backend of the device.
+ * Scenes build their windows with the ImGui API in Scene::onImGui().
  *
  * ImGui reads the input from GLFW itself. While it uses the mouse or the keyboard (e.g. a
  * window is hovered or a text field is active), those input events are marked handled before
@@ -45,7 +47,7 @@ public:
     void endFrame();
 
 private:
-    rhi::VulkanDevice& m_device;
+    std::unique_ptr<rhi::ImGuiBackend> m_rendererBackend;
     Subscription m_keyboardSubscription;
     Subscription m_mouseSubscription;
 };

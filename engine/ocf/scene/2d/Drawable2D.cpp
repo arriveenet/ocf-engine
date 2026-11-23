@@ -7,6 +7,7 @@
 #include "ocf/renderer/Material.h"
 #include "ocf/renderer/MaterialInstance.h"
 #include "ocf/renderer/Renderer.h"
+#include "ocf/renderer/ShaderLoader.h"
 #include "ocf/renderer/VertexBuffer.h"
 #include "ocf/rhi/Device.h"
 #include "ocf/rhi/PipelineState.h"
@@ -26,10 +27,10 @@ Drawable2D::Drawable2D(Engine& engine, std::string_view fragmentShaderPath)
 {
     auto& device = m_engine.getDevice();
     FileSystem* fileSystem = FileSystem::getInstance();
-    m_vertexShader = device.createShaderModule(
-        rhi::ShaderStage::Vertex, fileSystem->getAssetFullPath("shaders/drawable2d.vert.spv"));
-    m_fragmentShader = device.createShaderModule(
-        rhi::ShaderStage::Fragment, fileSystem->getAssetFullPath(fragmentShaderPath));
+    m_vertexShader = ShaderLoader::load(device, rhi::ShaderStage::Vertex,
+                                        fileSystem->getAssetFullPath("shaders/drawable2d.vert.spv"));
+    m_fragmentShader = ShaderLoader::load(device, rhi::ShaderStage::Fragment,
+                                          fileSystem->getAssetFullPath(fragmentShaderPath));
 
     m_material = Material::Builder()
                      .uniformBlock(0, "Drawable2DParameters", 16)

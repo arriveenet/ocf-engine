@@ -121,7 +121,8 @@ void VulkanCommandBuffer::beginRendering(RenderTargetHandle rth, const Rendering
     m_depthFormat = VK_FORMAT_UNDEFINED;
 
     if (target->isDefault) {
-        // The renderer moves the swapchain image and the depth buffer to the attachment layouts
+        // VulkanDevice::beginFrame() moves the swapchain image and the depth buffer to the
+        // attachment layouts for the whole frame
         const VulkanSwapchain* swapchain = m_device.getSwapchain();
         colorView = swapchain->getCurrentImageView();
         m_colorFormat = swapchain->getImageFormat().format;
@@ -292,7 +293,8 @@ void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCoun
                      firstInstance);
 }
 
-void VulkanCommandBuffer::transitionLayout(ResourceState oldState, ResourceState newState)
+void VulkanCommandBuffer::transitionSwapchainImage(ResourceState oldState,
+                                                   ResourceState newState)
 {
     auto swapchain = m_device.getSwapchain();
 
@@ -329,15 +331,9 @@ void VulkanCommandBuffer::transitionLayout(ResourceState oldState, ResourceState
     vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
 }
 
-void VulkanCommandBuffer::transitionLayout(TextureHandle texture, ResourceState oldState,
-                                           ResourceState newState)
+void VulkanCommandBuffer::transitionImage(const IImageResource& image, ResourceState oldState,
+                                          ResourceState newState)
 {
-    if (!texture) {
-        return;
-    }
-
-    VulkanTexture* tex = m_device.handle_cast<VulkanTexture*>(texture);
-
     const auto src = VulkanUtility::getResourceState(oldState);
     const auto dest = VulkanUtility::getResourceState(newState);
 
@@ -351,8 +347,8 @@ void VulkanCommandBuffer::transitionLayout(TextureHandle texture, ResourceState 
         .newLayout = dest.layout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = tex->image->getImage(),
-        .subresourceRange = tex->image->getSubresourceRange(),
+        .image = image.getImage(),
+        .subresourceRange = image.getSubresourceRange(),
     };
 
     VkDependencyInfo dependencyInfo{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
